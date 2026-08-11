@@ -28,12 +28,16 @@ Economy freshEconomy();
 inline uint16_t bet(const Economy& e) { return kBetLadder[e.betIndex]; }
 
 // Monte / descend d'un cran, sans jamais dépasser ce que le solde permet.
-void raiseBet(Economy& e);
-void lowerBet(Economy& e);
+// `linesPerSpin` dit combien de fois la mise est engagée par tour : 1 pour
+// une ligne unique, 5 pour le format vidéo. Sans ce paramètre, l'écran
+// afficherait une mise que le solde ne couvre pas réellement.
+void raiseBetFor(Economy& e, uint8_t linesPerSpin);
+void clampBetFor(Economy& e, uint8_t linesPerSpin);
 
-// Ramène la mise au plus grand cran finançable. Appelé après chaque tour :
-// un joueur qui s'appauvrit voit sa mise suivre au lieu d'être bloqué.
-void clampBet(Economy& e);
+inline void raiseBet(Economy& e) { raiseBetFor(e, 1); }
+inline void clampBet(Economy& e) { clampBetFor(e, 1); }
+
+void lowerBet(Economy& e);
 
 bool canSpin(const Economy& e);
 void placeBet(Economy& e);

@@ -2,6 +2,36 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-020 — 2026-08-11 — Le réglage de mise : rendu visible, et réparé
+
+Question de Pierre : « il faut un système pour changer la mise sur les 3
+jeux ? » Il existait (←/→ partout) mais il était invisible **et faux**.
+
+- **Bug corrigé — le gain du format vidéo suivait la mise affichée**, pas
+  la mise engagée : monter la mise pendant la rotation multipliait le
+  gain sans avoir rien payé de plus. La mise par ligne est désormais
+  figée au lancement (`perLineStake`) et relue au règlement. Test à
+  l'appui : on monte la mise au maximum en pleine rotation, le gain reste
+  celui de la mise de départ.
+- **La mise ne bouge plus pendant qu'un tour est en cours**, dans les
+  deux machines. Changer l'enjeu après avoir vu une partie du résultat
+  n'a pas de sens.
+- **La montée de mise connaît le coût réel du tour** : `raiseBetFor(e,
+  lignes)`. Le format vidéo engage cinq mises ; l'ancienne version
+  autorisait une mise de 10 avec 30 jetons, puis la faisait retomber en
+  silence au lancement.
+- **Affordance ajoutée** : deux chevrons encadrent la mise, et ils
+  **disparaissent** quand elle n'est pas réglable (rotation en cours,
+  main de blackjack engagée, mode démo). La règle se lit sans un mot.
+  Les trois pages d'aide mentionnent désormais `</>`.
+- Au blackjack, l'écran montre la mise **réglable** entre deux mains et
+  la mise **engagée** pendant la main (en magenta si doublée).
+
+Bug attrapé en route : une lecture hors limites (segfault) dans la page
+d'aide du blackjack, parce que le nombre de règles était codé en dur et
+qu'une règle avait été retirée. Le compte est maintenant déduit du
+tableau — le genre d'erreur qui ne pardonne pas sur microcontrôleur.
+
 ## D-019 — 2026-08-11 — Table de gains unifiée (dette D-017 soldée)
 
 Il y avait deux structures disant la même chose : `three[8] + two` pour le

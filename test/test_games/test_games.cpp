@@ -87,6 +87,55 @@ static void test_video_attract_is_free_and_silent() {
     TEST_ASSERT_EQUAL_INT32(before, g.econ.credits);
 }
 
+static void test_changing_bet_mid_spin_cannot_change_the_payout() {
+    // Le gain doit être calculé sur la mise ENGAGÉE, pas sur celle affichée
+    // au moment où les rouleaux s'arrêtent. Sinon monter la mise pendant la
+    // rotation paierait plus que ce qu'on a misé.
+    core::seedXorShift(77);
+    core::VideoGame g = core::newVideoGame(0, core::xorShift32);
+    g.econ.credits = 100000;
+    g.econ.betIndex = 0;                        // mise 1 par ligne
+    TEST_ASSERT_TRUE(core::startVideoSpin(g, 0, core::xorShift32));
+
+    // Le joueur monte la mise au maximum pendant que ça tourne.
+    uint32_t now = 0;
+    for (int k = 0; k < core::kBetSteps; ++k) core::raiseBet(g.econ);
+    const int32_t creditsBefore = g.econ.credits;
+    for (int i = 0; i < 400; ++i) {
+        now += core::kFrameMs;
+        core::updateVideoGame(g, now, core::xorShift32);
+        if (g.phase != core::Phase::Spinning) break;
+    }
+    // Le gain doit valoir multiplicateur x 1, pas x 50.
+    TEST_ASSERT_EQUAL_UINT32(g.outcome.totalMultiplier * 1, g.payout);
+    TEST_ASSERT_EQUAL_INT32(creditsBefore + static_cast<int32_t>(g.payout),
+                            g.econ.credits);
+}
+
+static void test_bet_cannot_change_while_reels_turn() {
+    App a = started(78);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);  // slots
+    uint32_t now = 0;
+    core::handleKey(a, AppKey::Confirm, now, core::xorShift32);  // tire
+    const uint8_t betDuring = a.game.machine.econ.betIndex;
+    core::handleKey(a, AppKey::Right, now, core::xorShift32);
+    TEST_ASSERT_EQUAL_UINT8_MESSAGE(betDuring, a.game.machine.econ.betIndex,
+                                    "la mise a bouge pendant la rotation");
+}
+
+static void test_video_bet_respects_the_real_cost_of_a_spin() {
+    // Un tour coûte cinq mises : proposer une mise que le solde ne couvre
+    // pas cinq fois serait un affichage mensonger.
+    core::seedXorShift(79);
+    core::VideoGame g = core::newVideoGame(0, core::xorShift32);
+    g.econ.credits = 30;          // permet 5 par ligne (25), pas 10 (50)
+    g.econ.betIndex = 0;
+    for (int k = 0; k < core::kBetSteps; ++k) core::raiseBetFor(g.econ, core::kVideoLines);
+    TEST_ASSERT_TRUE_MESSAGE(core::videoStake(g.econ) <= 30,
+                             "mise affichee superieure a ce que le solde permet");
+    TEST_ASSERT_EQUAL_UINT16(5, core::bet(g.econ));
+}
+
 static void test_blackjack_deal_is_progressive_then_playable() {
     core::seedXorShift(5);
     core::BjSession s = core::newBjSession(0);
@@ -153,6 +202,9 @@ int main() {
     RUN_TEST(test_the_three_games_share_one_balance);
     RUN_TEST(test_video_spin_costs_five_lines);
     RUN_TEST(test_video_attract_is_free_and_silent);
+    RUN_TEST(test_changing_bet_mid_spin_cannot_change_the_payout);
+    RUN_TEST(test_bet_cannot_change_while_reels_turn);
+    RUN_TEST(test_video_bet_respects_the_real_cost_of_a_spin);
     RUN_TEST(test_blackjack_deal_is_progressive_then_playable);
     RUN_TEST(test_blackjack_hand_always_terminates);
     RUN_TEST(test_basic_strategy_matches_the_reference_table);

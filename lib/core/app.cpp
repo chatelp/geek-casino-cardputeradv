@@ -151,13 +151,13 @@ void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
             }
             break;
         case AppKey::Left:
-            noteInput(a.game, now);
-            lowerBet(a.game.machine.econ);
-            pushCue(a.game, Cue::BetChange);
-            break;
         case AppKey::Right:
             noteInput(a.game, now);
-            raiseBet(a.game.machine.econ);
+            // Mise figée pendant la rotation : la changer en vol reviendrait
+            // à modifier l'enjeu après avoir vu une partie du résultat.
+            if (a.game.phase == Phase::Spinning) break;
+            if (k == AppKey::Left) lowerBet(a.game.machine.econ);
+            else raiseBet(a.game.machine.econ);
             pushCue(a.game, Cue::BetChange);
             break;
         case AppKey::Help:
@@ -186,13 +186,12 @@ void keyVideo(App& a, AppKey k, uint32_t now, RngFn rng) {
             }
             break;
         case AppKey::Left:
-            noteVideoInput(a.video, now);
-            lowerBet(a.video.econ);
-            pushVideoCue(a.video, Cue::BetChange);
-            break;
         case AppKey::Right:
             noteVideoInput(a.video, now);
-            raiseBet(a.video.econ);
+            if (a.video.phase == Phase::Spinning) break;
+            // Le format vidéo engage cinq mises : la montée en tient compte.
+            if (k == AppKey::Left) lowerBet(a.video.econ);
+            else raiseBetFor(a.video.econ, kVideoLines);
             pushVideoCue(a.video, Cue::BetChange);
             break;
         case AppKey::Help:

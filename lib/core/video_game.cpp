@@ -60,18 +60,15 @@ bool startVideoSpin(VideoGame& g, uint32_t now, RngFn rng, bool byPlayer) {
 
     const uint32_t cost = videoStake(g.econ);
     if (byPlayer) {
-        clampBet(g.econ);
         // Le tour coûte cinq mises : c'est ce total qu'il faut pouvoir payer.
-        while (videoStake(g.econ) > static_cast<uint32_t>(g.econ.credits) &&
-               g.econ.betIndex > 0) {
-            --g.econ.betIndex;
-        }
+        clampBetFor(g.econ, kVideoLines);
         if (videoStake(g.econ) > static_cast<uint32_t>(g.econ.credits)) return false;
         g.stake = static_cast<uint16_t>(videoStake(g.econ));
         g.econ.credits -= static_cast<int32_t>(g.stake);
     } else {
         g.stake = static_cast<uint16_t>(cost);  // démo : affiché, jamais débité
     }
+    g.perLineStake = bet(g.econ);  // figée ici, relue au règlement
 
     spinGrid(*g.reels, rng, g.outcome, kVideoRows);
     evaluateGrid(*g.pay, g.lines, kVideoLines, g.reels->reels, g.outcome);
@@ -123,13 +120,13 @@ uint8_t updateVideoGame(VideoGame& g, uint32_t now, RngFn rng) {
                 g.tier = tierOfMultiplier(g.outcome.totalMultiplier, g.outcome.jackpot);
                 if (!g.attract) {
                     // La mise par ligne multiplie le gain, pas le total engagé.
-                    g.payout = g.outcome.totalMultiplier * bet(g.econ);
+                    g.payout = g.outcome.totalMultiplier * g.perLineStake;
                     award(g.econ, g.payout);
                     if (needsBailout(g.econ)) {
                         bailout(g.econ);
                         g.bailedOut = true;
                     }
-                    clampBet(g.econ);
+                    clampBetFor(g.econ, kVideoLines);
                 }
                 if (g.bailedOut) {
                     g.phase = Phase::Bailout;

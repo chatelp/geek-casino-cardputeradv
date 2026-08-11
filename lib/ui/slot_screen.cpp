@@ -77,8 +77,14 @@ void drawHud(lgfx::LGFX_Sprite& g, const core::Game& game) {
     const bool low = e.credits < core::kBetLadder[0] * 10;
     drawNumber(g, e.credits, 22, 4, A(low ? P::red : P::yellow), 2);
     const int bw = numberWidth(core::bet(e), 2);
-    drawText(g, "BET", kScreenW - 6 - bw - 9, 4, P::steel300, 2, Align::Right);
-    drawNumber(g, core::bet(e), kScreenW - 6, 4, A(P::cyan), 2, Align::Right);
+    drawNumber(g, core::bet(e), kScreenW - 10, 4, A(P::cyan), 2, Align::Right);
+    drawText(g, "BET", kScreenW - 13 - bw - 9, 4, P::steel300, 2, Align::Right);
+    // Réglable seulement à l'arrêt : les chevrons disparaissent pendant la
+    // rotation, ce qui dit la règle sans un mot.
+    const bool idle = game.phase != core::Phase::Spinning && !g_demo;
+    drawBetArrows(g, kScreenW - 13 - bw - 9 - 10, kScreenW - 8, 5, P::steel500,
+                  idle && e.betIndex > 0,
+                  idle && e.betIndex + 1 < core::kBetSteps);
 }
 
 // Le bandeau de lampes est le canal d'expression le moins coûteux de

@@ -29,7 +29,11 @@ struct VideoGame {
     uint8_t reelsStopped = 0;
     uint32_t spins = 0;
 
-    uint16_t stake = 0;    // engagé sur le tour (mise × lignes)
+    uint16_t stake = 0;        // total engagé sur le tour (mise × lignes)
+    // Mise PAR LIGNE au moment du lancement. Le gain se calcule sur elle,
+    // jamais sur la mise affichée à l'arrivée : sinon monter la mise
+    // pendant la rotation paierait plus que ce qu'on a engagé.
+    uint16_t perLineStake = 0;
     uint32_t payout = 0;
     bool bailedOut = false;
     // Pendant la célébration, les lignes gagnantes défilent une à une :

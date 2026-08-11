@@ -62,8 +62,12 @@ void drawOverlayHud(lgfx::LGFX_Sprite& g, const core::VideoGame& game) {
     // joueur croit miser cinq fois moins qu'il ne mise.
     const int32_t total = static_cast<int32_t>(core::videoStake(e));
     const int bw = numberWidth(total, 2);
-    drawNumber(g, total, kScreenW - 3, 3, A(P::cyan), 2, Align::Right);
-    drawText(g, "BET", kScreenW - 9 - bw, 3, P::steel300, 2, Align::Right);
+    drawNumber(g, total, kScreenW - 8, 3, A(P::cyan), 2, Align::Right);
+    drawText(g, "BET", kScreenW - 14 - bw, 3, P::steel300, 2, Align::Right);
+    const bool idle = game.phase != core::Phase::Spinning && !g_demo;
+    drawBetArrows(g, kScreenW - 14 - bw - 10, kScreenW - 6, 4, P::steel500,
+                  idle && e.betIndex > 0,
+                  idle && e.betIndex + 1 < core::kBetSteps);
 }
 
 void drawChevrons(lgfx::LGFX_Sprite& g, const core::VideoGame& game, uint32_t now,

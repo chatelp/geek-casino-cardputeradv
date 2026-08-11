@@ -150,10 +150,18 @@ void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) 
     // HUD en surimpression, comme partout ailleurs maintenant.
     drawIcon(g, ICON_COIN, 3, 3);
     drawNumber(g, s.econ.credits, 19, 3, P::yellow, 2);
-    const int bw = numberWidth(s.bj.stake ? s.bj.stake : core::bet(s.econ), 2);
-    drawNumber(g, s.bj.stake ? s.bj.stake : core::bet(s.econ), kScreenW - 3, 3,
-               s.bj.doubled ? P::magenta : P::cyan, 2, Align::Right);
-    drawText(g, "BET", kScreenW - 9 - bw, 3, P::steel300, 2, Align::Right);
+    // Entre deux mains on montre la mise réglable ; pendant la main, la
+    // mise engagée (doublée le cas échéant, en magenta).
+    const bool between = s.bj.phase != core::BjPhase::PlayerTurn &&
+                         s.bj.phase != core::BjPhase::DealerTurn;
+    const int32_t shown = between ? core::bet(s.econ) : s.bj.stake;
+    const int bw = numberWidth(shown, 2);
+    drawNumber(g, shown, kScreenW - 8, 3,
+               s.bj.doubled && !between ? P::magenta : P::cyan, 2, Align::Right);
+    drawText(g, "BET", kScreenW - 14 - bw, 3, P::steel300, 2, Align::Right);
+    drawBetArrows(g, kScreenW - 14 - bw - 10, kScreenW - 6, 4, P::steel500,
+                  between && s.econ.betIndex > 0,
+                  between && s.econ.betIndex + 1 < core::kBetSteps);
 
     const bool hidden = core::bjHoleHidden(s);
     drawHand(g, s.bj.dealer, core::bjVisibleDealer(s), kDealerY, hidden);

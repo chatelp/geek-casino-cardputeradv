@@ -132,7 +132,8 @@ void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
         drawNumber(g, pt.pay[i][3], x + 50, y + 2, i == core::kJackpotSymbol
                    ? P::green : P::yellow, 2);
     }
-    drawText(g, "ANY PAIR LEFT x2", kScreenW / 2, 106, P::steel300, 1, Align::Center);
+    drawText(g, "ANY PAIR LEFT x2  -  </> CHANGE BET", kScreenW / 2, 106,
+             P::steel300, 1, Align::Center);
     drawHint(g, "H OR ESC BACK");
 }
 
@@ -161,7 +162,7 @@ void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
                        Align::Right);
         }
     }
-    drawText(g, "5 LINES - BET IS PER LINE", kScreenW / 2, 104, P::steel300, 1,
+    drawText(g, "5 LINES  -  </> CHANGE BET", kScreenW / 2, 104, P::steel300, 1,
              Align::Center);
     drawHint(g, "H OR ESC BACK");
 }
@@ -178,10 +179,15 @@ void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
         "BLACKJACK PAYS 3:2",
         "DEALER DRAWS TO 17",
         "DOUBLE ON FIRST 2",
+        "TIE RETURNS YOUR BET",
+        "</> BET, THEN ACTION",
     };
-    for (int i = 0; i < 6; ++i) {
-        g.fillRect(10, 30 + i * 13, 3, 3, i == 2 ? P::green : P::cyan);
-        drawText(g, kRules[i], 18, 29 + i * 13, P::steel300, 1);
+    // Taille déduite du tableau : coder le compte en dur avait produit une
+    // lecture hors limites (segfault) dès qu'une règle a été retirée.
+    constexpr int kRuleCount = sizeof(kRules) / sizeof(kRules[0]);
+    for (int i = 0; i < kRuleCount; ++i) {
+        g.fillRect(10, 28 + i * 12, 3, 3, i == 2 ? P::green : P::cyan);
+        drawText(g, kRules[i], 18, 27 + i * 12, P::steel300, 1);
     }
     // Deux cartes d'exemple : le blackjack lui-même.
     drawCard(g, core::Card{1, SUIT_SPADE}, 168, 34, false);

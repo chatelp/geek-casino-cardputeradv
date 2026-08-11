@@ -45,4 +45,10 @@ void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale = 1,
 void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c,
                int t = 1);
 
+// Petits chevrons de part et d'autre d'une valeur réglable. Sans eux, rien
+// n'indique au joueur que ←/→ changent la mise : le réglage existait mais
+// restait invisible.
+void drawBetArrows(lgfx::LGFX_Sprite& g, int leftX, int rightX, int y,
+                   uint16_t color, bool canLower, bool canRaise);
+
 }  // namespace ui

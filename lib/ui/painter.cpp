@@ -109,6 +109,14 @@ void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale,
     blitIndexed(g, kSuits[suit], kSuitPx, x, y, scale, tint, kSymbolPalette);
 }
 
+void drawBetArrows(lgfx::LGFX_Sprite& g, int leftX, int rightX, int y,
+                   uint16_t color, bool canLower, bool canRaise) {
+    for (int k = 0; k < 3; ++k) {
+        if (canLower) g.fillRect(leftX + 2 - k, y + 3 - k, 1, 1 + 2 * k, color);
+        if (canRaise) g.fillRect(rightX + k, y + 3 - k, 1, 1 + 2 * k, color);
+    }
+}
+
 void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c, int t) {
     g.fillRect(x, y, w, t, c);
     g.fillRect(x, y + h - t, w, t, c);
