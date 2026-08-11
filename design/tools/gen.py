@@ -23,7 +23,7 @@ ROOT = os.path.dirname(DESIGN)
 BUILD = os.path.join(DESIGN, "build")
 
 sys.path.insert(0, HERE)
-from art_symbols import SYMBOLS, CLASSIC_SYMBOLS, ICONS  # noqa: E402
+from art_symbols import SYMBOLS, CLASSIC_SYMBOLS, SUITS, ICONS  # noqa: E402
 from art_font import GLYPHS, W as FW, H as FH, ADVANCE  # noqa: E402
 
 TOK = json.load(open(os.path.join(DESIGN, "tokens.json")))
@@ -833,6 +833,82 @@ def card_equivalence():
                 "au même rang de valeur. C'est la page d'aide du jeu.")
 
 
+def _mini(cols, rows, scale, lines, label):
+    """Maquette d'un format : HUD en surimpression, zéro chrome, la grille
+    seule. C'est l'état d'esprit demandé — ne garder que jetons et mise."""
+    p = Paint()
+    sym = 16 * scale
+    gapx, gapy = (4 if scale == 3 else 3), (4 if scale == 3 else 3)
+    gw = cols * sym + (cols - 1) * gapx
+    gh = rows * sym + (rows - 1) * gapy
+    x0 = (SCREEN_W - gw) // 2
+    y0 = 20 + (100 - gh) // 2
+    p.rect(0, 0, SCREEN_W, SCREEN_H, C["ink900"])
+    # HUD en surimpression : pas de bandeau, juste les deux chiffres.
+    p.art(ICONS["COIN"]["art"], 4, 3, 1)
+    p.text("1250", 20, 3, C["yellow"], 2)
+    p.text("BET 5", SCREEN_W - 4, 3, C["cyan"], 2, "right")
+    picks = ["FLOPPY", "CHIP", "GAMEPAD", "CRT", "D20", "LED", "RESISTOR",
+             "INVADER", "CHIP", "FLOPPY", "CRT", "GAMEPAD", "LED", "D20",
+             "RESISTOR"]
+    for r in range(rows):
+        for c in range(cols):
+            x = x0 + c * (sym + gapx)
+            y = y0 + r * (sym + gapy)
+            p.rect(x - 1, y - 1, sym + 2, sym + 2, C["ink800"])
+            p.art(SYM_BY_ID[picks[(r * cols + c) % len(picks)]]["art"], x, y, scale)
+    # Lignes de paiement, en repères latéraux seulement — pas de tracé qui
+    # barre les symboles.
+    for r in range(min(rows, lines)):
+        cy = y0 + r * (sym + gapy) + sym // 2
+        for k in range(3):
+            p.rect(x0 - 4 - k, cy - k, 1, 1 + 2 * k, C["magenta"])
+            p.rect(x0 + gw + 3 + k, cy - k, 1, 1 + 2 * k, C["magenta"])
+    p.text(label, SCREEN_W // 2, SCREEN_H - 12, C["steel300"], 1, "center")
+    return p.svg(SCREEN_W, SCREEN_H), gw, gh
+
+
+def card_formats():
+    opts = [
+        (3, 1, 3, 1, "3x1 - ACTUEL", "Symboles 48 px. Une ligne. Le plus lisible."),
+        (3, 2, 3, 2, "3x2 - 2 LIGNES",
+         "Garde les symboles à 48 px et introduit le multi-ligne. "
+         "L'intermédiaire que tu cherchais."),
+        (5, 3, 2, 3, "5x3 - VIDEO SLOT",
+         "Symboles 32 px. Occupe vraiment la largeur : c'est le format "
+         "naturel d'un écran 16:9."),
+        (3, 3, 2, 3, "3x3 - 5 LIGNES",
+         "Symboles 32 px ET 100 px de vide de chaque côté. Le format "
+         "s'accorde mal à un écran deux fois plus large que haut."),
+    ]
+    blocks = []
+    for cols, rows, scale, lines, label, note in opts:
+        svg, gw, gh = _mini(cols, rows, scale, lines, label)
+        blocks.append(
+            '<div style="margin-bottom:20px">%s'
+            '<div class="cap"><b>%s</b> — %s<br>Grille %d x %d px sur 240 x 135, '
+            'soit %d %% de la largeur occupée.</div></div>'
+            % (device(svg, ""), label, note, gw, gh, round(100 * gw / SCREEN_W)))
+    body = (
+        '<div class="warn"><b>Constat en construisant ces maquettes :</b> sur un '
+        "écran deux fois plus large que haut, grandir en <i>hauteur</i> coûte "
+        "cher (il faut rapetisser les symboles) alors que grandir en "
+        "<i>largeur</i> ne coûte rien. Le 3x3 est le pire des deux mondes : il "
+        "impose des symboles de 32 px sans utiliser la largeur gagnée.</div>"
+        "%s"
+        '<h2>Le chrome</h2>'
+        "<p>Toutes les maquettes ci-dessus appliquent la règle demandée : "
+        "aucun cabinet, aucun hublot, aucune lampe — jetons et mise en "
+        "surimpression, et les lignes de paiement signalées par des chevrons "
+        "latéraux plutôt que par un trait qui barre les symboles. "
+        "Le cabinet-circuit reste au format 3x1, où la place existe.</p>"
+        % "".join(blocks))
+    return page("screens/formats.html", "Screens", "Formats de grille",
+                "3x1, 3x2, 5x3, 3x3 — comparés à l'échelle réelle", 720, body,
+                "Quel format pour aller au-delà d'une ligne ? Les quatre "
+                "candidats rendus à la taille réelle de l'écran.")
+
+
 def card_screens():
     body = (
         '<h2>Repos</h2>%s'
@@ -981,6 +1057,20 @@ def export_symbols():
         # plutôt que d'en tasser la moitié dans le medium.
         v = grays[2] if lum >= 125 else (grays[1] if lum >= 55 else grays[0])
         out.append("    0x%04X,  // %s lum=%d\n" % (v, k, int(lum)))
+    out.append("};\n\n")
+    out.append("// Enseignes de cartes 8x8 — blackjack.\n")
+    out.append("constexpr int kSuitPx = 8;\nenum Suit : uint8_t {\n")
+    for i, su in enumerate(SUITS):
+        out.append("    SUIT_%-8s = %d,  // %s\n" % (su["id"], i, su["label"]))
+    out.append("};\nconstexpr int kSuitCount = %d;\n\n" % len(SUITS))
+    out.append("constexpr uint8_t kSuits[kSuitCount][kSuitPx * kSuitPx] = {\n")
+    for su in SUITS:
+        if len(su["art"]) != 8 or any(len(r) != 8 for r in su["art"]):
+            raise SystemExit("enseigne %s : doit etre 8x8" % su["id"])
+        out.append("    {  // %s\n" % su["id"])
+        for row in su["art"]:
+            out.append("        " + ",".join("%d" % (0 if c == "." else idx[c]) for c in row) + ",\n")
+        out.append("    },\n")
     out.append("};\n")
     out.append("// Les trois nuances, nommées : le chrome de la démo les utilise\n")
     out.append("// directement (indexer la rampe dépendrait de l'ordre des clés).\n")
@@ -1130,7 +1220,7 @@ def main():
     os.makedirs(BUILD, exist_ok=True)
     cards = [card_palette(), card_typography(), card_geometry(), card_motion(),
              card_symbols(), card_equivalence(), card_cabinet(), card_screens(),
-             card_lobby()]
+             card_lobby(), card_formats()]
     json.dump(cards, open(os.path.join(BUILD, "cards.json"), "w"), indent=2,
               ensure_ascii=False)
     export_palette()

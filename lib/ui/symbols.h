@@ -348,6 +348,59 @@ constexpr uint16_t kSymbolPaletteGray[19] = {
     0xD6BD,  // w lum=255
     0xD6BD,  // y lum=202
 };
+
+// Enseignes de cartes 8x8 — blackjack.
+constexpr int kSuitPx = 8;
+enum Suit : uint8_t {
+    SUIT_SPADE    = 0,  // Pique
+    SUIT_HEART    = 1,  // Coeur
+    SUIT_DIAMOND  = 2,  // Carreau
+    SUIT_CLUB     = 3,  // Trefle
+};
+constexpr int kSuitCount = 4;
+
+constexpr uint8_t kSuits[kSuitCount][kSuitPx * kSuitPx] = {
+    {  // SPADE
+        0,0,0,17,17,0,0,0,
+        0,0,17,17,17,17,0,0,
+        0,17,17,17,17,17,17,0,
+        17,17,17,17,17,17,17,17,
+        17,17,17,17,17,17,17,17,
+        0,0,17,0,0,17,0,0,
+        0,0,0,17,17,0,0,0,
+        0,0,17,17,17,17,0,0,
+    },
+    {  // HEART
+        0,14,14,0,0,14,14,0,
+        14,14,14,14,14,14,14,14,
+        14,14,14,14,14,14,14,14,
+        14,14,14,14,14,14,14,14,
+        0,14,14,14,14,14,14,0,
+        0,0,14,14,14,14,0,0,
+        0,0,0,14,14,0,0,0,
+        0,0,0,0,0,0,0,0,
+    },
+    {  // DIAMOND
+        0,0,0,14,14,0,0,0,
+        0,0,14,14,14,14,0,0,
+        0,14,14,14,14,14,14,0,
+        14,14,14,14,14,14,14,14,
+        0,14,14,14,14,14,14,0,
+        0,0,14,14,14,14,0,0,
+        0,0,0,14,14,0,0,0,
+        0,0,0,0,0,0,0,0,
+    },
+    {  // CLUB
+        0,0,0,17,17,0,0,0,
+        0,0,17,17,17,17,0,0,
+        0,0,0,17,17,0,0,0,
+        0,17,17,17,17,17,17,0,
+        17,17,17,17,17,17,17,17,
+        0,17,17,17,17,17,17,0,
+        0,0,0,17,17,0,0,0,
+        0,0,17,17,17,17,0,0,
+    },
+};
 // Les trois nuances, nommées : le chrome de la démo les utilise
 // directement (indexer la rampe dépendrait de l'ordre des clés).
 constexpr uint16_t kGrayDark  = 0x298A;

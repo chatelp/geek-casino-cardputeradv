@@ -78,6 +78,7 @@ bool startSpin(Game& g, uint32_t now, RngFn rng, bool byPlayer) {
     g.reelsStopped = 0;
     g.attract = !byPlayer;
     if (byPlayer) g.lastInputMs = now;
+    else g.lastAttractMs = now;
     // La démo est muette : elle attire l'œil, elle n'impose rien à la pièce.
     if (byPlayer) pushCue(g, Cue::SpinStart);
     return true;
@@ -131,7 +132,10 @@ uint8_t updateGame(Game& g, uint32_t now, RngFn rng) {
             }
             break;
         case Phase::Idle:
-            if (now - g.lastInputMs >= kAttractDelayMs) {
+            // Deux conditions : le joueur est parti ET la démo a laissé
+            // passer un moment depuis son tour précédent.
+            if (now - g.lastInputMs >= kAttractDelayMs &&
+                (g.lastAttractMs == 0 || now - g.lastAttractMs >= kAttractIntervalMs)) {
                 startSpin(g, now, rng, /*byPlayer=*/false);
             }
             break;

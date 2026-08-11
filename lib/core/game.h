@@ -33,6 +33,9 @@ uint32_t celebrateMs(Tier t);
 
 // Le mode démo prend la main après ce délai d'inactivité (D-005).
 constexpr uint32_t kAttractDelayMs = 12000;
+// ...puis respire entre deux tours. Sans cette pause, la démo enchaînait
+// sans répit : l'inactivité restait vraie, donc elle relançait aussitôt.
+constexpr uint32_t kAttractIntervalMs = 5000;
 
 struct Game {
     Machine machine;
@@ -45,6 +48,7 @@ struct Game {
     uint32_t lastInputMs = 0;
     bool attract = false;         // le tour courant est joué par la machine
     uint8_t reelsStopped = 0;
+    uint32_t lastAttractMs = 0;
     uint32_t spins = 0;           // compteur de session, persisté
 
     // File de signaux sonores. La logique dit QUOI jouer et QUAND ; c'est

@@ -25,6 +25,9 @@ multi-joueurs avec classement persistant en NVS.
 - [x] Son 800–2600 Hz (contrainte testée), geste IMU, NVS signée
 - [x] Accueil, aide (H), réglages globaux et par jeu (S), classement (L)
 - [x] Deux habillages de rouleaux : geek et classique — mêmes gains
+- [x] Blackjack — règles complètes testées, **RTP 95,81 %**
+- [ ] Blackjack : écran de jeu et intégration à l'accueil
+- [ ] Format multi-lignes (3x2 ou 5x3 — voir le design system)
 
 ## Construire
 

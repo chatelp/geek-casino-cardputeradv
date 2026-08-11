@@ -27,17 +27,46 @@ bool blink(uint32_t now, uint32_t periodMs) {
     return ((now / (periodMs / 2)) & 1u) != 0;
 }
 
+// Pistes hors cabinet : marge gauche ET droite. Le fond dit « vous êtes
+// dans une machine », pas « rien à afficher ici ». Elles restent en ink700
+// sur ink900 — présentes, jamais concurrentes du contenu.
 void drawTraces(lgfx::LGFX_Sprite& g) {
-    // Pistes de circuit dans la marge gauche : le fond dit « vous êtes dans
-    // une machine », pas « rien à afficher ici ».
     static const int16_t kSeg[][4] = {
+        // marge gauche
         {4, 24, 2, 44},  {4, 66, 12, 2}, {14, 68, 2, 24}, {9, 30, 2, 24},
         {9, 30, 8, 2},   {4, 94, 2, 16}, {4, 108, 10, 2}, {16, 34, 2, 30},
         {12, 100, 2, 12},
+        // marge droite, autour du levier — elles passent derrière lui, ce
+        // qui est exactement ce que fait une piste sous un composant.
+        {234, 26, 2, 40}, {222, 24, 14, 2}, {228, 66, 2, 26},
+        {216, 90, 20, 2}, {234, 92, 2, 18}, {210, 30, 2, 22},
     };
     for (auto& s : kSeg) g.fillRect(s[0], s[1], s[2], s[3], P::ink700);
-    static const int16_t kVia[][2] = {{3, 65}, {13, 91}, {15, 29}, {3, 107}, {11, 111}};
+    static const int16_t kVia[][2] = {
+        {3, 65}, {13, 91}, {15, 29}, {3, 107}, {11, 111},
+        {233, 65}, {227, 89}, {233, 109}, {209, 29},
+    };
     for (auto& v : kVia) g.fillRect(v[0], v[1], 4, 4, P::ink600);
+}
+
+// Pistes SUR la carte, autour des hublots. Le cabinet est le circuit :
+// c'est ici qu'elles ont le plus de sens, et la place y est libre.
+void drawBoardTraces(lgfx::LGFX_Sprite& g) {
+    const int left = kCabX + 4, right = kCabX + kCabW - 6;
+    const int top = kLampY + kLampSize + 2, bot = kWinY + kWinH;
+    // Colonnes latérales, dans les 12 px de marge de part et d'autre.
+    g.fillRect(left + 2, top, 2, bot - top - 2, P::ink700);
+    g.fillRect(right - 2, top, 2, bot - top - 2, P::ink700);
+    g.fillRect(left + 2, top, 8, 2, P::ink700);
+    g.fillRect(right - 8, top, 8, 2, P::ink700);
+    g.fillRect(left + 2, kPaylineY, 10, 2, P::ink700);
+    g.fillRect(right - 10, kPaylineY, 10, 2, P::ink700);
+    g.fillRect(left + 1, top - 2, 4, 4, P::ink600);
+    g.fillRect(right - 4, top - 2, 4, 4, P::ink600);
+    g.fillRect(left + 1, bot - 6, 4, 4, P::ink600);
+    g.fillRect(right - 4, bot - 6, 4, 4, P::ink600);
+    // Bus horizontal sous la rangée de lampes, entre les trous de fixation.
+    g.fillRect(kCabX + 12, top, kCabW - 24, 1, P::ink700);
 }
 
 void drawHud(lgfx::LGFX_Sprite& g, const core::Game& game) {
@@ -75,6 +104,7 @@ void drawCabinet(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
         frame = P::ink600;
     }
     g.fillRect(kCabX, kCabY, kCabW, kCabH, P::ink800);
+    drawBoardTraces(g);
     drawFrame(g, kCabX, kCabY, kCabW, kCabH, frame, 2);
 
     const int hx[2] = {kCabX + 3, kCabX + kCabW - 3 - kHole};

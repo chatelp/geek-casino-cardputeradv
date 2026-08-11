@@ -361,6 +361,51 @@ CLASSIC_SYMBOLS = [
     },
 ]
 
+# Enseignes de cartes, 8x8 — pour le blackjack. Petites par nécessité :
+# une carte fait 26 px de large, l'enseigne doit tenir à côté du rang.
+SUITS = [
+    {"id": "SPADE", "label": "Pique", "art": [
+        "...ww...",
+        "..wwww..",
+        ".wwwwww.",
+        "wwwwwwww",
+        "wwwwwwww",
+        "..w..w..",
+        "...ww...",
+        "..wwww..",
+    ]},
+    {"id": "HEART", "label": "Coeur", "art": [
+        ".rr..rr.",
+        "rrrrrrrr",
+        "rrrrrrrr",
+        "rrrrrrrr",
+        ".rrrrrr.",
+        "..rrrr..",
+        "...rr...",
+        "........",
+    ]},
+    {"id": "DIAMOND", "label": "Carreau", "art": [
+        "...rr...",
+        "..rrrr..",
+        ".rrrrrr.",
+        "rrrrrrrr",
+        ".rrrrrr.",
+        "..rrrr..",
+        "...rr...",
+        "........",
+    ]},
+    {"id": "CLUB", "label": "Trefle", "art": [
+        "...ww...",
+        "..wwww..",
+        "...ww...",
+        ".wwwwww.",
+        "wwwwwwww",
+        ".wwwwww.",
+        "...ww...",
+        "..wwww..",
+    ]},
+]
+
 # Petits pictogrammes d'interface, 12x12 — pas des symboles de rouleau.
 ICONS = {
     "COIN": {

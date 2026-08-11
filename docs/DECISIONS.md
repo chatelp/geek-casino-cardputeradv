@@ -2,6 +2,29 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-016 — 2026-08-11 — Blackjack, cadence démo, pistes, formats
+
+- **Cadence de la démo espacée** : elle enchaînait sans répit car
+  l'inactivité restait vraie une fois le tour fini. Un intervalle propre
+  (`kAttractIntervalMs`, 5 s) sépare désormais deux tours de démo.
+- **Pistes de circuit tout autour** : marges gauche ET droite (elles
+  passent derrière le levier, comme sous un composant réel) et surtout
+  **sur la carte**, autour des hublots — c'est là qu'elles ont le plus de
+  sens puisque le cabinet EST le circuit. Toujours en ink700 sur ink900 :
+  présentes, jamais concurrentes du contenu.
+- **Blackjack : logique complète et testée** (`cards.*`, `blackjack.*`).
+  Sabot de 4 jeux remélangé à 25 % de pénétration, croupier S17, 3:2 sur
+  blackjack, doublement sur deux cartes, ni split ni assurance. L'arrondi
+  du 3:2 va au joueur. **RTP mesuré : 95,81 %** avec une stratégie naïve
+  (tirer sous 17) sur 20 000 mains. Même garde-fou de renflouement.
+- **Formats de grille — constat, pas opinion** : sur un écran deux fois
+  plus large que haut, grandir en hauteur coûte cher (symboles à 32 px)
+  et grandir en largeur ne coûte rien. Le **3x3 est le pire des deux
+  mondes** : il impose 32 px sans utiliser la largeur (42 % occupée).
+  Les vrais candidats sont **3x2 / 2 lignes** (symboles gardés à 48 px)
+  et **5x3 / video slot** (72 % de largeur occupée). Carte comparative
+  « Formats de grille » dans le design system.
+
 ## D-015 — 2026-08-11 — Démo en niveaux de gris, annulation de saisie
 
 - La démo n'est plus une teinte plate : **rampe de 3 gris** appliquée par
