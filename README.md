@@ -68,3 +68,15 @@ test/       tests Unity de lib/core
 Les décisions de conception sont journalisées dans
 [docs/DECISIONS.md](docs/DECISIONS.md), les contraintes et pièges
 matériels mesurés dans [CLAUDE.md](CLAUDE.md).
+
+## Licence
+
+[MIT](LICENSE) — prenez, apprenez, construisez dessus.
+
+Contrairement à mon autre projet Cardputer, la licence couvre ici **aussi
+l'identité visuelle** : palette, fonte 5×7 et glyphes sont dans le dépôt
+et sont libres au même titre que le code. Il n'y a pas de marque à
+préserver derrière ce nom de code.
+
+Les bibliothèques tierces (M5Unified, M5GFX, LovyanGFX) restent sous leurs
+licences respectives.
