@@ -218,6 +218,33 @@ int runCapture() {
         ui::drawApp(canvas, app, bt);
         if (!saveShot(canvas, "bj_settings.bmp")) return 1;
 
+        // Une célébration à trois instants : ouverture, décompte, total.
+        app.screen = core::AppScreen::Slot;
+        app.settings.slotSkin = 0;
+        app.game.attract = false;
+        app.game.phase = core::Phase::Celebrate;
+        app.game.tier = core::Tier::Big;
+        app.game.outcome.payout = 1250;
+        app.game.outcome.win.multiplier = 250;
+        app.game.phaseT0 = 1000;
+        const uint32_t dur = core::celebrateMs(core::Tier::Big);
+        struct Moment { float f; const char* name; };
+        static const Moment kMoments[] = {
+            {0.08f, "celeb_open.bmp"}, {0.30f, "celeb_count.bmp"},
+            {0.80f, "celeb_hold.bmp"},
+        };
+        for (const auto& m : kMoments) {
+            ui::drawApp(canvas, app, 1000 + static_cast<uint32_t>(dur * m.f));
+            if (!saveShot(canvas, m.name)) return 1;
+        }
+        // Séquence complète de la célébration, pour en juger le rythme.
+        for (uint32_t t = 0; t <= dur + 300; t += core::kFrameMs) {
+            char nm[32];
+            std::snprintf(nm, sizeof(nm), "celeb_%04u.bmp", t / core::kFrameMs);
+            ui::drawApp(canvas, app, 1000 + t);
+            if (!saveShot(canvas, nm)) return 1;
+        }
+
         // Le mode démo : monochrome gris, un tour gratuit en cours.
         app.screen = core::AppScreen::Slot;
         app.settings.slotSkin = 0;

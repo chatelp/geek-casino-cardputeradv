@@ -31,6 +31,16 @@ enum class Tier : uint8_t {
 Tier tierOf(const LineWin& w);
 uint32_t celebrateMs(Tier t);
 
+// Le décompte du gain s'achève avant la fin de la célébration : le joueur
+// doit avoir le temps de LIRE le total, pas seulement de le voir arriver.
+constexpr float kCountFraction = 0.55f;
+
+// Avancement de la célébration, 0 à 1. Sert au décompte et aux effets.
+float celebrateProgress(Phase phase, Tier tier, uint32_t phaseT0, uint32_t now);
+
+// Montant affiché pendant le décompte. Atteint EXACTEMENT le gain final.
+uint32_t countedPayout(uint32_t payout, float progress);
+
 // Le mode démo prend la main après ce délai d'inactivité (D-005).
 constexpr uint32_t kAttractDelayMs = 12000;
 // ...puis respire entre deux tours. Sans cette pause, la démo enchaînait

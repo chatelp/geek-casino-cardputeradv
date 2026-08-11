@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "celebration.h"
 #include "layout.h"
 #include "painter.h"
 #include "palette.h"
@@ -144,18 +145,9 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::VideoGame& game, uint32_t now
         case core::Phase::Spinning:
             drawText(g, "SPINNING", kScreenW / 2, ty, P::magenta, 2, Align::Center);
             break;
-        case core::Phase::Celebrate: {
-            if (game.tier == core::Tier::Jackpot && blink(now, 300)) {
-                drawText(g, "JACKPOT", kScreenW / 2, ty, P::green, 2, Align::Center);
-            } else if (game.tier != core::Tier::Jackpot) {
-                const int wl = textWidth("WIN ", 2);
-                const int wn = numberWidth(static_cast<int32_t>(game.payout), 2);
-                const int x0 = (kScreenW - wl - wn) / 2;
-                drawText(g, "WIN", x0, ty, P::yellow, 2);
-                drawNumber(g, static_cast<int32_t>(game.payout), x0 + wl, ty, P::white, 2);
-            }
+        case core::Phase::Celebrate:
+            // Le gain vit dans le panneau : ici on laisse voir la grille.
             break;
-        }
         case core::Phase::Bailout:
             drawText(g, "THE HOUSE REFILLS +500", kScreenW / 2, ty + 3, P::green, 1,
                      Align::Center);
@@ -203,6 +195,19 @@ void drawVideoScreen(lgfx::LGFX_Sprite& g, const core::VideoGame& game,
     drawWinPath(g, game, hot, now);
     drawLever(g, game, now);
     drawMessage(g, game, now);
+
+    if (game.phase == core::Phase::Celebrate) {
+        Celebration c;
+        c.tier = game.tier;
+        c.payout = game.payout;
+        // Sur cinq lignes, le multiplicateur affiché est le total gagné.
+        c.multiplier = static_cast<uint16_t>(
+            game.outcome.totalMultiplier > 9999 ? 9999 : game.outcome.totalMultiplier);
+        c.progress = core::celebrateProgress(game.phase, game.tier, game.phaseT0, now);
+        c.counted = core::countedPayout(c.payout, c.progress);
+        c.demo = g_demo;
+        drawCelebration(g, c, now);
+    }
 }
 
 }  // namespace ui

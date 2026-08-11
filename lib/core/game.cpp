@@ -11,14 +11,35 @@ Tier tierOf(const LineWin& w) {
 }
 
 uint32_t celebrateMs(Tier t) {
+    // Durées revues après essai en main : 400 ms pour un petit gain se
+    // lisait comme un clignotement, pas comme une récompense. L'escalade
+    // se joue maintenant sur l'INTENSITÉ autant que sur la durée.
     switch (t) {
         case Tier::None: return 0;
-        case Tier::Small: return 400;
-        case Tier::Mid: return 900;
-        case Tier::Big: return 1600;
-        case Tier::Jackpot: return 3000;
+        case Tier::Small: return 1200;
+        case Tier::Mid: return 1800;
+        case Tier::Big: return 2600;
+        case Tier::Jackpot: return 4000;
     }
     return 0;
+}
+
+float celebrateProgress(Phase phase, Tier tier, uint32_t phaseT0, uint32_t now) {
+    if (phase != Phase::Celebrate) return 1.0f;
+    const uint32_t dur = celebrateMs(tier);
+    if (dur == 0 || now <= phaseT0) return 0.0f;
+    const uint32_t dt = now - phaseT0;
+    if (dt >= dur) return 1.0f;
+    return static_cast<float>(dt) / static_cast<float>(dur);
+}
+
+uint32_t countedPayout(uint32_t payout, float progress) {
+    if (progress >= kCountFraction) return payout;  // exact, jamais approché
+    const float k = progress / kCountFraction;
+    // Décélération : le compteur ralentit en approchant, comme un
+    // mécanisme qui se cale.
+    const float e = 1.0f - (1.0f - k) * (1.0f - k);
+    return static_cast<uint32_t>(static_cast<float>(payout) * e);
 }
 
 void pushCue(Game& g, Cue c) {

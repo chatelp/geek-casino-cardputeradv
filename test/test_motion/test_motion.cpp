@@ -149,6 +149,37 @@ static void test_attract_mode_takes_over_when_left_alone() {
     TEST_ASSERT_TRUE(g.attract);
 }
 
+static void test_win_countup_lands_exactly_and_never_overshoots() {
+    constexpr uint32_t kPayout = 1250;
+    uint32_t prev = 0;
+    for (int i = 0; i <= 100; ++i) {
+        const float p = static_cast<float>(i) / 100.0f;
+        const uint32_t v = core::countedPayout(kPayout, p);
+        TEST_ASSERT_TRUE_MESSAGE(v <= kPayout, "le compteur depasse le gain");
+        TEST_ASSERT_TRUE_MESSAGE(v >= prev, "le compteur recule");
+        prev = v;
+    }
+    TEST_ASSERT_EQUAL_UINT32(kPayout, core::countedPayout(kPayout, 1.0f));
+    // Le décompte s'achève avant la fin : le joueur doit LIRE le total.
+    TEST_ASSERT_EQUAL_UINT32(kPayout, core::countedPayout(kPayout, core::kCountFraction));
+    TEST_ASSERT_TRUE(core::countedPayout(kPayout, 0.0f) == 0);
+}
+
+static void test_celebration_lasts_long_enough_to_be_read() {
+    // Retour de Pierre : 400 ms se lisaient comme un clignotement. Aucun
+    // palier gagnant ne doit durer moins d'une seconde.
+    TEST_ASSERT_TRUE_MESSAGE(core::celebrateMs(core::Tier::Small) >= 1000,
+                             "petit gain trop bref pour etre lu");
+    TEST_ASSERT_TRUE(core::celebrateMs(core::Tier::Small) < core::celebrateMs(core::Tier::Mid));
+    TEST_ASSERT_TRUE(core::celebrateMs(core::Tier::Mid) < core::celebrateMs(core::Tier::Big));
+    TEST_ASSERT_TRUE(core::celebrateMs(core::Tier::Big) < core::celebrateMs(core::Tier::Jackpot));
+
+    // La progression va bien de 0 à 1 sur la durée du palier.
+    const uint32_t dur = core::celebrateMs(core::Tier::Mid);
+    TEST_ASSERT_TRUE(core::celebrateProgress(core::Phase::Celebrate, core::Tier::Mid, 100, 100) < 0.01f);
+    TEST_ASSERT_TRUE(core::celebrateProgress(core::Phase::Celebrate, core::Tier::Mid, 100, 100 + dur) >= 1.0f);
+}
+
 static void test_a_long_session_never_deadlocks() {
     // Trente minutes de jeu simulées : aucune phase ne doit rester coincée.
     core::seedXorShift(0x5107);
@@ -187,6 +218,8 @@ int main() {
     RUN_TEST(test_game_returns_to_idle_and_shows_the_outcome);
     RUN_TEST(test_attract_spins_are_free);
     RUN_TEST(test_attract_mode_takes_over_when_left_alone);
+    RUN_TEST(test_win_countup_lands_exactly_and_never_overshoots);
+    RUN_TEST(test_celebration_lasts_long_enough_to_be_read);
     RUN_TEST(test_a_long_session_never_deadlocks);
     return UNITY_END();
 }

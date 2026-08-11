@@ -2,6 +2,38 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-022 — 2026-08-11 — La célébration de gain devient un vrai moment
+
+Retour de Pierre après essai : « le gain s'affiche très brièvement ».
+Diagnostic juste — un petit gain durait **400 ms** et se contentait d'un
+texte dans le bandeau. Ce n'était pas une célébration, c'était un
+clignotement.
+
+- **Durées revues** : 1200 / 1800 / 2600 / 4000 ms au lieu de
+  400 / 900 / 1600 / 3000. Un test refuse tout palier gagnant sous une
+  seconde.
+- **Panneau en surimpression** par-dessus le jeu, qui s'ouvre
+  verticalement sur les 12 % premiers de la célébration.
+- **Le gain se décompte** de 0 au total, avec décélération — c'est le
+  vrai cœur de l'effet, et le procédé classique des machines réelles. Le
+  décompte s'achève à 55 % de la durée : le joueur doit avoir le temps de
+  **lire** le total, pas seulement de le voir arriver. Testé : le
+  compteur ne recule jamais, ne dépasse jamais, et atteint le total
+  **exactement**.
+- **Escalade par l'intensité** autant que par la durée (D-008) : rien au
+  petit gain hormis le panneau ; rayons dès le palier moyen ; étincelles
+  6 / 12 / 18 ; secousse du panneau sur les gros gains, à l'arrivée
+  seulement. Pastille du multiplicateur dès le palier moyen — elle dit
+  *pourquoi* le gain est gros.
+- **Une seule implémentation** (`lib/ui/celebration.*`) pour les deux
+  machines. Dupliquer un effet visuel produirait exactement la dérive
+  silencieuse qu'on vient de supprimer sur les tables de gains.
+
+Correction en cours de route : les rayons partaient du centre, donc
+étaient **entièrement cachés derrière le panneau** — il ne reste que
+36 px de marge. Ils partent maintenant des bords vers l'extérieur, seule
+place réellement disponible.
+
 ## D-021 — 2026-08-11 — Une mise par joueur ET par jeu
 
 Le solde est partagé — c'est ce qui fait un casino. **La mise ne l'est

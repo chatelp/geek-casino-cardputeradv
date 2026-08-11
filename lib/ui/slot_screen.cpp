@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "celebration.h"
 #include "layout.h"
 #include "painter.h"
 #include "palette.h"
@@ -286,21 +287,10 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
         case core::Phase::Spinning:
             drawText(g, "SPINNING", kScreenW / 2, ty, P::magenta, 2, Align::Center);
             break;
-        case core::Phase::Celebrate: {
-            if (game.tier == core::Tier::Jackpot) {
-                if (blink(now, 300)) {
-                    drawText(g, "JACKPOT", kScreenW / 2, ty, P::green, 2, Align::Center);
-                }
-            } else {
-                const int wl = textWidth("WIN ", 2);
-                const int wn = numberWidth(static_cast<int32_t>(game.outcome.payout), 2);
-                const int x0 = (kScreenW - wl - wn) / 2;
-                drawText(g, "WIN", x0, ty, P::yellow, 2);
-                drawNumber(g, static_cast<int32_t>(game.outcome.payout), x0 + wl, ty,
-                           P::white, 2);
-            }
+        case core::Phase::Celebrate:
+            // Le gain s'affiche dans le panneau de célébration, pas ici :
+            // le bandeau ne peut ni durer ni s'animer.
             break;
-        }
         case core::Phase::Bailout:
             drawText(g, "THE HOUSE REFILLS", kScreenW / 2, kMsgY + 3, P::green, 1,
                      Align::Center);
@@ -342,10 +332,6 @@ void drawJackpot(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
 void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
                     bool classic) {
     g_demo = game.attract;
-    if (game.phase == core::Phase::Celebrate && game.tier == core::Tier::Jackpot) {
-        drawJackpot(g, game, now);
-        return;
-    }
     g.fillScreen(P::ink900);
     drawTraces(g);
     drawHud(g, game);
@@ -355,6 +341,17 @@ void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
     drawLever(g, game, now);
     drawSparks(g, game, now);
     drawMessage(g, game, now);
+
+    if (game.phase == core::Phase::Celebrate) {
+        Celebration c;
+        c.tier = game.tier;
+        c.payout = game.outcome.payout;
+        c.multiplier = game.outcome.win.multiplier;
+        c.progress = core::celebrateProgress(game.phase, game.tier, game.phaseT0, now);
+        c.counted = core::countedPayout(c.payout, c.progress);
+        c.demo = g_demo;
+        drawCelebration(g, c, now);
+    }
 }
 
 }  // namespace ui
