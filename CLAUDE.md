@@ -100,7 +100,11 @@ Règles issues du design system :
 
 ```
 lib/core/   Logique pure C++17 — AUCUN include Arduino/M5/lgfx.
-            Testée par test-native. Rouleaux, table de gains, économie.
+            Testée par test-native. Rouleaux, table de gains, économie,
+            ET le mouvement : le rythme est de la logique, pas du dessin.
+            Le temps entre par un paramètre `now`, jamais lu d'une horloge
+            interne — c'est ce qui rend les transitions testables et les
+            captures reproductibles.
 lib/hal/    Frontières matérielles : hal_display.h (M5GFX ou LovyanGFX
             selon la cible), hal_keys.h (enum Key), aléa injecté.
 lib/ui/     Rendu, uniquement via l'API lgfx:: (jamais le matériel).

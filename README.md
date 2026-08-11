@@ -13,14 +13,16 @@ rouleaux ; l'architecture prévoit d'autres jeux.
 
 ## État
 
-Le cœur jouable est écrit et testé ; il ne s'affiche pas encore.
-L'animation, le son et le levier IMU restent à faire.
+La machine se joue dans le simulateur : rouleaux animés, cascade d'arrêt,
+gains, jackpot, renflouement, mode démo. Le son et le levier IMU restent
+à faire — ils demandent l'appareil réel.
 
 - [x] Trois environnements PlatformIO (firmware, simulateur, tests)
 - [x] Aléa injecté, testé, sans biais de modulo
 - [x] Design system : palette, fonte 5×7, 8 glyphes, écrans
 - [x] Bandes de rouleaux, table de gains, économie — **RTP exact 95,24 %**
-- [ ] Animation, son, levier IMU, persistance NVS
+- [x] Animation des rouleaux, machine à états, mode démo
+- [ ] Son, levier IMU, persistance NVS, écran d'accueil
 
 ## Construire
 
@@ -35,9 +37,13 @@ tout le rendu passe par l'API `lgfx::`, jamais par le matériel. Il sait
 aussi produire des captures déterministes, sans fenêtre :
 
 ```bash
-.pio/build/sim/program --shot captures        # une image
-.pio/build/sim/program --frames captures 60   # une suite, pour un GIF
+.pio/build/sim/program --shot captures         # une image
+.pio/build/sim/program --frames captures 300   # une suite, pour un GIF
 ```
+
+Dans la fenêtre : **espace** tire le levier, **←/→** règlent la mise,
+**Échap** quitte. Sans geste pendant douze secondes, le mode démo prend
+la main.
 
 ## Design system
 

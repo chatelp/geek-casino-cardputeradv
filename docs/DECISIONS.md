@@ -2,6 +2,33 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-011 — 2026-08-11 — Animation : le rythme est de la logique
+
+Le jeu tourne dans le simulateur. Choix structurant : **le mouvement vit
+dans `lib/core`, pas dans `lib/ui`**. La courbe d'arrêt, la cascade et la
+machine à états sont testées sans écran (`test_motion`) ; `lib/ui` ne fait
+qu'afficher la position que `core` calcule. Le temps entre par un
+paramètre `now`, jamais lu depuis une horloge interne — c'est ce qui rend
+chaque transition vérifiable et les captures reproductibles.
+
+- **Décélération cubique + dépassement** de 0,55 symbole, nul en fin de
+  course : le rouleau tombe *exactement* sur sa cible. Testé pour les 32
+  positions — une dérive d'un centième désalignerait l'affichage en
+  permanence.
+- **Cascade** : 900 ms pour le premier rouleau, +450 ms par rouleau. Un
+  test refuse que deux rouleaux s'arrêtent ensemble.
+- **Paliers de célébration** : 0 / 400 / 900 / 1600 / 3000 ms, strictement
+  croissants (testé).
+- **Flou de vitesse** — découvert en regardant l'animation, pas prévu :
+  au-delà de 1,2 symbole par image, afficher les glyphes produit du
+  scintillement, pas de la vitesse. Le rouleau bascule sur des bandes de
+  la couleur dominante de chaque symbole, défilant ~5× moins vite que le
+  rouleau réel. Mensonge assumé : l'œil lit « très vite » et ne peut pas
+  compter. La couleur dominante est calculée par `gen.py` depuis l'art.
+- **Mode démo** après 12 s d'inactivité.
+- Le firmware et le simulateur partagent le même `core::Game` : seuls
+  l'horloge, l'aléa et le clavier changent.
+
 ## D-010 — 2026-08-11 — Équilibrage : bande, table de gains, RTP
 
 Le cœur jouable est écrit et testé. Chiffres **mesurés, pas visés** :

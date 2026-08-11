@@ -663,16 +663,16 @@ def card_geometry():
 
 def card_motion():
     tiers = [
-        ("Perte", "~0 %", "Aucun effet. Les rouleaux s'arrêtent, la ligne reste sourde.",
+        ("Perte", "83 % des tours", "Aucun effet. Les rouleaux s'arrêtent, la ligne reste sourde.",
          "Le silence du quotidien est ce qui rend le reste énorme."),
-        ("Petit gain", "2-5x", "Hublots gagnants cerclés de blanc, 2 flashs, lampes en chenillard.",
-         "300 ms. On note, on ne célèbre pas."),
-        ("Gain moyen", "10-25x", "Cadre passe à l'or, étincelles, compteur de crédits qui défile.",
-         "800 ms. Le compteur qui grimpe fait plus d'effet que l'explosion."),
-        ("Gros gain", "50x+", "Écran secoué, pluie d'étincelles, symboles pulsés au blanc.",
-         "1,5 s. Premier moment où le cabinet perd son calme."),
+        ("Petit gain", "2x a 9x", "Hublots gagnants cerclés de blanc, lampes clignotantes.",
+         "400 ms. On note, on ne célèbre pas."),
+        ("Gain moyen", "10x a 49x", "Étincelles aux angles, hublots cerclés, cadre cyan.",
+         "900 ms."),
+        ("Gros gain", "50x et plus", "Cadre passé à l'or, lampes toutes allumées, gerbes complètes.",
+         "1,6 s. Premier moment où le cabinet perd son calme."),
         ("JACKPOT", "3 invaders", "Le cabinet disparaît. Invaders en fond, bannière verte, déluge.",
-         "3 s, interruptible. Le seul état qui casse la mise en page."),
+         "3 s. Le seul état qui casse la mise en page."),
     ]
     rows = "".join(
         '<tr><td><b>%s</b></td><td class="mono">%s</td><td>%s</td><td>%s</td></tr>' % t
@@ -712,6 +712,13 @@ def card_motion():
         "d'arrêt tombe sur le pic de dépassement, pas sur l'immobilisation.</p>"
         "<p>Les trois rouleaux s'arrêtent en cascade, jamais ensemble : "
         "l'attente sur le dernier est le seul suspense que la machine possède.</p></div></div>"
+        '<h2>Flou de vitesse</h2>'
+        "<p>Au-delà de 1,2 symbole par image, un rouleau ne peut plus montrer "
+        "de détail à 30 images par seconde : afficher les glyphes ne donne pas "
+        "de la vitesse, ça donne du scintillement. Le rouleau bascule alors sur "
+        "des bandes de la couleur dominante de chaque symbole, qui défilent "
+        "environ cinq fois moins vite que le rouleau réel. C'est un mensonge "
+        "assumé : l'œil lit « très vite » et n'a aucun moyen de compter.</p>"
         '<h2>Cadence</h2>'
         "<p>Cible 30 images par seconde. Tout est dessiné dans un sprite plein écran "
         "puis poussé d'un bloc — aucun effet ne doit dépendre d'un dessin direct à "
@@ -906,6 +913,39 @@ def export_symbols():
         for row in s["art"]:
             out.append("        " + ",".join("%d" % (0 if c == "." else idx[c]) for c in row) + ",\n")
         out.append("    },\n")
+    out.append("};\n\n")
+
+    # Couleur dominante de chaque glyphe : au-delà d'une certaine vitesse, un
+    # rouleau ne peut plus montrer de détail à 30 images/s — il montre une
+    # bande de cette couleur. Sans ça, le défilement scintille au lieu d'aller
+    # vite.
+    out.append("// Couleur dominante — utilisée pour le flou de vitesse.\n")
+    out.append("constexpr uint16_t kSymbolDominant[kSymbolCount] = {\n")
+    for s in SYMBOLS:
+        tally = {}
+        for row in s["art"]:
+            for ch in row:
+                if ch not in (".", "k", "K"):  # le contour ne fait pas la teinte
+                    tally[ch] = tally.get(ch, 0) + 1
+        best = max(tally, key=tally.get)
+        out.append("    0x%04X,  // %s → %s\n" % (PAL[KEYS[best]]["v565"], s["id"], best))
+    out.append("};\n\n")
+
+    # Pictogrammes d'interface : même palette indexée, tailles variables.
+    ids = sorted(ICONS)
+    out.append("constexpr int kIconPx = 12;\nenum Icon : uint8_t {\n")
+    for i, iid in enumerate(ids):
+        out.append("    ICON_%-8s = %d,  // %s\n" % (iid, i, ICONS[iid]["label"]))
+    out.append("};\nconstexpr int kIconCount = %d;\n\n" % len(ids))
+    out.append("constexpr uint8_t kIcons[kIconCount][kIconPx * kIconPx] = {\n")
+    for iid in ids:
+        ic = ICONS[iid]
+        if ic["size"] != 12:
+            raise SystemExit("icone %s : seules les icones 12x12 sont exportées" % iid)
+        out.append("    {  // %s\n" % iid)
+        for row in ic["art"]:
+            out.append("        " + ",".join("%d" % (0 if c == "." else idx[c]) for c in row) + ",\n")
+        out.append("    },\n")
     out.append("};\n\n}  // namespace ui\n")
     cpp_header("lib/ui/symbols.h", "".join(out))
 
@@ -924,6 +964,34 @@ def export_symbol_ids():
     out.append("constexpr Symbol kJackpotSymbol = SYM_INVADER;\n\n")
     out.append("}  // namespace core\n")
     cpp_header("lib/core/symbol_ids.h", "".join(out))
+
+
+def export_layout():
+    """La géométrie de l'écran, du design system vers le code de rendu.
+    Déplacer un hublot dans gen.py déplace le hublot dans le firmware."""
+    names = {
+        "hud_h": "kHudH", "cab_x": "kCabX", "cab_y": "kCabY",
+        "cab_w": "kCabW", "cab_h": "kCabH", "hole": "kHole",
+        "lamp_y": "kLampY", "lamp_x0": "kLampX0", "lamp_step": "kLampStep",
+        "lamp_n": "kLampCount", "lamp_s": "kLampSize",
+        "win_y": "kWinY", "win_h": "kWinH", "win_w": "kWinW",
+        "win_gap": "kWinGap", "win_x0": "kWinX0",
+        "sym": "kSym", "sym_scale": "kSymScale", "sym_y": "kSymY",
+        "pitch": "kPitch", "payline_y": "kPaylineY",
+        "lever_cx": "kLeverCx", "lever_top": "kLeverTop",
+        "lever_base_y": "kLeverBaseY", "lever_travel": "kLeverTravel",
+        "msg_y": "kMsgY",
+    }
+    out = ["namespace ui {\nnamespace layout {\n\n",
+           "constexpr int kScreenW = %d;\n" % SCREEN_W,
+           "constexpr int kScreenH = %d;\n\n" % SCREEN_H]
+    for key in sorted(GEO):
+        if key in names:
+            out.append("constexpr int %-14s = %d;\n" % (names[key], GEO[key]))
+    out.append("\nconstexpr int winX(int i) { return kWinX0 + i * (kWinW + kWinGap); }\n")
+    out.append("constexpr int symX(int i) { return winX(i) + (kWinW - kSym) / 2; }\n")
+    out.append("\n}  // namespace layout\n}  // namespace ui\n")
+    cpp_header("lib/ui/layout.h", "".join(out))
 
 
 def export_font():
@@ -994,6 +1062,7 @@ def main():
     export_palette()
     export_symbols()
     export_symbol_ids()
+    export_layout()
     export_font()
     print("%d cartes -> design/build/" % len(cards))
     for c in cards:
