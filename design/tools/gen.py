@@ -833,7 +833,19 @@ def card_equivalence():
                 "au même rang de valeur. C'est la page d'aide du jeu.")
 
 
-def _mini(cols, rows, scale, lines, label):
+def _lever(p, cx, top, base_y, pull=0.0):
+    """Le levier, dessiné hors grille. Sert à vérifier qu'un format laisse
+    vraiment la place au geste plutôt qu'à l'affirmer."""
+    t = top + int(pull * 30)
+    p.rect(cx - 2, t + 10, 4, base_y - t - 10, C["steel500"])
+    p.rect(cx - 1, t + 10, 1, base_y - t - 10, C["steel300"])
+    p.art(ICONS["BALL"]["art"], cx - 6, t, 1)
+    p.rect(cx - 9, base_y, 18, 3, C["ink600"])
+    p.rect(cx - 11, base_y + 3, 22, 9, C["steel500"])
+    p.frame(cx - 11, base_y + 3, 22, 9, C["ink900"], 1)
+
+
+def _mini(cols, rows, scale, lines, label, lever=False):
     """Maquette d'un format : HUD en surimpression, zéro chrome, la grille
     seule. C'est l'état d'esprit demandé — ne garder que jetons et mise."""
     p = Paint()
@@ -841,8 +853,10 @@ def _mini(cols, rows, scale, lines, label):
     gapx, gapy = (4 if scale == 3 else 3), (4 if scale == 3 else 3)
     gw = cols * sym + (cols - 1) * gapx
     gh = rows * sym + (rows - 1) * gapy
-    x0 = (SCREEN_W - gw) // 2
-    y0 = 20 + (100 - gh) // 2
+    # Avec levier, la grille se décale à gauche pour lui laisser sa colonne.
+    lever_w = 46 if lever else 0
+    x0 = 16 if lever else (SCREEN_W - gw) // 2
+    y0 = 19 + (102 - gh) // 2
     p.rect(0, 0, SCREEN_W, SCREEN_H, C["ink900"])
     # HUD en surimpression : pas de bandeau, juste les deux chiffres.
     p.art(ICONS["COIN"]["art"], 4, 3, 1)
@@ -864,31 +878,43 @@ def _mini(cols, rows, scale, lines, label):
         for k in range(3):
             p.rect(x0 - 4 - k, cy - k, 1, 1 + 2 * k, C["magenta"])
             p.rect(x0 + gw + 3 + k, cy - k, 1, 1 + 2 * k, C["magenta"])
-    p.text(label, SCREEN_W // 2, SCREEN_H - 12, C["steel300"], 1, "center")
-    return p.svg(SCREEN_W, SCREEN_H), gw, gh
+    if lever:
+        # Quelques pistes dans la marge gauche, comme sur l'écran réel.
+        for (tx, ty, tw, th) in [(4, 24, 2, 40), (4, 62, 8, 2), (10, 64, 2, 30),
+                                 (4, 96, 2, 18)]:
+            p.rect(tx, ty, tw, th, C["ink700"])
+        p.rect(3, 61, 4, 4, C["ink600"])
+        _lever(p, x0 + gw + lever_w // 2 - 2, 26, 104)
+    p.text(label, SCREEN_W // 2, SCREEN_H - 11, C["steel300"], 1, "center")
+    free = SCREEN_W - gw - (16 if lever else 0)
+    return p.svg(SCREEN_W, SCREEN_H), gw, gh, free
 
 
 def card_formats():
     opts = [
-        (3, 1, 3, 1, "3x1 - ACTUEL", "Symboles 48 px. Une ligne. Le plus lisible."),
-        (3, 2, 3, 2, "3x2 - 2 LIGNES",
-         "Garde les symboles à 48 px et introduit le multi-ligne. "
-         "L'intermédiaire que tu cherchais."),
-        (5, 3, 2, 3, "5x3 - VIDEO SLOT",
-         "Symboles 32 px. Occupe vraiment la largeur : c'est le format "
-         "naturel d'un écran 16:9."),
-        (3, 3, 2, 3, "3x3 - 5 LIGNES",
-         "Symboles 32 px ET 100 px de vide de chaque côté. Le format "
-         "s'accorde mal à un écran deux fois plus large que haut."),
+        (3, 2, 3, 2, False, "3x2 - 2 LIGNES",
+         "Symboles gardés à 48 px. Le multi-ligne sans rien sacrifier."),
+        (3, 2, 3, 2, True, "3x2 + LEVIER",
+         "Le levier tient, mais il mange la marge : la grille se colle à "
+         "gauche et l'équilibre se perd."),
+        (5, 3, 2, 3, False, "5x3 - VIDEO SLOT",
+         "Symboles 32 px. Occupe vraiment la largeur."),
+        (5, 3, 2, 3, True, "5x3 + LEVIER",
+         "La place existe : 46 px de colonne à droite, la grille reste "
+         "entière et les pistes gardent leur marge à gauche."),
+        (3, 3, 2, 3, False, "3x3 - 5 LIGNES",
+         "Symboles 32 px ET 100 px de vide de chaque côté. Le pire des "
+         "deux mondes."),
     ]
     blocks = []
-    for cols, rows, scale, lines, label, note in opts:
-        svg, gw, gh = _mini(cols, rows, scale, lines, label)
+    for cols, rows, scale, lines, lever, label, note in opts:
+        svg, gw, gh, free = _mini(cols, rows, scale, lines, label, lever)
         blocks.append(
             '<div style="margin-bottom:20px">%s'
-            '<div class="cap"><b>%s</b> — %s<br>Grille %d x %d px sur 240 x 135, '
-            'soit %d %% de la largeur occupée.</div></div>'
-            % (device(svg, ""), label, note, gw, gh, round(100 * gw / SCREEN_W)))
+            '<div class="cap"><b>%s</b> — %s<br>Grille %d x %d px. '
+            'Marge restante : %d px%s.</div></div>'
+            % (device(svg, ""), label, note, gw, gh, free,
+               " (le levier en occupe 46)" if lever else ""))
     body = (
         '<div class="warn"><b>Constat en construisant ces maquettes :</b> sur un '
         "écran deux fois plus large que haut, grandir en <i>hauteur</i> coûte "

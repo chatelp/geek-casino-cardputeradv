@@ -2,6 +2,38 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-017 — 2026-08-11 — Format vidéo 5×3 retenu, 5 lignes
+
+Pierre : « finalement en 5x3 il reste de la place pour du chrome, comme
+la poignée ». **Vérifié au pixel** plutôt qu'estimé — maquette à l'appui :
+grille 172 px, colonne de 46 px pour le levier, marge gauche conservée
+pour les pistes. Le 3×2 avec levier est même moins équilibré (la grille
+se colle à gauche). **Le 5×3 est retenu.**
+
+- **5 lignes** : centre, haut, bas, et les deux chevrons. Sans les
+  chevrons, trois lignes parallèles se liraient comme trois machines
+  côte à côte. Aucune ligne en double (testé).
+- **Bande PROPRE au format vidéo** — décision de fond : avec la bande du
+  3×1, cinq invaders tomberaient 1 fois sur **33 millions**, un jackpot
+  décoratif. L'invader y gagne une seconde position (7/6/5/4/3/3/2/2).
+  Résultat : jackpot 1 tour sur **210 000**, et surtout **4 alignés 1 sur
+  14 000** — c'est celui-là qui fera les vrais moments.
+- **RTP par ligne : 94,95 %**, calculé analytiquement. 32⁵ = 33 millions
+  de combinaisons rendent l'énumération inutile : l'espérance d'une ligne
+  ne dépend que des effectifs de la bande. Table résolue par optimisation
+  sous contrainte (croissance stricte en longueur ET en rang).
+- **Mise par ligne** : la mise affichée est engagée sur chacune des cinq
+  lignes.
+- Le test de convergence a été **rendu honnête** : l'écart-type d'une
+  ligne vaut 27 fois son espérance, il faudrait 1,5 million de tours pour
+  un intervalle de ±1 point. Le test vérifie donc la fréquence de gain et
+  la distribution des symboles (variance faible), puis le RTP dans une
+  bande de 3 sigma explicitement justifiée — au lieu d'une tolérance
+  large sans raison affichée.
+- **Dette assumée** : `multiline.*` est un module distinct du 3×1 plutôt
+  qu'une généralisation. Le 3×1 est flashé et joué ; on ne le refactorise
+  pas sous les pieds de Pierre pour ajouter un format. Fusion à faire.
+
 ## D-016 — 2026-08-11 — Blackjack, cadence démo, pistes, formats
 
 - **Cadence de la démo espacée** : elle enchaînait sans répit car

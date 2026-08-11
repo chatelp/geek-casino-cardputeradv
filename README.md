@@ -27,7 +27,8 @@ multi-joueurs avec classement persistant en NVS.
 - [x] Deux habillages de rouleaux : geek et classique — mêmes gains
 - [x] Blackjack — règles complètes testées, **RTP 95,81 %**
 - [ ] Blackjack : écran de jeu et intégration à l'accueil
-- [ ] Format multi-lignes (3x2 ou 5x3 — voir le design system)
+- [x] Format vidéo 5x3, 5 lignes — **RTP par ligne 94,95 %**
+- [ ] Écrans : blackjack et format vidéo (les logiques sont faites)
 
 ## Construire
 
