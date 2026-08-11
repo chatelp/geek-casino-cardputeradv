@@ -28,7 +28,7 @@ enum class Tier : uint8_t {
     Jackpot = 4,
 };
 
-Tier tierOf(const WinResult& w);
+Tier tierOf(const LineWin& w);
 uint32_t celebrateMs(Tier t);
 
 // Le mode démo prend la main après ce délai d'inactivité (D-005).

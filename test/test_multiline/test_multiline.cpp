@@ -19,6 +19,11 @@ static void test_line_rtp_is_about_95_percent() {
                 rtp * 100.0, hit * 100.0);
     TEST_ASSERT_TRUE_MESSAGE(rtp > 0.93, "RTP trop bas");
     TEST_ASSERT_TRUE_MESSAGE(rtp < 0.97, "RTP trop haut");
+    // Même garde-fou que pour le 3x1 : l'unification ne doit pas avoir
+    // bougé le nombre mesuré avant la fusion.
+    const int32_t bp = static_cast<int32_t>(rtp * 1000000.0 + 0.5);
+    TEST_ASSERT_INT32_WITHIN_MESSAGE(50, 949470, bp,
+        "l'unification des tables a change le RTP du format video");
     // Avec 5 lignes, la probabilité qu'au moins une paie est bien plus
     // haute : le format vidéo doit récompenser plus souvent, moins fort.
     TEST_ASSERT_TRUE(hit > 0.02);
@@ -49,7 +54,7 @@ static void test_paylines_stay_inside_the_grid() {
 }
 
 static void test_payouts_grow_with_length_and_rarity() {
-    const core::MultiPaytable& pt = core::videoPaytable();
+    const core::Paytable& pt = core::videoPaytable();
     const core::ReelSet& rs = core::videoReelSet();
     for (uint8_t s = 0; s < core::kSymbolCount; ++s) {
         // Plus long paie strictement plus.
@@ -69,7 +74,7 @@ static void test_payouts_grow_with_length_and_rarity() {
 }
 
 static void test_evaluate_reads_each_line_from_the_left() {
-    const core::MultiPaytable& pt = core::videoPaytable();
+    const core::Paytable& pt = core::videoPaytable();
     const core::Payline* lines = core::videoPaylines();
     core::GridOutcome o{};
 
@@ -134,7 +139,7 @@ static void test_simulated_draw_matches_the_analytic_model() {
     // répartition des symboles — puis le RTP dans une bande justifiée.
     core::seedXorShift(0x5107C0DE);
     const core::ReelSet& rs = core::videoReelSet();
-    const core::MultiPaytable& pt = core::videoPaytable();
+    const core::Paytable& pt = core::videoPaytable();
     const core::Payline* lines = core::videoPaylines();
 
     core::GridOutcome o{};

@@ -67,9 +67,9 @@ static void test_reels_stop_in_cascade() {
 }
 
 static void test_tiers_follow_the_paytable() {
-    core::WinResult w = {0, 0, 0, false};
+    core::LineWin w = {0, 0, 0, 0, false};
     TEST_ASSERT_EQUAL(core::Tier::None, core::tierOf(w));
-    w.multiplier = 2;  w.matched = 2;
+    w.multiplier = 2;  w.count = 2;
     TEST_ASSERT_EQUAL(core::Tier::Small, core::tierOf(w));
     w.multiplier = 20;
     TEST_ASSERT_EQUAL(core::Tier::Mid, core::tierOf(w));

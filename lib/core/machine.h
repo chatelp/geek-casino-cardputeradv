@@ -16,7 +16,7 @@ struct SpinOutcome {
     uint8_t sym[kMaxReels];
     uint16_t stake;    // mise engagée
     uint32_t payout;   // jetons rendus (0 = perdu)
-    WinResult win;
+    LineWin win;
     bool bailedOut;    // la maison a remis au pot après ce tour
 };
 

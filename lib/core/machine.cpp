@@ -19,7 +19,7 @@ bool playSpin(Machine& m, RngFn rng, SpinOutcome& out, bool charge) {
     if (charge) placeBet(m.econ);
 
     spin(*m.reels, rng, out.pos, out.sym);
-    out.win = evaluate(*m.pay, out.sym, m.reels->reels);
+    out.win = evaluateLine(*m.pay, out.sym, m.reels->reels);
     out.payout = static_cast<uint32_t>(out.win.multiplier) * out.stake;
 
     if (charge) {

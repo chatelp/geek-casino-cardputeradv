@@ -4,86 +4,106 @@ namespace core {
 
 namespace {
 
-// Choisie avec la bande de reels.cpp pour un RTP d'environ 95 %.
-// Toute retouche ici DOIT être revalidée par test/test_paytable, qui
-// recalcule le RTP exact et refuse de passer hors de la fourchette.
-constexpr Paytable kMvp = {
-    {
-        8,     // RESISTOR — 8 positions sur 32
-        12,    // LED      — 7
-        20,    // CHIP     — 6
-        50,    // FLOPPY   — 4
-        100,   // GAMEPAD  — 3
-        250,   // CRT      — 2
-        400,   // D20      — 1
-        1200,  // INVADER  — 1, le jackpot
-    },
-    2,  // deux identiques en tête
-};
+// --- 3 rouleaux, 1 ligne. RTP exact 95,24 %, vérifié par test_paytable.
+// Deux identiques en tête paient 2 quel que soit le symbole : le petit gain
+// entretient le rythme, il ne récompense personne en particulier.
+//                          0  1  2    3
+constexpr Paytable kMvp = {{
+    {0, 0, 2,    8, 0, 0},   // RESISTOR (8/32)
+    {0, 0, 2,   12, 0, 0},   // LED      (7/32)
+    {0, 0, 2,   20, 0, 0},   // CHIP     (6/32)
+    {0, 0, 2,   50, 0, 0},   // FLOPPY   (4/32)
+    {0, 0, 2,  100, 0, 0},   // GAMEPAD  (3/32)
+    {0, 0, 2,  250, 0, 0},   // CRT      (2/32)
+    {0, 0, 2,  400, 0, 0},   // D20      (1/32)
+    {0, 0, 2, 1200, 0, 0},   // INVADER  (1/32) — jackpot
+}};
+
+// --- 5 rouleaux, 5 lignes. RTP par ligne 94,95 %, même vérification.
+// Rien ne paie sous trois alignés : sur cinq rouleaux, une paire tomberait
+// bien trop souvent.
+//                            0  1  2    3     4      5
+constexpr Paytable kVideo = {{
+    {0, 0, 0,     8,    20,    50},    // RESISTOR (7/32)
+    {0, 0, 0,    15,    40,   100},    // LED      (6/32)
+    {0, 0, 0,    25,    75,   200},    // CHIP     (5/32)
+    {0, 0, 0,    30,   150,   600},    // FLOPPY   (4/32)
+    {0, 0, 0,    75,   500,  2500},    // GAMEPAD  (3/32)
+    {0, 0, 0,   100,   600,  3000},    // CRT      (3/32)
+    {0, 0, 0,   200,  2000, 12500},    // D20      (2/32)
+    {0, 0, 0,   250,  2500, 15000},    // INVADER  (2/32) — jackpot
+}};
 
 static_assert(kSymbolCount == 8,
-              "La table de gains est calibrée pour 8 symboles. Si l'art en "
-              "ajoute ou en retire, il faut refaire l'équilibrage et les "
-              "tests de RTP — pas seulement rallonger ce tableau.");
+              "Les deux calibrages sont faits pour 8 symboles. En ajouter un "
+              "impose de refaire l'équilibrage ET les tests de RTP, pas "
+              "d'allonger les tableaux.");
 
 }  // namespace
 
 const Paytable& mvpPaytable() { return kMvp; }
+const Paytable& videoPaytable() { return kVideo; }
 
-WinResult evaluate(const Paytable& pt, const uint8_t* sym, uint8_t reels) {
-    WinResult w = {0, 0, 0, false};
+LineWin evaluateLine(const Paytable& pt, const uint8_t* sym, uint8_t reels,
+                     uint8_t line) {
+    LineWin w = {line, 0, 0, 0, false};
     if (reels < 2) return w;
 
-    // Longueur de la séquence identique depuis la gauche.
     uint8_t run = 1;
     while (run < reels && sym[run] == sym[0]) ++run;
 
-    if (run >= 3) {
-        w.multiplier = pt.three[sym[0]];
-        w.matched = 3;
-        w.symbol = sym[0];
-        w.jackpot = (sym[0] == kJackpotSymbol);
-    } else if (run == 2) {
-        w.multiplier = pt.two;
-        w.matched = 2;
-        w.symbol = sym[0];
-    }
+    const uint16_t m = pt.pay[sym[0]][run];
+    if (m == 0) return w;
+
+    w.symbol = sym[0];
+    w.count = run;
+    w.multiplier = m;
+    w.jackpot = (run == reels && sym[0] == kJackpotSymbol);
     return w;
 }
 
 namespace {
 
-// Parcourt récursivement toutes les combinaisons de positions et accumule
-// le multiplicateur total ainsi que le nombre de tours gagnants.
-void walk(const ReelSet& rs, const Paytable& pt, uint8_t reel, uint8_t* sym,
-          double& sumMult, double& hits, double& total) {
-    if (reel == rs.reels) {
-        const WinResult w = evaluate(pt, sym, rs.reels);
-        sumMult += w.multiplier;
-        if (w.multiplier > 0) hits += 1.0;
-        total += 1.0;
-        return;
-    }
-    for (uint16_t i = 0; i < rs.len[reel]; ++i) {
-        sym[reel] = rs.strip[reel][i];
-        walk(rs, pt, reel + 1, sym, sumMult, hits, total);
+// P(exactement k alignés depuis la gauche) = (produit des p des k premiers
+// rouleaux) × (1 - p du rouleau suivant), et sans le second facteur quand
+// la ligne est pleine. Gère des bandes différentes d'un rouleau à l'autre.
+void lineStats(const ReelSet& rs, const Paytable& pt, uint8_t reels,
+               double& ev, double& hit) {
+    ev = 0;
+    hit = 0;
+    for (uint8_t s = 0; s < kSymbolCount; ++s) {
+        double prefix = 1.0;
+        for (uint8_t k = 1; k <= reels; ++k) {
+            const uint8_t r = static_cast<uint8_t>(k - 1);
+            prefix *= static_cast<double>(countOn(rs, r, s)) /
+                      static_cast<double>(rs.len[r]);
+            double prob = prefix;
+            if (k < reels) {
+                const double pNext = static_cast<double>(countOn(rs, k, s)) /
+                                     static_cast<double>(rs.len[k]);
+                prob *= (1.0 - pNext);
+            }
+            const uint16_t m = pt.pay[s][k];
+            if (m > 0) {
+                ev += prob * m;
+                hit += prob;
+            }
+        }
     }
 }
 
 }  // namespace
 
-double exactRtp(const ReelSet& rs, const Paytable& pt) {
-    uint8_t sym[kMaxReels] = {0};
-    double sumMult = 0, hits = 0, total = 0;
-    walk(rs, pt, 0, sym, sumMult, hits, total);
-    return total > 0 ? sumMult / total : 0.0;
+double exactLineRtp(const ReelSet& rs, const Paytable& pt, uint8_t reels) {
+    double ev = 0, hit = 0;
+    lineStats(rs, pt, reels, ev, hit);
+    return ev;
 }
 
-double exactHitRate(const ReelSet& rs, const Paytable& pt) {
-    uint8_t sym[kMaxReels] = {0};
-    double sumMult = 0, hits = 0, total = 0;
-    walk(rs, pt, 0, sym, sumMult, hits, total);
-    return total > 0 ? hits / total : 0.0;
+double exactLineHitRate(const ReelSet& rs, const Paytable& pt, uint8_t reels) {
+    double ev = 0, hit = 0;
+    lineStats(rs, pt, reels, ev, hit);
+    return hit;
 }
 
 }  // namespace core

@@ -12,7 +12,7 @@ namespace core {
 
 struct VideoGame {
     const ReelSet* reels = nullptr;
-    const MultiPaytable* pay = nullptr;
+    const Paytable* pay = nullptr;
     const Payline* lines = nullptr;
     Economy econ;
 

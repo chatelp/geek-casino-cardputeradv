@@ -72,7 +72,7 @@ void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     const int32_t jack = app.lobbyIndex == 1
         ? static_cast<int32_t>(app.video.pay->pay[core::kJackpotSymbol][5] *
                                core::bet(app.econ))
-        : static_cast<int32_t>(app.game.machine.pay->three[core::kJackpotSymbol] *
+        : static_cast<int32_t>(app.game.machine.pay->pay[core::kJackpotSymbol][3] *
                                core::bet(app.econ));
     const int w = 16 + 4 + textWidth("JACKPOT ", 1) + numberWidth(jack, 1);
     const int x0 = (kScreenW - w) / 2;
@@ -129,7 +129,7 @@ void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
         drawSymbol(g, static_cast<uint8_t>(i), x, y + 1, 1);
         drawSymbol(g, static_cast<uint8_t>(i), x + 20, y + 1, 1, 0, /*classic=*/true);
         drawText(g, "x", x + 42, y + 3, P::steel300, 1);
-        drawNumber(g, pt.three[i], x + 50, y + 2, i == core::kJackpotSymbol
+        drawNumber(g, pt.pay[i][3], x + 50, y + 2, i == core::kJackpotSymbol
                    ? P::green : P::yellow, 2);
     }
     drawText(g, "ANY PAIR LEFT x2", kScreenW / 2, 106, P::steel300, 1, Align::Center);
@@ -139,7 +139,7 @@ void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
 void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
     drawHeader(g, "VIDEO SLOT", P::cyan);
-    const core::MultiPaytable& pt = *app.video.pay;
+    const core::Paytable& pt = *app.video.pay;
     // Deux groupes de quatre rangs. Les nombres sont alignés à droite sur
     // des colonnes FIXES : à 15000, un alignement à gauche se chevauche.
     constexpr int kGroupX[2] = {2, 122};

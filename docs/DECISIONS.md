@@ -2,6 +2,31 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-019 — 2026-08-11 — Table de gains unifiée (dette D-017 soldée)
+
+Il y avait deux structures disant la même chose : `three[8] + two` pour le
+3×1, `pay[8][6]` pour le 5×3. Deux endroits à modifier pour un seul
+réglage, **et rien qui casse si on en oublie un** — le jeu devenait
+simplement incohérent, en silence. C'est ce silence qui rendait la dette
+dangereuse, pas la duplication elle-même.
+
+- **Une seule forme** : `pay[symbole][nombre d'alignés]`. Le 3×1 y range
+  ses valeurs en [2] et [3], le vidéo en [3], [4], [5].
+- **Une seule fonction de calcul de gain** : `evaluateLine()`. Le 3×1
+  l'appelle une fois, le 5×3 cinq fois. `evaluateGrid` ne fait plus que
+  recomposer chaque ligne et la lui confier.
+- **Un seul calcul de RTP**, analytique, généralisé aux bandes
+  différentes d'un rouleau à l'autre. L'énumération récursive des 32³
+  combinaisons disparaît : elle donnait le même nombre, plus lentement.
+- **Ce qui reste distinct, volontairement** : les deux BANDES. Le format
+  vidéo garde la sienne parce que le jackpot serait sinon introuvable sur
+  cinq rouleaux. Un choix de jeu, pas un doublon — et c'est maintenant le
+  seul, donc il ne peut plus être confondu avec un oubli.
+
+**Preuve que rien n'a bougé** : deux tests comparent le RTP à sa valeur
+d'avant fusion, en millionièmes — 952393 pour le 3×1, 949470 pour le
+vidéo. Une unification qui aurait changé le jeu les ferait tomber.
+
 ## D-018 — 2026-08-11 — Les trois jeux à l'écran
 
 Les deux nouveaux jeux sont jouables, l'accueil compte trois entrées.

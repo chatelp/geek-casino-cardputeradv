@@ -36,9 +36,18 @@ Journal complet dans [docs/DECISIONS.md](docs/DECISIONS.md). Résumé :
 ## Équilibrage — où vit quoi
 
 Le **vocabulaire** (quels symboles existent) est généré depuis l'art vers
-`lib/core/symbol_ids.h`. L'**équilibrage** (bande, gains) est écrit à la
-main dans `lib/core/reels.cpp` et `paytable.cpp` : ce sont deux choses
-différentes, elles ne doivent pas se mélanger.
+`lib/core/symbol_ids.h`. L'**équilibrage** est écrit à la main : ce sont
+deux choses différentes, elles ne doivent pas se mélanger.
+
+**Une seule table de gains** pour tous les formats — `Paytable`, dans
+`paytable.cpp`, indexée `pay[symbole][nombre d'alignés]`. Une seule
+fonction de calcul, `evaluateLine()`. Ne jamais recréer une table par
+format : la duplication ne casse rien, elle rend le jeu incohérent en
+silence (dette D-017, soldée par D-019).
+
+Les **bandes** restent distinctes par format (`reels.cpp` pour le 3×1,
+`multiline.cpp` pour le vidéo) : c'est un choix de jeu assumé, le jackpot
+serait introuvable sur cinq rouleaux avec la bande du 3×1.
 
 Toute retouche de la bande ou de la table **doit** être revalidée :
 

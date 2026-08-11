@@ -2,7 +2,7 @@
 
 namespace core {
 
-Tier tierOf(const WinResult& w) {
+Tier tierOf(const LineWin& w) {
     if (w.jackpot) return Tier::Jackpot;
     if (w.multiplier == 0) return Tier::None;
     if (w.multiplier >= 50) return Tier::Big;
