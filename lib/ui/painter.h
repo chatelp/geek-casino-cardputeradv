@@ -31,6 +31,13 @@ void drawSymbol(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
 void drawIcon(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale = 1,
               uint16_t tint = 0);
 
+// Variantes « niveaux de gris » pour le mode démo : chaque couleur est
+// remplacée par un des 3 gris de kSymbolPaletteGray (mappage par
+// luminance, calculé par gen.py). Le dessin garde son volume.
+void drawSymbolGray(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
+                    bool classic = false);
+void drawIconGray(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale = 1);
+
 void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c,
                int t = 1);
 

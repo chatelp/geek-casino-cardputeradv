@@ -326,6 +326,34 @@ constexpr uint8_t kSymbolsClassic[kSymbolCount][kSymbolPx * kSymbolPx] = {
     },
 };
 
+// Palette 3 gris pour le mode démo — même indexation.
+constexpr uint16_t kSymbolPaletteGray[19] = {
+    0x0000,
+    0x73F3,  // C lum=102
+    0x73F3,  // G lum=109
+    0x298A,  // K lum=16
+    0x73F3,  // M lum=81
+    0x73F3,  // S lum=83
+    0x73F3,  // V lum=72
+    0xD6BD,  // Y lum=139
+    0xD6BD,  // b lum=198
+    0xD6BD,  // c lum=173
+    0xD6BD,  // g lum=188
+    0x298A,  // k lum=7
+    0xD6BD,  // m lum=133
+    0xD6BD,  // o lum=150
+    0x73F3,  // r lum=111
+    0xD6BD,  // s lum=148
+    0xD6BD,  // v lum=132
+    0xD6BD,  // w lum=255
+    0xD6BD,  // y lum=202
+};
+// Les trois nuances, nommées : le chrome de la démo les utilise
+// directement (indexer la rampe dépendrait de l'ordre des clés).
+constexpr uint16_t kGrayDark  = 0x298A;
+constexpr uint16_t kGrayMid   = 0x73F3;
+constexpr uint16_t kGrayLight = 0xD6BD;
+
 // Couleur dominante — utilisée pour le flou de vitesse.
 constexpr uint16_t kSymbolDominant[kSymbolCount] = {
     0xEE11,  // RESISTOR → b

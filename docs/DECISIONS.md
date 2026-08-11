@@ -2,6 +2,19 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-015 — 2026-08-11 — Démo en niveaux de gris, annulation de saisie
+
+- La démo n'est plus une teinte plate : **rampe de 3 gris** appliquée par
+  luminance à chaque couleur (`kSymbolPaletteGray`, générée par gen.py).
+  Les glyphes gardent leur volume — contour sombre, corps moyen, éclats
+  clairs — au lieu de devenir des silhouettes. Seuils choisis pour
+  répartir les 20 teintes plutôt que d'en tasser la moitié au milieu.
+- Les trois gris sont **exportés nommés** (`kGrayDark/Mid/Light`) :
+  indexer la rampe dépendrait de l'ordre alphabétique des clés d'art.
+- Bug appareil corrigé : Échap pendant la saisie du nom était **avalé par
+  le filtre de caractères** (le backtick partait dans `feedNameChar`).
+  L'annulation est désormais interceptée avant le filtre, et testée.
+
 ## D-014 — 2026-08-11 — Retours du premier test en main
 
 Quatre retours de Pierre après manipulation de l'appareil :

@@ -967,6 +967,27 @@ def export_symbols():
         out.append("    },\n")
     out.append("};\n\n")
 
+    # Rampe de démo : chaque couleur mappée sur 3 gris par luminance.
+    # La démo garde ainsi le volume des dessins — trois nuances, pas une
+    # silhouette plate (retour Pierre, D-014).
+    grays = [to565("#2E3352"), to565("#767D9E"), to565("#D2D7EE")]
+    out.append("// Palette 3 gris pour le mode démo — même indexation.\n")
+    out.append("constexpr uint16_t kSymbolPaletteGray[%d] = {\n    0x0000,\n" % len(keys))
+    for k in keys[1:]:
+        hx = PAL[KEYS[k]]["hex"]
+        r, gr, b = int(hx[1:3], 16), int(hx[3:5], 16), int(hx[5:7], 16)
+        lum = 0.299 * r + 0.587 * gr + 0.114 * b
+        # Seuils choisis pour répartir les 20 teintes sur les 3 gris
+        # plutôt que d'en tasser la moitié dans le medium.
+        v = grays[2] if lum >= 125 else (grays[1] if lum >= 55 else grays[0])
+        out.append("    0x%04X,  // %s lum=%d\n" % (v, k, int(lum)))
+    out.append("};\n")
+    out.append("// Les trois nuances, nommées : le chrome de la démo les utilise\n")
+    out.append("// directement (indexer la rampe dépendrait de l'ordre des clés).\n")
+    out.append("constexpr uint16_t kGrayDark  = 0x%04X;\n" % grays[0])
+    out.append("constexpr uint16_t kGrayMid   = 0x%04X;\n" % grays[1])
+    out.append("constexpr uint16_t kGrayLight = 0x%04X;\n\n" % grays[2])
+
     # Couleur dominante de chaque glyphe : au-delà d'une certaine vitesse, un
     # rouleau ne peut plus montrer de détail à 30 images/s — il montre une
     # bande de cette couleur. Sans ça, le défilement scintille au lieu d'aller

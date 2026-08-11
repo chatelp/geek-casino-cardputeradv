@@ -13,11 +13,13 @@ namespace P = pal;
 
 namespace {
 
-// Mode démo : tout passe en gris clair. Le monochrome EST le message —
-// pas besoin de bandeau clignotant pour dire « ceci n'est pas une partie ».
+// Mode démo : niveaux de gris plutôt qu'une teinte plate. Trois nuances —
+// les glyphes passent par kSymbolPaletteGray (mappage par luminance), le
+// chrome par ces deux helpers. Le dessin garde son volume, la couleur part.
 bool g_demo = false;
-uint16_t A(uint16_t accent) { return g_demo ? P::steel300 : accent; }
-uint16_t D(uint16_t dimmed) { return g_demo ? P::steel500 : dimmed; }
+// GA : accents vifs → gris clair. GD : éléments sourds → gris moyen.
+uint16_t A(uint16_t accent) { return g_demo ? kGrayLight : accent; }
+uint16_t D(uint16_t dimmed) { return g_demo ? kGrayMid : dimmed; }
 
 // Clignotement déterministe : même instant → même image. Indispensable pour
 // que --shot et --frames produisent des captures reproductibles.
@@ -127,7 +129,7 @@ void drawBlurredReel(lgfx::LGFX_Sprite& g, const core::ReelSet& rs, uint8_t r,
                 int run = 1;
                 while (c + run < kSymbolPx && art[row * kSymbolPx + c + run] == idx) ++run;
                 g.fillRect(symX(r) + c * kSymScale, y, run * kSymScale, streakH,
-                           tint ? tint : kSymbolPalette[idx]);
+                           (tint ? kSymbolPaletteGray : kSymbolPalette)[idx]);
                 c += run;
             }
         }
@@ -153,15 +155,20 @@ void drawReels(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
         // Découpe au hublot : un symbole qui défile déborde forcément.
         g.setClipRect(winX(r), kWinY, kWinW, kWinH);
         if (speed > kBlurThreshold) {
-            drawBlurredReel(g, rs, r, p, classic, g_demo ? P::steel500 : 0);
+            drawBlurredReel(g, rs, r, p, classic, g_demo ? 1 : 0);
         } else {
             const float base = std::floor(p);
             const int shift = static_cast<int>((p - base) * kPitch);
             for (int k = -2; k <= 2; ++k) {
                 const uint8_t sym =
                     core::symbolAt(rs, r, static_cast<int32_t>(base) + k);
-                drawSymbol(g, sym, symX(r), kSymY + k * kPitch - shift, kSymScale,
-                           dead ? P::ink600 : (g_demo ? P::steel300 : 0), classic);
+                if (g_demo) {
+                    drawSymbolGray(g, sym, symX(r), kSymY + k * kPitch - shift,
+                                   kSymScale, classic);
+                } else {
+                    drawSymbol(g, sym, symX(r), kSymY + k * kPitch - shift,
+                               kSymScale, dead ? P::ink600 : 0, classic);
+                }
             }
         }
         g.clearClipRect();
@@ -193,7 +200,8 @@ void drawLever(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
     const int top = kLeverTop + static_cast<int>(pull * kLeverTravel);
     g.fillRect(kLeverCx - 2, top + 10, 4, kLeverBaseY - top - 10, P::steel500);
     g.fillRect(kLeverCx - 1, top + 10, 1, kLeverBaseY - top - 10, P::steel300);
-    drawIcon(g, ICON_BALL, kLeverCx - 6, top, 1, g_demo ? P::steel300 : 0);
+    if (g_demo) drawIconGray(g, ICON_BALL, kLeverCx - 6, top);
+    else drawIcon(g, ICON_BALL, kLeverCx - 6, top);
     g.fillRect(kLeverCx - 9, kLeverBaseY, 18, 3, P::ink600);
     g.fillRect(kLeverCx - 11, kLeverBaseY + 3, 22, 9, P::steel500);
     drawFrame(g, kLeverCx - 11, kLeverBaseY + 3, 22, 9, P::ink900, 1);
@@ -232,7 +240,7 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
 
     if (g_demo) {
         // Le mot + le monochrome : impossible de croire à une partie.
-        drawText(g, "DEMO", kScreenW / 2, ty, P::steel300, 2, Align::Center);
+        drawText(g, "DEMO", kScreenW / 2, ty, kGrayLight, 2, Align::Center);
         return;
     }
     switch (game.phase) {
@@ -270,7 +278,10 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
 void drawJackpot(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
     g.fillScreen(P::ink900);
     static const int16_t kInv[][2] = {{6, 8}, {206, 14}, {30, 96}, {186, 104}, {110, 4}};
-    for (auto& v : kInv) drawSymbol(g, core::SYM_INVADER, v[0], v[1], 2, D(P::greenDk));
+    for (auto& v : kInv) {
+        if (g_demo) drawSymbolGray(g, core::SYM_INVADER, v[0], v[1], 2);
+        else drawSymbol(g, core::SYM_INVADER, v[0], v[1], 2, P::greenDk);
+    }
     g.fillRect(0, 34, kScreenW, 46, P::ink800);
     g.fillRect(0, 34, kScreenW, 2, A(P::green));
     g.fillRect(0, 78, kScreenW, 2, A(P::green));
@@ -280,7 +291,8 @@ void drawJackpot(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
     drawNumber(g, static_cast<int32_t>(game.outcome.payout), kScreenW / 2, 64,
                P::white, 2, Align::Center);
     for (int i = 0; i < 3; ++i) {
-        drawSymbol(g, core::SYM_INVADER, 42 + i * 54, 88, 2, A(P::green));
+        if (g_demo) drawSymbolGray(g, core::SYM_INVADER, 42 + i * 54, 88, 2);
+        else drawSymbol(g, core::SYM_INVADER, 42 + i * 54, 88, 2, P::green);
     }
     const uint32_t step = now / 120;
     for (int x = 0; x < kScreenW; x += 8) {

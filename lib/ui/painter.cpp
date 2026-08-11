@@ -60,40 +60,47 @@ void drawNumber(lgfx::LGFX_Sprite& g, int32_t v, int x, int y, uint16_t color,
     drawText(g, s, x, y, color, scale, a);
 }
 
-void drawSymbol(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
-                uint16_t tint, bool classic) {
-    if (sym >= kSymbolCount) return;
-    const uint8_t* art = classic ? kSymbolsClassic[sym] : kSymbols[sym];
-    for (int ry = 0; ry < kSymbolPx; ++ry) {
+namespace {
+void blitIndexed(lgfx::LGFX_Sprite& g, const uint8_t* art, int px, int x, int y,
+                 int scale, uint16_t tint, const uint16_t* pal) {
+    for (int ry = 0; ry < px; ++ry) {
         int c = 0;
-        while (c < kSymbolPx) {
-            const uint8_t idx = art[ry * kSymbolPx + c];
+        while (c < px) {
+            const uint8_t idx = art[ry * px + c];
             if (idx == 0) { ++c; continue; }  // 0 = transparent
             int run = 1;
-            while (c + run < kSymbolPx && art[ry * kSymbolPx + c + run] == idx) ++run;
-            const uint16_t col = tint ? tint : kSymbolPalette[idx];
+            while (c + run < px && art[ry * px + c + run] == idx) ++run;
+            const uint16_t col = tint ? tint : pal[idx];
             g.fillRect(x + c * scale, y + ry * scale, run * scale, scale, col);
             c += run;
         }
     }
 }
+}  // namespace
+
+void drawSymbol(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
+                uint16_t tint, bool classic) {
+    if (sym >= kSymbolCount) return;
+    blitIndexed(g, classic ? kSymbolsClassic[sym] : kSymbols[sym], kSymbolPx,
+                x, y, scale, tint, kSymbolPalette);
+}
+
+void drawSymbolGray(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
+                    bool classic) {
+    if (sym >= kSymbolCount) return;
+    blitIndexed(g, classic ? kSymbolsClassic[sym] : kSymbols[sym], kSymbolPx,
+                x, y, scale, 0, kSymbolPaletteGray);
+}
+
+void drawIconGray(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale) {
+    if (icon >= kIconCount) return;
+    blitIndexed(g, kIcons[icon], kIconPx, x, y, scale, 0, kSymbolPaletteGray);
+}
 
 void drawIcon(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale,
               uint16_t tint) {
     if (icon >= kIconCount) return;
-    const uint8_t* art = kIcons[icon];
-    for (int ry = 0; ry < kIconPx; ++ry) {
-        int c = 0;
-        while (c < kIconPx) {
-            const uint8_t idx = art[ry * kIconPx + c];
-            if (idx == 0) { ++c; continue; }
-            int run = 1;
-            while (c + run < kIconPx && art[ry * kIconPx + c + run] == idx) ++run;
-            const uint16_t col = tint ? tint : kSymbolPalette[idx];
-            g.fillRect(x + c * scale, y + ry * scale, run * scale, scale, col);
-            c += run;
-        }
-    }
+    blitIndexed(g, kIcons[icon], kIconPx, x, y, scale, tint, kSymbolPalette);
 }
 
 void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c, int t) {

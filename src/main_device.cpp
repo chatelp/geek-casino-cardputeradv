@@ -93,7 +93,13 @@ static void handleKeyboard(uint32_t now) {
 
     for (const auto c : st.word) {
         if (naming) {
-            core::feedNameChar(app, c);  // filtre A-Z 0-9 lui-même
+            // Échap doit rester joignable PENDANT la saisie : sans ce cas,
+            // la saisie avalait la touche et l'annulation était impossible.
+            if (c == '`') {
+                core::handleKey(app, core::AppKey::Back, now, trng);
+            } else {
+                core::feedNameChar(app, c);  // filtre A-Z 0-9 lui-même
+            }
             continue;
         }
         switch (c) {

@@ -94,6 +94,33 @@ static void test_attract_spins_are_silent() {
     }
 }
 
+static void test_esc_cancels_name_entry_when_a_player_exists() {
+    // Bug signalé : sur l'appareil, Échap pendant la saisie était avalé par
+    // le filtre de caractères. Ici on vérifie le contrat côté logique.
+    core::seedXorShift(14);
+    App a = core::newApp(0, core::xorShift32);
+    // Premier lancement : pas d'annulation possible, il FAUT un nom.
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::NameEntry, a.screen);
+
+    typeName(a, "ZOE");
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+
+    // Changement de joueur, puis on se ravise : Échap ramène à l'accueil
+    // et la saisie en cours est oubliée.
+    core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::NameEntry, a.screen);
+    typeName(a, "BOB");
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::Lobby, a.screen);
+    TEST_ASSERT_EQUAL_UINT8(1, a.roster.count);        // BOB n'existe pas
+    TEST_ASSERT_EQUAL_UINT8(0, a.nameEntry.len);       // saisie effacée
+    TEST_ASSERT_EQUAL_STRING("ZOE", a.roster.players[a.roster.current].name);
+}
+
 static void test_switching_player_swaps_the_balance() {
     core::seedXorShift(3);
     App a = core::newApp(0, core::xorShift32);
@@ -186,6 +213,7 @@ int main() {
     RUN_TEST(test_lobby_keys_route_to_the_right_screens);
     RUN_TEST(test_help_returns_where_it_was_opened);
     RUN_TEST(test_attract_spins_are_silent);
+    RUN_TEST(test_esc_cancels_name_entry_when_a_player_exists);
     RUN_TEST(test_switching_player_swaps_the_balance);
     RUN_TEST(test_same_name_switches_instead_of_duplicating);
     RUN_TEST(test_reset_needs_two_presses_and_wipes_everything);
