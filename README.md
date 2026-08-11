@@ -1,0 +1,70 @@
+# Geek Casino — machine à sous pour M5Stack Cardputer ADV
+
+Jeu de casino hors-ligne pour **M5Stack Cardputer ADV** (ESP32-S3, écran
+240 × 135, clavier 56 touches, IMU BMI270, haut-parleur 1 W).
+
+> **Jetons virtuels uniquement.** Pas d'argent réel, pas d'achat, pas de
+> compte, pas de réseau — ni WiFi ni BLE. C'est un jouet et un exercice
+> d'animation, pas un produit de jeu d'argent. Le joueur ne peut jamais
+> être définitivement ruiné : la machine renfloue.
+
+Nom de code provisoire. Le premier module est une machine à sous à trois
+rouleaux ; l'architecture prévoit d'autres jeux.
+
+## État
+
+Amorçage. Les trois environnements compilent, le design system est en
+place, la logique de jeu reste à écrire.
+
+- [x] Trois environnements PlatformIO (firmware, simulateur, tests)
+- [x] Aléa injecté, testé, sans biais de modulo
+- [x] Design system : palette, fonte 5×7, 8 glyphes, écrans
+- [ ] Bandes de rouleaux, table de gains, RTP vérifié
+- [ ] Animation, son, levier IMU, persistance NVS
+
+## Construire
+
+```bash
+pio run -e sim && .pio/build/sim/program   # simulateur macOS (SDL2)
+pio test -e test-native                     # tests unitaires
+pio run -e cardputer-adv -t upload          # firmware
+```
+
+Le simulateur rend le même écran que l'appareil via LovyanGFX + SDL2 :
+tout le rendu passe par l'API `lgfx::`, jamais par le matériel. Il sait
+aussi produire des captures déterministes, sans fenêtre :
+
+```bash
+.pio/build/sim/program --shot captures        # une image
+.pio/build/sim/program --frames captures 60   # une suite, pour un GIF
+```
+
+## Design system
+
+La direction artistique — pixel-art néon, palette « nuit d'arcade »,
+glyphes issus de l'univers maker et geek — vit dans un projet
+claude.ai/design et se régénère depuis ce dépôt :
+
+```bash
+python3 design/tools/gen.py
+```
+
+Une source de vérité unique (`design/tokens.json`, `design/tools/art_*.py`)
+produit à la fois les cartes du design system et les en-têtes C++
+`lib/ui/palette.h`, `symbols.h`, `font5x7.h`. **Ces trois fichiers sont
+générés : les corriger à la main ne sert à rien**, ils sont écrasés.
+
+## Structure
+
+```
+lib/core/   logique pure C++17, sans Arduino ni M5 — testée en natif
+lib/hal/    frontières matérielles : écran, touches, aléa
+lib/ui/     rendu, uniquement via lgfx::
+src/        main appareil et main simulateur, triés par #ifdef
+design/     source de vérité de l'identité visuelle
+test/       tests Unity de lib/core
+```
+
+Les décisions de conception sont journalisées dans
+[docs/DECISIONS.md](docs/DECISIONS.md), les contraintes et pièges
+matériels mesurés dans [CLAUDE.md](CLAUDE.md).

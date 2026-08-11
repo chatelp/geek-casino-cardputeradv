@@ -1,0 +1,60 @@
+# --------------------------------------------------------------- build
+.pio/
+.pioenvs/
+.piolibdeps/
+*.o
+*.elf
+*.bin.bak
+
+# ----------------------------------------------------- éditeurs et OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# ------------------------------------------- outillage design (Python)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ------------------------------------------------------ sorties générées
+# Régénérables par `python3 design/tools/gen.py` — pas de raison de les
+# versionner. Les en-têtes lib/ui/*.h, eux, SONT versionnés : le firmware
+# doit compiler depuis un clone nu, sans Python.
+design/build/
+captures/
+
+# ------------------------------------------------ travail hors dépôt
+# Notes de stratégie, brouillons de publication, identifiants d'espaces de
+# travail externes. Rien de ce dossier ne doit atteindre GitHub.
+private/
+
+# ----------------------------------------------------- réglages locaux
+.claude/settings.local.json
+
+# ------------------------------------------------------------- secrets
+# Aucun secret n'existe dans ce projet : il est hors ligne, sans compte,
+# sans réseau, sans argent réel (voir les garde-fous de CLAUDE.md). Ces
+# règles sont des garde-fous contre un ajout futur par inadvertance.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+id_rsa*
+id_ed25519*
+*.ppk
+secrets.json
+credentials.json
+service-account*.json
+.netrc
