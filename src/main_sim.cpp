@@ -100,7 +100,20 @@ void loadApp(core::App& a) {
     core::SaveData s{};
     const bool ok = std::fread(&s, sizeof(s), 1, f) == 1;
     std::fclose(f);
-    if (ok && core::applySave(s, a.roster, a.settings)) core::enterFromSave(a);
+    if (ok && core::applySave(s, a.roster, a.settings)) {
+        // Bloc de mises facultatif : une sauvegarde d'avant cette
+        // fonctionnalité se charge normalement, avec les mises par défaut.
+        core::BetMemory b{};
+        FILE* fb = std::fopen(kSavePath, "rb");
+        if (fb) {
+            std::fseek(fb, sizeof(s), SEEK_SET);
+            if (std::fread(&b, sizeof(b), 1, fb) == 1 && core::betsValid(b)) {
+                a.bets = b;
+            }
+            std::fclose(fb);
+        }
+        core::enterFromSave(a);
+    }
     // Sauvegarde illisible : on repart sur la saisie du nom, sans casser
     // le fichier — il sera réécrit à la première partie.
 }
@@ -108,10 +121,13 @@ void loadApp(core::App& a) {
 void saveApp(core::App& a) {
     core::pullEconomy(a);
     core::syncPlayer(a.roster, a.econ, a.game.spins + a.video.spins + a.bj.hands, 0);
+    core::storePlayerBets(a);
     const core::SaveData s = core::makeSave(a.roster, a.settings);
+    const core::BetMemory b = core::makeBets(a.bets);
     FILE* f = std::fopen(kSavePath, "wb");
     if (!f) return;
     std::fwrite(&s, sizeof(s), 1, f);
+    std::fwrite(&b, sizeof(b), 1, f);
     std::fclose(f);
     a.dirty = false;
 }

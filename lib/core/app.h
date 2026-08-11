@@ -70,6 +70,8 @@ struct App {
     // Le solde vit dans App : les trois jeux le partagent au lieu d'en
     // garder chacun une copie qui divergerait.
     Economy econ;
+    // Mise par joueur et par jeu, persistée à côté du classement.
+    BetMemory bets;
     bool resetArmed = false;    // le reset demande une seconde pression
     bool quitRequested = false; // Échap depuis l'accueil (sim uniquement)
     bool dirty = false;         // une sauvegarde est due
@@ -96,8 +98,14 @@ constexpr uint8_t kGlobalSettingsRows = 4;  // SOUND, VOLUME, PLAYER, RESET
 constexpr uint8_t kSlotSettingsRows = 1;    // GLYPHS
 constexpr uint8_t kBjSettingsRows = 1;      // HINTS
 
-// Synchronise le solde partagé vers le jeu courant et retour.
+// Synchronise le SOLDE (partagé) — pas la mise, qui appartient au jeu.
 void pushEconomy(App& a);
 void pullEconomy(App& a);
+
+// La mise appartient au couple (joueur, jeu). Ces deux fonctions font le
+// va-et-vient entre la table persistée et les trois jeux.
+void loadPlayerBets(App& a);   // table → jeux
+void storePlayerBets(App& a);  // jeux → table
+uint16_t betOfGame(const App& a, GameId g);
 
 }  // namespace core

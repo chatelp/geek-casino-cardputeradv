@@ -69,11 +69,13 @@ void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     // Jackpot courant : gain des 3 invaders à la mise en cours.
     g.fillRect(0, 110, kScreenW, 12, P::ink800);
     g.fillRect(0, 110, kScreenW, 1, P::greenDk);
-    const int32_t jack = app.lobbyIndex == 1
-        ? static_cast<int32_t>(app.video.pay->pay[core::kJackpotSymbol][5] *
-                               core::bet(app.econ))
-        : static_cast<int32_t>(app.game.machine.pay->pay[core::kJackpotSymbol][3] *
-                               core::bet(app.econ));
+    // Chaque jeu a sa mise : le jackpot annoncé doit être celui du jeu
+    // sélectionné, pas d'une mise commune qui n'existe plus.
+    const core::GameId gid = static_cast<core::GameId>(app.lobbyIndex);
+    const uint16_t b = core::betOfGame(app, gid);
+    const int32_t jack = gid == core::GameId::Video
+        ? static_cast<int32_t>(app.video.pay->pay[core::kJackpotSymbol][5] * b)
+        : static_cast<int32_t>(app.game.machine.pay->pay[core::kJackpotSymbol][3] * b);
     const int w = 16 + 4 + textWidth("JACKPOT ", 1) + numberWidth(jack, 1);
     const int x0 = (kScreenW - w) / 2;
     drawSymbol(g, core::SYM_INVADER, x0, 112, 1);

@@ -2,31 +2,63 @@
 
 namespace core {
 
-// Le solde est unique et vit dans App ; chaque jeu en reçoit une copie au
-// moment d'être joué et la rend ensuite. Sans ce va-et-vient explicite,
-// trois jeux tiendraient trois comptes qui divergeraient en silence.
+// Le SOLDE est partagé — c'est ce qui fait un casino. La MISE ne l'est
+// pas : chaque jeu garde la sienne, parce qu'elles n'ont pas la même
+// portée (au format vidéo, une mise de 5 engage 25). Passer d'un jeu à
+// l'autre ne doit pas changer l'enjeu à l'insu du joueur.
 void pushEconomy(App& a) {
-    a.game.machine.econ = a.econ;
-    a.video.econ = a.econ;
-    a.bj.econ = a.econ;
+    a.game.machine.econ.credits = a.econ.credits;
+    a.video.econ.credits = a.econ.credits;
+    a.bj.econ.credits = a.econ.credits;
+    // Chaque mise reste dans son jeu, ramenée à ce que le solde permet.
+    clampBet(a.game.machine.econ);
+    clampBetFor(a.video.econ, kVideoLines);
+    clampBet(a.bj.econ);
+}
+
+void storePlayerBets(App& a) {
+    if (a.roster.count == 0 || a.roster.current >= kMaxPlayers) return;
+    uint8_t* row = a.bets.bet[a.roster.current];
+    row[0] = a.game.machine.econ.betIndex;
+    row[1] = a.video.econ.betIndex;
+    row[2] = a.bj.econ.betIndex;
+    a.bets = makeBets(a.bets);  // somme de contrôle à jour
+}
+
+void loadPlayerBets(App& a) {
+    if (a.roster.count == 0 || a.roster.current >= kMaxPlayers) return;
+    const uint8_t* row = a.bets.bet[a.roster.current];
+    a.game.machine.econ.betIndex = row[0] < kBetSteps ? row[0] : kDefaultBetIndex;
+    a.video.econ.betIndex = row[1] < kBetSteps ? row[1] : kDefaultBetIndex;
+    a.bj.econ.betIndex = row[2] < kBetSteps ? row[2] : kDefaultBetIndex;
+    pushEconomy(a);  // ramène chaque mise à ce que le solde permet
+}
+
+uint16_t betOfGame(const App& a, GameId g) {
+    switch (g) {
+        case GameId::Video: return bet(a.video.econ);
+        case GameId::Blackjack: return bet(a.bj.econ);
+        default: return bet(a.game.machine.econ);
+    }
 }
 
 void pullEconomy(App& a) {
+    // Seul le solde remonte : la mise du jeu qu'on quitte lui appartient.
     switch (a.screen) {
         case AppScreen::Slot:
         case AppScreen::SlotHelp:
         case AppScreen::SlotSettings:
-            a.econ = a.game.machine.econ;
+            a.econ.credits = a.game.machine.econ.credits;
             break;
         case AppScreen::Video:
         case AppScreen::VideoHelp:
         case AppScreen::VideoSettings:
-            a.econ = a.video.econ;
+            a.econ.credits = a.video.econ.credits;
             break;
         case AppScreen::Blackjack:
         case AppScreen::BjHelp:
         case AppScreen::BjSettings:
-            a.econ = a.bj.econ;
+            a.econ.credits = a.bj.econ.credits;
             break;
         default:
             break;
@@ -39,6 +71,7 @@ App newApp(uint32_t now, RngFn rng) {
     a.video = newVideoGame(now, rng);
     a.bj = newBjSession(now);
     a.econ = freshEconomy();
+    a.bets = freshBets();
     pushEconomy(a);
     return a;
 }
@@ -50,9 +83,8 @@ void enterFromSave(App& a) {
         return;
     }
     a.econ.credits = p->credits;
-    clampBet(a.econ);
     a.game.spins = p->spins;
-    pushEconomy(a);
+    loadPlayerBets(a);
     a.screen = AppScreen::Lobby;
 }
 
@@ -65,6 +97,7 @@ uint32_t totalSpins(const App& a) {
 void syncAndMarkDirty(App& a, uint32_t payout = 0) {
     pullEconomy(a);
     syncPlayer(a.roster, a.econ, totalSpins(a), payout);
+    storePlayerBets(a);
     pushEconomy(a);
     a.dirty = true;
 }
@@ -77,10 +110,8 @@ void commitName(App& a) {
     }
     Player* p = currentPlayer(a.roster);
     a.econ.credits = p->credits;
-    a.econ.betIndex = kDefaultBetIndex;
-    clampBet(a.econ);
     a.game.spins = p->spins;
-    pushEconomy(a);
+    loadPlayerBets(a);  // le nouveau joueur retrouve SES mises
     a.nameEntry = NameEntry{};
     a.dirty = true;
     a.screen = AppScreen::Lobby;
@@ -272,20 +303,21 @@ void keyGlobalSettings(App& a, AppKey k) {
                 a.dirty = true;
                 pushCue(a.game, Cue::BetChange);
             } else if (a.menuIndex == 2 && a.roster.count > 0) {
+                storePlayerBets(a);   // les mises du joueur qui s'en va
                 syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 const uint8_t n = a.roster.count;
                 a.roster.current = static_cast<uint8_t>(
                     (a.roster.current + (inc ? 1 : n - 1)) % n);
                 Player* p = currentPlayer(a.roster);
                 a.econ.credits = p->credits;
-                clampBet(a.econ);
-                pushEconomy(a);
+                loadPlayerBets(a);    // celles du joueur qui arrive
                 a.dirty = true;
             }
             break;
         }
         case AppKey::Confirm:
             if (a.menuIndex == 2) {
+                storePlayerBets(a);
                 syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 a.screen = AppScreen::NameEntry;
             } else if (a.menuIndex == 3) {
@@ -296,6 +328,7 @@ void keyGlobalSettings(App& a, AppKey k) {
                     a.resetArmed = false;
                     a.dirty = true;
                     a.econ = freshEconomy();
+                    a.bets = freshBets();
                     a.game.spins = 0;
                     a.video.spins = 0;
                     a.bj.hands = 0;

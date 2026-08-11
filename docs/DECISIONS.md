@@ -2,6 +2,30 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-021 — 2026-08-11 — Une mise par joueur ET par jeu
+
+Le solde est partagé — c'est ce qui fait un casino. **La mise ne l'est
+pas** : elle appartient au couple (joueur, jeu).
+
+- **Par jeu**, parce que les mises n'ont pas la même portée : au format
+  vidéo une mise de 5 en engage 25. Passer d'une table à l'autre ne doit
+  pas changer l'enjeu à l'insu du joueur.
+- **Par joueur**, parce que deux personnes n'ont pas le même appétit. Un
+  nouveau joueur repart sur la mise par défaut, pas sur celle du
+  précédent.
+- `pushEconomy` ne copie plus que le **solde** ; chaque jeu garde son
+  `betIndex`, ramené à ce que le solde permet.
+
+**Persistance sans casse** : la table 8 joueurs × 3 jeux vit dans un bloc
+`BetMemory` **séparé** de `SaveData`, avec sa propre somme de contrôle.
+La mettre dans `SaveData` aurait imposé de bumper la version, donc
+d'invalider les sauvegardes existantes et d'effacer le classement de
+Pierre. Le bloc est facultatif à la lecture : une sauvegarde d'avant
+cette fonctionnalité se charge normalement, avec les mises par défaut.
+
+L'accueil affiche désormais le jackpot **du jeu sélectionné**, calculé
+sur la mise de ce jeu — une mise commune n'existe plus.
+
 ## D-020 — 2026-08-11 — Le réglage de mise : rendu visible, et réparé
 
 Question de Pierre : « il faut un système pour changer la mise sur les 3

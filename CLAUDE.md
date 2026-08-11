@@ -29,7 +29,9 @@ Journal complet dans [docs/DECISIONS.md](docs/DECISIONS.md). Résumé :
   commune + écran d'accueil).
 - MVP : **3 rouleaux, 1 ligne** ; cœur paramétré (nb rouleaux / lignes)
   pour ouvrir 3×3 ou plus ensuite.
-- **Solde persistant** (NVS) + **renflouement** en cas de ruine.
+- **Solde persistant** (NVS) + **renflouement** en cas de ruine. Le solde
+  est **partagé** entre les jeux ; la **mise** appartient au couple
+  (joueur, jeu) et vit dans un bloc de sauvegarde séparé.
 - **Levier IMU** (secouer/incliner) et **mode démo/attract** dès la v1.
 - **RTP réaliste ~95 %** — mesuré à **95,24 %** par énumération exacte.
 

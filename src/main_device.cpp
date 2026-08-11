@@ -65,6 +65,13 @@ static void loadFromNvs() {
     core::SaveData s{};
     if (prefs.getBytes("save", &s, sizeof(s)) == sizeof(s) &&
         core::applySave(s, app.roster, app.settings)) {
+        // Clé séparée : une sauvegarde d'avant cette fonctionnalité se
+        // charge normalement, avec les mises par défaut.
+        core::BetMemory b{};
+        if (prefs.getBytes("bets", &b, sizeof(b)) == sizeof(b) &&
+            core::betsValid(b)) {
+            app.bets = b;
+        }
         core::enterFromSave(app);
     }
     // Sinon : premier lancement (ou sauvegarde corrompue rejetée en bloc)
@@ -79,8 +86,11 @@ static void saveToNvs(uint32_t now) {
     core::pullEconomy(app);
     core::syncPlayer(app.roster, app.econ,
                      app.game.spins + app.video.spins + app.bj.hands, 0);
+    core::storePlayerBets(app);
     const core::SaveData s = core::makeSave(app.roster, app.settings);
+    const core::BetMemory b = core::makeBets(app.bets);
     prefs.putBytes("save", &s, sizeof(s));
+    prefs.putBytes("bets", &b, sizeof(b));
     app.dirty = false;
     lastSaveMs = now;
 }

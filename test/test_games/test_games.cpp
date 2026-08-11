@@ -136,6 +136,73 @@ static void test_video_bet_respects_the_real_cost_of_a_spin() {
     TEST_ASSERT_EQUAL_UINT16(5, core::bet(g.econ));
 }
 
+static void test_each_game_keeps_its_own_bet() {
+    // Une mise commune changerait l'enjeu à l'insu du joueur : au format
+    // vidéo, 5 en engage 25.
+    App a = started(90);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);   // slots
+    core::handleKey(a, AppKey::Right, 0, core::xorShift32);     // mise +1
+    const uint16_t slotBet = core::bet(a.game.machine.econ);
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);   // vidéo
+    core::handleKey(a, AppKey::Left, 0, core::xorShift32);      // mise -1
+    TEST_ASSERT_NOT_EQUAL(slotBet, core::bet(a.video.econ));
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+
+    // De retour aux slots, la mise n'a pas bougé.
+    core::handleKey(a, AppKey::Up, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_UINT16(slotBet, core::bet(a.game.machine.econ));
+}
+
+static void test_each_player_keeps_their_own_bets() {
+    App a = started(91);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);   // slots
+    for (int i = 0; i < 3; ++i) core::handleKey(a, AppKey::Right, 0, core::xorShift32);
+    const uint16_t zoeBet = core::bet(a.game.machine.econ);
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+
+    // Nouveau joueur : il repart sur la mise par défaut, pas celle de ZOE.
+    core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+    for (const char* c = "BOB"; *c; ++c) core::feedNameChar(a, *c);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_UINT16(core::kBetLadder[core::kDefaultBetIndex],
+                             core::bet(a.game.machine.econ));
+
+    // Retour à ZOE : elle retrouve la sienne.
+    core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Right, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_STRING("ZOE", a.roster.players[a.roster.current].name);
+    TEST_ASSERT_EQUAL_UINT16(zoeBet, core::bet(a.game.machine.econ));
+}
+
+static void test_bet_memory_survives_a_save_round_trip() {
+    App a = started(92);
+    a.bets.bet[0][0] = 4; a.bets.bet[0][1] = 1; a.bets.bet[0][2] = 3;
+    const core::BetMemory saved = core::makeBets(a.bets);
+    TEST_ASSERT_TRUE(core::betsValid(saved));
+
+    App b = started(93);
+    TEST_ASSERT_TRUE(core::betsValid(saved));
+    b.bets = saved;
+    core::loadPlayerBets(b);
+    TEST_ASSERT_EQUAL_UINT8(4, b.game.machine.econ.betIndex);
+    TEST_ASSERT_EQUAL_UINT8(1, b.video.econ.betIndex);
+    TEST_ASSERT_EQUAL_UINT8(3, b.bj.econ.betIndex);
+
+    // Un octet corrompu invalide le bloc : les mises par défaut reprennent.
+    core::BetMemory bad = saved;
+    bad.bet[2][1] = 99;
+    TEST_ASSERT_FALSE(core::betsValid(bad));
+}
+
 static void test_blackjack_deal_is_progressive_then_playable() {
     core::seedXorShift(5);
     core::BjSession s = core::newBjSession(0);
@@ -205,6 +272,9 @@ int main() {
     RUN_TEST(test_changing_bet_mid_spin_cannot_change_the_payout);
     RUN_TEST(test_bet_cannot_change_while_reels_turn);
     RUN_TEST(test_video_bet_respects_the_real_cost_of_a_spin);
+    RUN_TEST(test_each_game_keeps_its_own_bet);
+    RUN_TEST(test_each_player_keeps_their_own_bets);
+    RUN_TEST(test_bet_memory_survives_a_save_round_trip);
     RUN_TEST(test_blackjack_deal_is_progressive_then_playable);
     RUN_TEST(test_blackjack_hand_always_terminates);
     RUN_TEST(test_basic_strategy_matches_the_reference_table);

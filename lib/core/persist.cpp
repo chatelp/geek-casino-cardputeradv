@@ -49,4 +49,48 @@ bool applySave(const SaveData& s, Roster& r, Settings& st) {
     return true;
 }
 
+namespace {
+uint8_t betsChecksum(const BetMemory& b) {
+    uint8_t h = 17;
+    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
+        for (uint8_t g = 0; g < kBetGames; ++g) {
+            h = static_cast<uint8_t>(h * 31 + b.bet[p][g]);
+        }
+    }
+    return h;
+}
+}  // namespace
+
+BetMemory freshBets() {
+    BetMemory b{};
+    b.magic = kBetMagic;
+    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
+        for (uint8_t g = 0; g < kBetGames; ++g) b.bet[p][g] = kDefaultBetIndex;
+    }
+    b.sum = betsChecksum(b);
+    return b;
+}
+
+BetMemory makeBets(const BetMemory& src) {
+    BetMemory b = src;
+    b.magic = kBetMagic;
+    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
+        for (uint8_t g = 0; g < kBetGames; ++g) {
+            if (b.bet[p][g] >= kBetSteps) b.bet[p][g] = kDefaultBetIndex;
+        }
+    }
+    b.sum = betsChecksum(b);
+    return b;
+}
+
+bool betsValid(const BetMemory& b) {
+    if (b.magic != kBetMagic) return false;
+    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
+        for (uint8_t g = 0; g < kBetGames; ++g) {
+            if (b.bet[p][g] >= kBetSteps) return false;
+        }
+    }
+    return b.sum == betsChecksum(b);
+}
+
 }  // namespace core
