@@ -31,7 +31,25 @@ Journal complet dans [docs/DECISIONS.md](docs/DECISIONS.md). Résumé :
   pour ouvrir 3×3 ou plus ensuite.
 - **Solde persistant** (NVS) + **renflouement** en cas de ruine.
 - **Levier IMU** (secouer/incliner) et **mode démo/attract** dès la v1.
-- **RTP réaliste ~95 %**, vérifié par tests statistiques.
+- **RTP réaliste ~95 %** — mesuré à **95,24 %** par énumération exacte.
+
+## Équilibrage — où vit quoi
+
+Le **vocabulaire** (quels symboles existent) est généré depuis l'art vers
+`lib/core/symbol_ids.h`. L'**équilibrage** (bande, gains) est écrit à la
+main dans `lib/core/reels.cpp` et `paytable.cpp` : ce sont deux choses
+différentes, elles ne doivent pas se mélanger.
+
+Toute retouche de la bande ou de la table **doit** être revalidée :
+
+```bash
+pio test -e test-native -f test_paytable
+```
+
+`exactRtp()` énumère les 32³ combinaisons — le RTP est un nombre exact,
+jamais une estimation. Les tests refusent tout RTP hors de [93 %, 97 %].
+Un `static_assert` casse la compilation si l'art change le nombre de
+symboles : il faut alors refaire l'équilibrage, pas rallonger le tableau.
 
 ## Identité visuelle — design system
 

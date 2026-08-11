@@ -402,7 +402,7 @@ def screen_win():
             (15, 114, 2, C["orange"]), (6, 107, 2, C["yellow"]),
             (203, 114, 2, C["orange"]), (212, 107, 2, C["yellow"])]:
         p.rect(x, y, s, s, col)
-    draw_msg(p, "WIN 250", C["yellow"], 2)
+    draw_msg(p, "WIN 100", C["yellow"], 2)
     return p.svg(SCREEN_W, SCREEN_H)
 
 
@@ -418,7 +418,7 @@ def screen_jackpot():
     p.rect(0, 34, SCREEN_W, 2, C["green"])
     p.rect(0, 78, SCREEN_W, 2, C["green"])
     p.text("JACKPOT", SCREEN_W // 2, 40, C["green"], 3, "center")
-    p.text("5000", SCREEN_W // 2, 64, C["white"], 2, "center")
+    p.text("6000", SCREEN_W // 2, 64, C["white"], 2, "center")
     for i in range(3):
         p.art(SYM_BY_ID["INVADER"]["art"], 42 + i * 54, 88, 2, override=C["green"])
     for x in range(0, SCREEN_W, 8):
@@ -478,11 +478,11 @@ def screen_lobby():
     # Le jackpot en cours donne une raison de revenir à cet écran.
     p.rect(0, 112, SCREEN_W, SCREEN_H - 112, C["ink800"])
     p.rect(0, 112, SCREEN_W, 1, C["greenDk"])
-    w = 16 + 4 + text_w("JACKPOT 5000", 2)
+    w = 16 + 4 + text_w("JACKPOT 6000", 2)
     x0 = (SCREEN_W - w) // 2
     p.art(SYM_BY_ID["INVADER"]["art"], x0, 115, 1)
     p.text("JACKPOT", x0 + 20, 117, C["green"], 2)
-    p.text("5000", x0 + 20 + text_w("JACKPOT ", 2), 117, C["white"], 2)
+    p.text("6000", x0 + 20 + text_w("JACKPOT ", 2), 117, C["white"], 2)
     return p.svg(SCREEN_W, SCREEN_H)
 
 
@@ -900,9 +900,6 @@ def export_symbols():
     out.append("constexpr uint16_t kSymbolPalette[%d] = {\n    0x0000,\n" % len(keys))
     for k in keys[1:]:
         out.append("    0x%04X,  // %s (%s)\n" % (PAL[KEYS[k]]["v565"], k, KEYS[k]))
-    out.append("};\n\nenum Symbol : uint8_t {\n")
-    for i, s in enumerate(SYMBOLS):
-        out.append("    SYM_%-9s = %d,  // %s\n" % (s["id"], i, s["label"]))
     out.append("};\n\nconstexpr uint8_t kSymbols[kSymbolCount][kSymbolPx * kSymbolPx] = {\n")
     for s in SYMBOLS:
         out.append("    {  // %s\n" % s["id"])
@@ -911,6 +908,22 @@ def export_symbols():
         out.append("    },\n")
     out.append("};\n\n}  // namespace ui\n")
     cpp_header("lib/ui/symbols.h", "".join(out))
+
+
+def export_symbol_ids():
+    """Le vocabulaire de symboles, côté logique pure. Aucune donnée de rendu :
+    lib/core doit pouvoir se compiler et se tester sans rien connaître du
+    dessin. L'équilibrage (bandes, gains) est écrit à la main dans core."""
+    out = ["namespace core {\n\n",
+           "// Ordre = ordre de valeur croissante. INVADER est le jackpot.\n",
+           "enum Symbol : uint8_t {\n"]
+    for i, s in enumerate(SYMBOLS):
+        out.append("    SYM_%-9s = %d,  // %s — %s\n"
+                   % (s["id"], i, s["label"], s["family"]))
+    out.append("};\n\nconstexpr uint8_t kSymbolCount = %d;\n" % len(SYMBOLS))
+    out.append("constexpr Symbol kJackpotSymbol = SYM_INVADER;\n\n")
+    out.append("}  // namespace core\n")
+    cpp_header("lib/core/symbol_ids.h", "".join(out))
 
 
 def export_font():
@@ -980,6 +993,7 @@ def main():
               ensure_ascii=False)
     export_palette()
     export_symbols()
+    export_symbol_ids()
     export_font()
     print("%d cartes -> design/build/" % len(cards))
     for c in cards:

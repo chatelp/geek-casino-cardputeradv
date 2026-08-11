@@ -19,7 +19,7 @@ place, la logique de jeu reste à écrire.
 - [x] Trois environnements PlatformIO (firmware, simulateur, tests)
 - [x] Aléa injecté, testé, sans biais de modulo
 - [x] Design system : palette, fonte 5×7, 8 glyphes, écrans
-- [ ] Bandes de rouleaux, table de gains, RTP vérifié
+- [x] Bandes de rouleaux, table de gains, économie — **RTP exact 95,24 %**
 - [ ] Animation, son, levier IMU, persistance NVS
 
 ## Construire

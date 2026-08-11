@@ -2,6 +2,30 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-010 — 2026-08-11 — Équilibrage : bande, table de gains, RTP
+
+Le cœur jouable est écrit et testé. Chiffres **mesurés, pas visés** :
+
+- **RTP exact : 95,24 %** — calculé par énumération des 32³ combinaisons,
+  pas par simulation. C'est un nombre déterministe, pas une estimation.
+- **Tours gagnants : 17,58 %.**
+- Bande de **32 positions**, partagée par les 3 rouleaux. Effectifs :
+  résistance 8, LED 7, puce 6, disquette 4, manette 3, CRT 2, d20 1,
+  invader 1. C'est la bande qui fixe les probabilités, pas la table.
+- Gains pour 3 identiques : 8 / 12 / 20 / 50 / 100 / 250 / 400 / **1200**
+  (invader). Deux identiques **en tête** : 2. Lecture de gauche à droite,
+  comme sur une machine réelle.
+- Deux positions voisines de la bande sont toujours différentes : un arrêt
+  imprécis d'un cran ne doit pas changer le résultat de façon invisible.
+- Échelle de mises 1 / 2 / 5 / 10 / 25 / 50, défaut 5. La mise **suit le
+  solde vers le bas** au lieu de bloquer le joueur.
+- **Renflouement à 500** dès que la plus petite mise est hors de portée.
+  Un test joue 200 000 tours à la mise maximale et vérifie que la machine
+  ne refuse jamais de jouer (garde-fou D-004).
+
+Les maquettes ont été corrigées pour être arithmétiquement vraies :
+3 puces à la mise 5 rapportent 100 (et non 250), le jackpot 6000.
+
 ## D-009 — 2026-08-11 — « SLOTS », et densité de l'écran
 
 Retour de Pierre sur la première maquette : nom trop précieux, écran trop

@@ -31,17 +31,6 @@ constexpr uint16_t kSymbolPalette[19] = {
     0xFE85,  // y (yellow)
 };
 
-enum Symbol : uint8_t {
-    SYM_RESISTOR  = 0,  // Résistance
-    SYM_LED       = 1,  // LED
-    SYM_CHIP      = 2,  // Puce
-    SYM_FLOPPY    = 3,  // Disquette
-    SYM_GAMEPAD   = 4,  // Manette
-    SYM_CRT       = 5,  // Écran CRT
-    SYM_D20       = 6,  // Dé 20
-    SYM_INVADER   = 7,  // Invader
-};
-
 constexpr uint8_t kSymbols[kSymbolCount][kSymbolPx * kSymbolPx] = {
     {  // RESISTOR
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
