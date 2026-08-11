@@ -78,7 +78,8 @@ bool startSpin(Game& g, uint32_t now, RngFn rng, bool byPlayer) {
     g.reelsStopped = 0;
     g.attract = !byPlayer;
     if (byPlayer) g.lastInputMs = now;
-    pushCue(g, Cue::SpinStart);
+    // La démo est muette : elle attire l'œil, elle n'impose rien à la pièce.
+    if (byPlayer) pushCue(g, Cue::SpinStart);
     return true;
 }
 
@@ -94,8 +95,10 @@ uint8_t updateGame(Game& g, uint32_t now, RngFn rng) {
             }
             if (stopped > g.reelsStopped) {
                 justStopped = static_cast<uint8_t>(stopped - g.reelsStopped);
-                for (uint8_t k = 0; k < justStopped; ++k) {
-                    pushCue(g, reelStopCue(static_cast<uint8_t>(g.reelsStopped + k)));
+                if (!g.attract) {
+                    for (uint8_t k = 0; k < justStopped; ++k) {
+                        pushCue(g, reelStopCue(static_cast<uint8_t>(g.reelsStopped + k)));
+                    }
                 }
                 g.reelsStopped = stopped;
             }
@@ -104,10 +107,10 @@ uint8_t updateGame(Game& g, uint32_t now, RngFn rng) {
                 g.tier = tierOf(g.outcome.win);
                 if (g.outcome.bailedOut) {
                     g.phase = Phase::Bailout;
-                    pushCue(g, Cue::Bailout);
+                    pushCue(g, Cue::Bailout);  // impossible en démo (gratuite)
                 } else {
                     g.phase = g.tier == Tier::None ? Phase::Idle : Phase::Celebrate;
-                    if (g.tier != Tier::None) pushCue(g, winCue(g.tier));
+                    if (g.tier != Tier::None && !g.attract) pushCue(g, winCue(g.tier));
                 }
                 g.phaseT0 = now;
             }
@@ -141,6 +144,11 @@ float reelDisplayPos(const Game& g, uint8_t reel, uint32_t now) {
     return static_cast<float>(g.restPos[reel]);
 }
 
-void noteInput(Game& g, uint32_t now) { g.lastInputMs = now; }
+void noteInput(Game& g, uint32_t now) {
+    g.lastInputMs = now;
+    // Le premier geste du joueur reprend la main : la démo cesse d'être
+    // affichée (et le tour de démo en cours finit ses rouleaux en gris).
+    if (g.phase == Phase::Idle) g.attract = false;
+}
 
 }  // namespace core

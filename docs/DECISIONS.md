@@ -2,6 +2,28 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-014 — 2026-08-11 — Retours du premier test en main
+
+Quatre retours de Pierre après manipulation de l'appareil :
+
+- **Volume par défaut : bas** (1/3). L'objet ne crie pas à la première
+  prise en main.
+- **La démo est muette et monochrome.** Aucun son en mode attract — la
+  démo attire l'œil, elle n'impose rien à la pièce. Et tout l'écran passe
+  en **gris clair** (glyphes, cadre, lampes, ligne, pommeau) avec le mot
+  DEMO : le monochrome EST le message, impossible de croire à une partie.
+  Le premier geste du joueur rend les couleurs. Testé : un tour de démo
+  complet n'émet aucun son.
+- **Le flou de rotation n'est plus un arc-en-ciel** : les bandes de
+  couleur dominante sont remplacées par les **glyphes eux-mêmes étirés en
+  traînées verticales** (4 rangées de l'art échantillonnées, chacune
+  étirée sur un quart de symbole). Les couleurs et silhouettes restent
+  celles des symboles qui passent — l'œil lit « vite », pas « rayures ».
+- **Citron redessiné** : ovale pointu aux deux bouts, ombre ambrée.
+- Bug de navigation corrigé : l'aide ouverte depuis l'accueil revenait
+  sur le jeu lancé. Elle revient désormais d'où elle a été ouverte
+  (`helpReturn`), testé.
+
 ## D-013 — 2026-08-11 — Son, geste IMU, persistance — et premier flash
 
 - **Son** : composition dans `core/sound.*` (paliers alignés sur ceux de

@@ -68,7 +68,10 @@ void keyLobby(App& a, AppKey k, uint32_t now, RngFn rng) {
             a.screen = AppScreen::Leaderboard;
             break;
         case AppKey::Help:
-            if (a.lobbyIndex == 0) a.screen = AppScreen::SlotHelp;
+            if (a.lobbyIndex == 0) {
+                a.helpReturn = AppScreen::Lobby;
+                a.screen = AppScreen::SlotHelp;
+            }
             break;
         case AppKey::Back:
             a.quitRequested = true;  // ignoré par l'appareil
@@ -98,6 +101,7 @@ void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
             pushCue(a.game, Cue::BetChange);
             break;
         case AppKey::Help:
+            a.helpReturn = AppScreen::Slot;
             a.screen = AppScreen::SlotHelp;
             break;
         case AppKey::Settings:
@@ -217,7 +221,7 @@ void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
             break;
         case AppScreen::SlotHelp:
             if (k == AppKey::Help || k == AppKey::Back || k == AppKey::Confirm) {
-                a.screen = AppScreen::Slot;
+                a.screen = a.helpReturn;  // on revient d'où l'on vient
             }
             break;
         case AppScreen::SlotSettings:

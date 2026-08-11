@@ -15,7 +15,7 @@ constexpr uint16_t kSaveVersion = 2;
 enum class Skin : uint8_t { Geek = 0, Classic = 1 };
 
 struct Settings {
-    uint8_t volume = 2;   // 0..3, appliqué par lib/hal
+    uint8_t volume = 1;   // 0..3 — défaut BAS : l'objet ne crie pas (D-014)
     uint8_t muted = 0;
     uint8_t slotSkin = 0; // Skin — uint8 pour une taille de struct stable
 };

@@ -49,6 +49,9 @@ struct App {
     NameEntry nameEntry;
     uint8_t lobbyIndex = 0;     // 0 = SLOTS, seuls autres = à venir
     uint8_t menuIndex = 0;      // ligne sélectionnée dans les réglages
+    // L'aide s'ouvre depuis l'accueil OU depuis le jeu : on revient
+    // toujours d'où l'on vient, jamais vers un écran câblé en dur.
+    AppScreen helpReturn = AppScreen::Lobby;
     bool resetArmed = false;    // le reset demande une seconde pression
     bool quitRequested = false; // Échap depuis l'accueil (sim uniquement)
     bool dirty = false;         // une sauvegarde est due

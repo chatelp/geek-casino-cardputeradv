@@ -58,6 +58,42 @@ static void test_lobby_keys_route_to_the_right_screens() {
     TEST_ASSERT_EQUAL(AppScreen::Slot, a.screen);
 }
 
+static void test_help_returns_where_it_was_opened() {
+    // L'aide s'ouvre depuis l'accueil ET depuis le jeu : chaque sortie doit
+    // revenir à son point d'entrée (bug signalé par Pierre : depuis
+    // l'accueil, la sortie tombait sur le jeu lancé).
+    core::seedXorShift(12);
+    App a = core::newApp(0, core::xorShift32);
+    typeName(a, "ZOE");
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+
+    core::handleKey(a, AppKey::Help, 0, core::xorShift32);  // depuis l'accueil
+    TEST_ASSERT_EQUAL(AppScreen::SlotHelp, a.screen);
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::Lobby, a.screen);          // retour accueil
+
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);  // entre en jeu
+    core::handleKey(a, AppKey::Help, 0, core::xorShift32);     // depuis le jeu
+    core::handleKey(a, AppKey::Help, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::Slot, a.screen);              // retour jeu
+}
+
+static void test_attract_spins_are_silent() {
+    // La démo n'impose rien à la pièce : aucun son émis pendant tout un
+    // tour de démo, du départ à l'arrêt des trois rouleaux.
+    core::seedXorShift(13);
+    uint32_t now = 0;
+    core::Game g = core::newGame(now, core::xorShift32);
+    while (core::takeCue(g) != core::Cue::None) {}
+    TEST_ASSERT_TRUE(core::startSpin(g, now, core::xorShift32, /*byPlayer=*/false));
+    for (int i = 0; i < 400; ++i) {
+        now += core::kFrameMs;
+        core::updateGame(g, now, core::xorShift32);
+        TEST_ASSERT_EQUAL(core::Cue::None, core::takeCue(g));
+        if (g.phase == core::Phase::Idle && i > 10) break;
+    }
+}
+
 static void test_switching_player_swaps_the_balance() {
     core::seedXorShift(3);
     App a = core::newApp(0, core::xorShift32);
@@ -148,6 +184,8 @@ int main() {
     UNITY_BEGIN();
     RUN_TEST(test_first_launch_asks_for_a_name);
     RUN_TEST(test_lobby_keys_route_to_the_right_screens);
+    RUN_TEST(test_help_returns_where_it_was_opened);
+    RUN_TEST(test_attract_spins_are_silent);
     RUN_TEST(test_switching_player_swaps_the_balance);
     RUN_TEST(test_same_name_switches_instead_of_duplicating);
     RUN_TEST(test_reset_needs_two_presses_and_wipes_everything);

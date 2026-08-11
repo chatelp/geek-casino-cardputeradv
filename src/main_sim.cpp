@@ -168,6 +168,13 @@ int runCapture() {
         app.screen = core::AppScreen::Slot;
         ui::drawApp(canvas, app, 400);
         if (!saveShot(canvas, "slot_classic.bmp")) return 1;
+        // Le mode démo : monochrome gris, un tour gratuit en cours.
+        app.settings.slotSkin = 0;
+        uint32_t t = 1000;
+        core::startSpin(app.game, t, core::xorShift32, /*byPlayer=*/false);
+        for (int i = 0; i < 40; ++i) { t += core::kFrameMs; core::updateGame(app.game, t, core::xorShift32); }
+        ui::drawApp(canvas, app, t);
+        if (!saveShot(canvas, "demo.bmp")) return 1;
         return 0;
     }
 

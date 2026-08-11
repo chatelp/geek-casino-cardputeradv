@@ -13,6 +13,12 @@ namespace P = pal;
 
 namespace {
 
+// Mode démo : tout passe en gris clair. Le monochrome EST le message —
+// pas besoin de bandeau clignotant pour dire « ceci n'est pas une partie ».
+bool g_demo = false;
+uint16_t A(uint16_t accent) { return g_demo ? P::steel300 : accent; }
+uint16_t D(uint16_t dimmed) { return g_demo ? P::steel500 : dimmed; }
+
 // Clignotement déterministe : même instant → même image. Indispensable pour
 // que --shot et --frames produisent des captures reproductibles.
 bool blink(uint32_t now, uint32_t periodMs) {
@@ -38,10 +44,10 @@ void drawHud(lgfx::LGFX_Sprite& g, const core::Game& game) {
     g.fillRect(0, kHudH - 1, kScreenW, 1, P::ink600);
     drawIcon(g, ICON_COIN, 6, 3);
     const bool low = e.credits < core::kBetLadder[0] * 10;
-    drawNumber(g, e.credits, 22, 4, low ? P::red : P::yellow, 2);
+    drawNumber(g, e.credits, 22, 4, A(low ? P::red : P::yellow), 2);
     const int bw = numberWidth(core::bet(e), 2);
     drawText(g, "BET", kScreenW - 6 - bw - 8, 4, P::steel300, 2, Align::Right);
-    drawNumber(g, core::bet(e), kScreenW - 6, 4, P::cyan, 2, Align::Right);
+    drawNumber(g, core::bet(e), kScreenW - 6, 4, A(P::cyan), 2, Align::Right);
 }
 
 // Le bandeau de lampes est le canal d'expression le moins coûteux de
@@ -60,9 +66,9 @@ bool lampOn(const core::Game& game, uint32_t now, int i) {
 }
 
 void drawCabinet(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
-    uint16_t frame = P::cyanDk;
+    uint16_t frame = D(P::cyanDk);
     if (game.phase == core::Phase::Celebrate) {
-        frame = game.tier >= core::Tier::Big ? P::yellow : P::cyan;
+        frame = A(game.tier >= core::Tier::Big ? P::yellow : P::cyan);
     } else if (game.phase == core::Phase::Bailout) {
         frame = P::ink600;
     }
@@ -79,7 +85,7 @@ void drawCabinet(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
     }
     for (int i = 0; i < kLampCount; ++i) {
         g.fillRect(kLampX0 + i * kLampStep, kLampY, kLampSize, kLampSize,
-                   lampOn(game, now, i) ? P::yellow : P::ink600);
+                   lampOn(game, now, i) ? A(P::yellow) : P::ink600);
     }
     const int bot = kWinY + kWinH;
     for (int i = 0; i < 3; ++i) {
@@ -96,18 +102,35 @@ constexpr float kBlurThreshold = 1.2f;
 // assumé : à la vitesse vraie, l'image se réduirait à du bruit. L'œil lit
 // « très vite » et n'a aucun moyen de compter les symboles.
 constexpr float kBlurSlowdown = 0.22f;
-constexpr int kBandH = 7;
 
+// Flou de vitesse : le glyphe lui-même, étiré en traînées verticales.
+// Quatre rangées de l'art sont échantillonnées et chacune s'étire sur un
+// quart de symbole : les couleurs et la silhouette restent celles du
+// glyphe qui passe, mais l'œil ne peut plus le lire — il lit « vite ».
 void drawBlurredReel(lgfx::LGFX_Sprite& g, const core::ReelSet& rs, uint8_t r,
-                     float pos) {
+                     float pos, bool classic, uint16_t tint) {
     const float apparent = pos * kBlurSlowdown;
     const float base = std::floor(apparent);
-    const int shift = static_cast<int>((apparent - base) * kBandH);
-    const int bands = kWinH / kBandH + 2;
-    for (int k = 0; k < bands; ++k) {
+    const int shift = static_cast<int>((apparent - base) * kPitch);
+    const int streakH = kPitch / 4;  // 4 traînées par symbole
+    for (int k = -1; k <= 2; ++k) {
         const uint8_t sym = core::symbolAt(rs, r, static_cast<int32_t>(base) + k);
-        g.fillRect(winX(r), kWinY - shift + k * kBandH, kWinW, kBandH,
-                   kSymbolDominant[sym]);
+        const uint8_t* art = classic ? kSymbolsClassic[sym] : kSymbols[sym];
+        const int top = kSymY + k * kPitch - shift;
+        for (int band = 0; band < 4; ++band) {
+            const int row = 2 + band * 4;  // rangées 2, 6, 10, 14 de l'art
+            const int y = top + band * streakH;
+            int c = 0;
+            while (c < kSymbolPx) {
+                const uint8_t idx = art[row * kSymbolPx + c];
+                if (idx == 0) { ++c; continue; }
+                int run = 1;
+                while (c + run < kSymbolPx && art[row * kSymbolPx + c + run] == idx) ++run;
+                g.fillRect(symX(r) + c * kSymScale, y, run * kSymScale, streakH,
+                           tint ? tint : kSymbolPalette[idx]);
+                c += run;
+            }
+        }
     }
 }
 
@@ -130,7 +153,7 @@ void drawReels(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
         // Découpe au hublot : un symbole qui défile déborde forcément.
         g.setClipRect(winX(r), kWinY, kWinW, kWinH);
         if (speed > kBlurThreshold) {
-            drawBlurredReel(g, rs, r, p);
+            drawBlurredReel(g, rs, r, p, classic, g_demo ? P::steel500 : 0);
         } else {
             const float base = std::floor(p);
             const int shift = static_cast<int>((p - base) * kPitch);
@@ -138,20 +161,20 @@ void drawReels(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
                 const uint8_t sym =
                     core::symbolAt(rs, r, static_cast<int32_t>(base) + k);
                 drawSymbol(g, sym, symX(r), kSymY + k * kPitch - shift, kSymScale,
-                           dead ? P::ink600 : 0, classic);
+                           dead ? P::ink600 : (g_demo ? P::steel300 : 0), classic);
             }
         }
         g.clearClipRect();
 
         if (celebrating && blink(now, 260)) {
-            drawFrame(g, winX(r) - 1, kWinY - 1, kWinW + 2, kWinH + 2, P::white, 1);
+            drawFrame(g, winX(r) - 1, kWinY - 1, kWinW + 2, kWinH + 2, A(P::white), 1);
         }
     }
 }
 
 void drawPayline(lgfx::LGFX_Sprite& g, const core::Game& game) {
-    uint16_t c = P::magentaDk;
-    if (game.phase == core::Phase::Celebrate) c = P::magenta;
+    uint16_t c = D(P::magentaDk);
+    if (game.phase == core::Phase::Celebrate) c = A(P::magenta);
     else if (game.phase == core::Phase::Bailout) c = P::ink600;
     for (int i = 0; i < 3; ++i) g.fillRect(winX(i), kPaylineY, kWinW, 1, c);
     for (int k = 0; k < 4; ++k) {
@@ -170,15 +193,15 @@ void drawLever(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
     const int top = kLeverTop + static_cast<int>(pull * kLeverTravel);
     g.fillRect(kLeverCx - 2, top + 10, 4, kLeverBaseY - top - 10, P::steel500);
     g.fillRect(kLeverCx - 1, top + 10, 1, kLeverBaseY - top - 10, P::steel300);
-    drawIcon(g, ICON_BALL, kLeverCx - 6, top);
+    drawIcon(g, ICON_BALL, kLeverCx - 6, top, 1, g_demo ? P::steel300 : 0);
     g.fillRect(kLeverCx - 9, kLeverBaseY, 18, 3, P::ink600);
     g.fillRect(kLeverCx - 11, kLeverBaseY + 3, 22, 9, P::steel500);
     drawFrame(g, kLeverCx - 11, kLeverBaseY + 3, 22, 9, P::ink900, 1);
     g.fillRect(kLeverCx - 7, kLeverBaseY + 6, 14, 3, P::ink800);
     if (pull > 0.5f) {
         for (int k = 0; k < 3; ++k) {
-            g.fillRect(kLeverCx - 12 - k * 3, top + 4, 2, 2, P::yellow);
-            g.fillRect(kLeverCx + 11 + k * 3, top + 4, 2, 2, P::yellow);
+            g.fillRect(kLeverCx - 12 - k * 3, top + 4, 2, 2, A(P::yellow));
+            g.fillRect(kLeverCx + 11 + k * 3, top + 4, 2, 2, A(P::yellow));
         }
     }
 }
@@ -186,6 +209,7 @@ void drawLever(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
 // Gerbes depuis les angles du cabinet, jamais isolées au milieu d'un bord
 // où elles se liraient comme des pixels morts.
 void drawSparks(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
+    if (g_demo) return;
     if (game.phase != core::Phase::Celebrate || game.tier < core::Tier::Mid) return;
     const int n = game.tier >= core::Tier::Big ? 10 : 4;
     static const int16_t kS[][4] = {
@@ -206,13 +230,14 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
     g.fillRect(0, kMsgY, kScreenW, 1, P::ink600);
     const int ty = kMsgY + (kScreenH - kMsgY - kFontH * 2) / 2;
 
+    if (g_demo) {
+        // Le mot + le monochrome : impossible de croire à une partie.
+        drawText(g, "DEMO", kScreenW / 2, ty, P::steel300, 2, Align::Center);
+        return;
+    }
     switch (game.phase) {
         case core::Phase::Idle:
-            if (game.attract) {
-                drawText(g, "DEMO", kScreenW / 2, ty, P::violet, 2, Align::Center);
-            } else {
-                drawText(g, "SHAKE TO SPIN", kScreenW / 2, ty, P::cyan, 2, Align::Center);
-            }
+            drawText(g, "SHAKE TO SPIN", kScreenW / 2, ty, P::cyan, 2, Align::Center);
             break;
         case core::Phase::Spinning:
             drawText(g, "SPINNING", kScreenW / 2, ty, P::magenta, 2, Align::Center);
@@ -245,22 +270,22 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
 void drawJackpot(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
     g.fillScreen(P::ink900);
     static const int16_t kInv[][2] = {{6, 8}, {206, 14}, {30, 96}, {186, 104}, {110, 4}};
-    for (auto& v : kInv) drawSymbol(g, core::SYM_INVADER, v[0], v[1], 2, P::greenDk);
+    for (auto& v : kInv) drawSymbol(g, core::SYM_INVADER, v[0], v[1], 2, D(P::greenDk));
     g.fillRect(0, 34, kScreenW, 46, P::ink800);
-    g.fillRect(0, 34, kScreenW, 2, P::green);
-    g.fillRect(0, 78, kScreenW, 2, P::green);
+    g.fillRect(0, 34, kScreenW, 2, A(P::green));
+    g.fillRect(0, 78, kScreenW, 2, A(P::green));
     if (blink(now, 400)) {
-        drawText(g, "JACKPOT", kScreenW / 2, 40, P::green, 3, Align::Center);
+        drawText(g, "JACKPOT", kScreenW / 2, 40, A(P::green), 3, Align::Center);
     }
     drawNumber(g, static_cast<int32_t>(game.outcome.payout), kScreenW / 2, 64,
                P::white, 2, Align::Center);
     for (int i = 0; i < 3; ++i) {
-        drawSymbol(g, core::SYM_INVADER, 42 + i * 54, 88, 2, P::green);
+        drawSymbol(g, core::SYM_INVADER, 42 + i * 54, 88, 2, A(P::green));
     }
     const uint32_t step = now / 120;
     for (int x = 0; x < kScreenW; x += 8) {
         const bool a = (((x / 8) + step) & 1u) == 0;
-        g.fillRect(x, 128, 4, 4, a ? P::yellow : P::magenta);
+        g.fillRect(x, 128, 4, 4, a ? A(P::yellow) : A(P::magenta));
     }
 }
 
@@ -268,6 +293,7 @@ void drawJackpot(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
 
 void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
                     bool classic) {
+    g_demo = game.attract;
     if (game.phase == core::Phase::Celebrate && game.tier == core::Tier::Jackpot) {
         drawJackpot(g, game, now);
         return;
