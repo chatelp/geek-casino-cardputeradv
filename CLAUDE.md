@@ -55,8 +55,12 @@ Toute retouche de la bande ou de la table **doit** être revalidée :
 pio test -e test-native -f test_paytable
 ```
 
-`exactRtp()` énumère les 32³ combinaisons — le RTP est un nombre exact,
-jamais une estimation. Les tests refusent tout RTP hors de [93 %, 97 %].
+`exactLineRtp()` calcule le RTP **analytiquement** : la probabilité
+d'aligner k symboles ne dépend que des effectifs des bandes, donc
+l'énumération est inutile (elle serait de 33 millions de cas à 5
+rouleaux). C'est un nombre exact, jamais une estimation. Les tests
+refusent tout RTP hors de [93 %, 97 %], et deux d'entre eux comparent le
+résultat au millionième à sa valeur d'avant l'unification.
 Un `static_assert` casse la compilation si l'art change le nombre de
 symboles : il faut alors refaire l'équilibrage, pas rallonger le tableau.
 
