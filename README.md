@@ -13,8 +13,8 @@ rouleaux ; l'architecture prévoit d'autres jeux.
 
 ## État
 
-Amorçage. Les trois environnements compilent, le design system est en
-place, la logique de jeu reste à écrire.
+Le cœur jouable est écrit et testé ; il ne s'affiche pas encore.
+L'animation, le son et le levier IMU restent à faire.
 
 - [x] Trois environnements PlatformIO (firmware, simulateur, tests)
 - [x] Aléa injecté, testé, sans biais de modulo
