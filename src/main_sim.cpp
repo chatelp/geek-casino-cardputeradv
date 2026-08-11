@@ -1,11 +1,12 @@
 // Main simulateur macOS — LovyanGFX + SDL2 (Panel_sdl), fenêtre ×3.
 //
-//   (aucune option)      fenêtre interactive : espace = tirer, ←/→ = mise
+//   (aucune option)      fenêtre interactive
 //   --shot <dir>         une image déterministe, sans fenêtre
 //   --frames <dir> <n>   n images déterministes, pour un GIF
+//   --screens <dir>      une image par écran (accueil, aide, réglages...)
 //
-// Les captures n'ouvrent aucune fenêtre et avancent le temps d'un pas fixe :
-// même commande, mêmes pixels, toujours.
+// Clavier : voir core/app.h. Le son n'existe pas au simulateur — c'est
+// précisément ce que le sim juge mal, il s'écoute sur l'appareil.
 #ifdef SIM_BUILD
 
 #include <cstdio>
@@ -15,11 +16,10 @@
 
 #include <lgfx/v1/platforms/sdl/Panel_sdl.hpp>
 
-#include "game.h"
+#include "app.h"
 #include "hal_display.h"
-#include "hal_keys.h"
+#include "menus.h"
 #include "rng.h"
-#include "slot_screen.h"
 
 namespace {
 
@@ -44,8 +44,6 @@ public:
     }
 };
 
-// Panel_sdl::main ne rend la main que fenêtres fermées : on pousse un
-// SDL_QUIT pour terminer proprement depuis le thread utilisateur.
 void requestQuit() {
     SDL_Event ev;
     ev.type = SDL_QUIT;
@@ -53,8 +51,11 @@ void requestQuit() {
 }
 
 std::string g_outDir;
-int g_frameCount = 0;  // 0 = interactif, sinon nombre d'images à écrire
+enum class Mode { Interactive, Shot, Frames, Screens };
+Mode g_mode = Mode::Interactive;
+int g_frameCount = 0;
 constexpr uint32_t kFixedSeed = 0xCA51704Du;
+constexpr char kSavePath[] = "geekcasino.sav";
 
 // Écrit un BMP 24 bits. readRect renvoie du RGB565 aux octets inversés
 // (piège documenté dans CLAUDE.md) : on corrige ici.
@@ -64,28 +65,27 @@ bool writeBmp(lgfx::LGFX_Sprite& g, const std::string& path) {
     g.readRect(0, 0, w, h, px);
 
     const uint32_t rowBytes = ((w * 3 + 3) / 4) * 4;
-    const uint32_t imageSize = rowBytes * h;
     uint8_t hdr[54] = {'B', 'M'};
     auto put32 = [&](int off, uint32_t v) {
         hdr[off] = v; hdr[off + 1] = v >> 8; hdr[off + 2] = v >> 16; hdr[off + 3] = v >> 24;
     };
-    put32(2, 54 + imageSize); put32(10, 54); put32(14, 40);
+    put32(2, 54 + rowBytes * h); put32(10, 54); put32(14, 40);
     put32(18, static_cast<uint32_t>(w)); put32(22, static_cast<uint32_t>(h));
     hdr[26] = 1; hdr[28] = 24;
-    put32(34, imageSize);
+    put32(34, rowBytes * h);
 
     FILE* f = std::fopen(path.c_str(), "wb");
     if (!f) return false;
     std::fwrite(hdr, 1, 54, f);
     static uint8_t row[((hal::kScreenW * 3 + 3) / 4) * 4];
-    for (int y = h - 1; y >= 0; --y) {  // BMP : lignes de bas en haut
+    for (int y = h - 1; y >= 0; --y) {
         std::memset(row, 0, sizeof(row));
         for (int x = 0; x < w; ++x) {
             const uint16_t s = px[y * w + x];
             const uint16_t c = static_cast<uint16_t>((s >> 8) | (s << 8));
-            row[x * 3 + 0] = static_cast<uint8_t>(((c >> 0) & 0x1F) * 255 / 31);   // B
-            row[x * 3 + 1] = static_cast<uint8_t>(((c >> 5) & 0x3F) * 255 / 63);   // G
-            row[x * 3 + 2] = static_cast<uint8_t>(((c >> 11) & 0x1F) * 255 / 31);  // R
+            row[x * 3 + 0] = static_cast<uint8_t>(((c >> 0) & 0x1F) * 255 / 31);
+            row[x * 3 + 1] = static_cast<uint8_t>(((c >> 5) & 0x3F) * 255 / 63);
+            row[x * 3 + 2] = static_cast<uint8_t>(((c >> 11) & 0x1F) * 255 / 31);
         }
         std::fwrite(row, 1, rowBytes, f);
     }
@@ -93,8 +93,37 @@ bool writeBmp(lgfx::LGFX_Sprite& g, const std::string& path) {
     return true;
 }
 
-// Capture sans fenêtre : temps simulé par pas fixes, graine fixe. Le tour
-// est lancé à la première image pour que la suite montre l'animation.
+// ------------------------------------------------------------- persistance
+void loadApp(core::App& a) {
+    FILE* f = std::fopen(kSavePath, "rb");
+    if (!f) return;
+    core::SaveData s{};
+    const bool ok = std::fread(&s, sizeof(s), 1, f) == 1;
+    std::fclose(f);
+    if (ok && core::applySave(s, a.roster, a.settings)) core::enterFromSave(a);
+    // Sauvegarde illisible : on repart sur la saisie du nom, sans casser
+    // le fichier — il sera réécrit à la première partie.
+}
+
+void saveApp(core::App& a) {
+    core::syncPlayer(a.roster, a.game.machine.econ, a.game.spins, 0);
+    const core::SaveData s = core::makeSave(a.roster, a.settings);
+    FILE* f = std::fopen(kSavePath, "wb");
+    if (!f) return;
+    std::fwrite(&s, sizeof(s), 1, f);
+    std::fclose(f);
+    a.dirty = false;
+}
+
+// ----------------------------------------------------------------- captures
+bool saveShot(lgfx::LGFX_Sprite& canvas, const char* name) {
+    if (!writeBmp(canvas, g_outDir + "/" + name)) {
+        std::fprintf(stderr, "capture : echec d'ecriture dans %s\n", g_outDir.c_str());
+        return false;
+    }
+    return true;
+}
+
 int runCapture() {
     core::seedXorShift(kFixedSeed);
     lgfx::LGFX_Sprite canvas(nullptr);
@@ -102,38 +131,74 @@ int runCapture() {
     canvas.createSprite(hal::kScreenW, hal::kScreenH);
 
     uint32_t now = 0;
-    core::Game game = core::newGame(now, core::xorShift32);
-    core::startSpin(game, now, core::xorShift32);
+    core::App app = core::newApp(now, core::xorShift32);
+    core::addOrSwitchPlayer(app.roster, "PIXEL");
+    core::enterFromSave(app);
 
+    if (g_mode == Mode::Screens) {
+        // Un état représentatif de chaque écran, toujours le même.
+        core::addOrSwitchPlayer(app.roster, "MARIO");
+        app.roster.players[1].credits = 720;
+        app.roster.players[1].bestWin = 250;
+        core::addOrSwitchPlayer(app.roster, "PIXEL");
+
+        struct Shotdef { core::AppScreen sc; const char* name; };
+        static const Shotdef defs[] = {
+            {core::AppScreen::Lobby, "lobby.bmp"},
+            {core::AppScreen::SlotHelp, "help.bmp"},
+            {core::AppScreen::GlobalSettings, "settings.bmp"},
+            {core::AppScreen::SlotSettings, "slot_settings.bmp"},
+            {core::AppScreen::Leaderboard, "leaderboard.bmp"},
+        };
+        for (const auto& d : defs) {
+            app.screen = d.sc;
+            ui::drawApp(canvas, app, 400);
+            if (!saveShot(canvas, d.name)) return 1;
+        }
+        // La saisie du nom, à moitié remplie, curseur visible.
+        app.roster.count = 0;
+        app.screen = core::AppScreen::NameEntry;
+        core::feedNameChar(app, 'Z'); core::feedNameChar(app, 'O');
+        core::feedNameChar(app, 'E');
+        ui::drawApp(canvas, app, 400);
+        if (!saveShot(canvas, "name_entry.bmp")) return 1;
+        // Le jeu en habillage classique.
+        core::addOrSwitchPlayer(app.roster, "PIXEL");
+        app.settings.slotSkin = 1;
+        app.screen = core::AppScreen::Slot;
+        ui::drawApp(canvas, app, 400);
+        if (!saveShot(canvas, "slot_classic.bmp")) return 1;
+        return 0;
+    }
+
+    app.screen = core::AppScreen::Slot;
+    core::startSpin(app.game, now, core::xorShift32);
     for (int i = 0; i < g_frameCount; ++i) {
-        core::updateGame(game, now, core::xorShift32);
-        // Enchaîner les tours : une capture doit montrer la machine en
-        // marche, pas l'attendre pendant le délai du mode démo.
-        if (game.phase == core::Phase::Idle) {
-            core::startSpin(game, now, core::xorShift32);
+        core::tickApp(app, now, core::xorShift32);
+        if (app.game.phase == core::Phase::Idle) {
+            core::startSpin(app.game, now, core::xorShift32);
         }
-        ui::drawSlotScreen(canvas, game, now);
+        ui::drawApp(canvas, app, now);
         char name[32];
-        if (g_frameCount == 1) std::snprintf(name, sizeof(name), "/shot.bmp");
-        else std::snprintf(name, sizeof(name), "/frame_%04d.bmp", i);
-        if (!writeBmp(canvas, g_outDir + name)) {
-            std::fprintf(stderr, "capture : echec d'ecriture dans %s\n", g_outDir.c_str());
-            return 1;
-        }
+        if (g_mode == Mode::Shot) std::snprintf(name, sizeof(name), "shot.bmp");
+        else std::snprintf(name, sizeof(name), "frame_%04d.bmp", i);
+        if (!saveShot(canvas, name)) return 1;
         now += core::kFrameMs;
     }
     return 0;
 }
 
-hal::Key readKey() {
-    const uint8_t* k = SDL_GetKeyboardState(nullptr);
-    if (k[SDL_SCANCODE_ESCAPE] || k[SDL_SCANCODE_Q]) return hal::Key::Escape;
-    if (k[SDL_SCANCODE_SPACE]) return hal::Key::Space;
-    if (k[SDL_SCANCODE_RETURN]) return hal::Key::Enter;
-    if (k[SDL_SCANCODE_LEFT]) return hal::Key::Left;
-    if (k[SDL_SCANCODE_RIGHT]) return hal::Key::Right;
-    return hal::Key::None;
-}
+// --------------------------------------------------------------- interactif
+struct KeyEdge {
+    bool prev[SDL_NUM_SCANCODES] = {false};
+
+    bool pressed(const uint8_t* st, SDL_Scancode sc) {
+        const bool down = st[sc] != 0;
+        const bool edge = down && !prev[sc];
+        prev[sc] = down;
+        return edge;
+    }
+};
 
 int simRun(bool* running) {
     core::seedXorShift(kFixedSeed);
@@ -145,37 +210,70 @@ int simRun(bool* running) {
     canvas.createSprite(hal::kScreenW, hal::kScreenH);
 
     const uint32_t t0 = SDL_GetTicks();
-    core::Game game = core::newGame(0, core::xorShift32);
-    hal::Key prev = hal::Key::None;
+    core::App app = core::newApp(0, core::xorShift32);
+    loadApp(app);
+    KeyEdge edge;
 
     while (*running) {
         const uint32_t now = SDL_GetTicks() - t0;
-        const hal::Key key = readKey();
-        if (key != prev) {  // front montant : une pression = une action
-            switch (key) {
-                case hal::Key::Escape:
-                    requestQuit();
-                    return 0;
-                case hal::Key::Space:
-                case hal::Key::Enter:
-                    core::noteInput(game, now);
-                    core::startSpin(game, now, core::xorShift32);
-                    break;
-                case hal::Key::Left:
-                    core::noteInput(game, now);
-                    core::lowerBet(game.machine.econ);
-                    break;
-                case hal::Key::Right:
-                    core::noteInput(game, now);
-                    core::raiseBet(game.machine.econ);
-                    break;
-                default:
-                    break;
+        const uint8_t* st = SDL_GetKeyboardState(nullptr);
+        const bool naming = app.screen == core::AppScreen::NameEntry;
+
+        if (naming) {
+            for (int sc = SDL_SCANCODE_A; sc <= SDL_SCANCODE_Z; ++sc) {
+                if (edge.pressed(st, static_cast<SDL_Scancode>(sc))) {
+                    core::feedNameChar(app, static_cast<char>('a' + sc - SDL_SCANCODE_A));
+                }
             }
-            prev = key;
+            for (int sc = SDL_SCANCODE_1; sc <= SDL_SCANCODE_0; ++sc) {
+                if (edge.pressed(st, static_cast<SDL_Scancode>(sc))) {
+                    const int d = sc == SDL_SCANCODE_0 ? 0 : 1 + sc - SDL_SCANCODE_1;
+                    core::feedNameChar(app, static_cast<char>('0' + d));
+                }
+            }
+            if (edge.pressed(st, SDL_SCANCODE_BACKSPACE)) core::nameBackspace(app);
         }
-        core::updateGame(game, now, core::xorShift32);
-        ui::drawSlotScreen(canvas, game, now);
+
+        struct Map { SDL_Scancode sc; core::AppKey k; };
+        static const Map maps[] = {
+            {SDL_SCANCODE_UP, core::AppKey::Up},
+            {SDL_SCANCODE_DOWN, core::AppKey::Down},
+            {SDL_SCANCODE_LEFT, core::AppKey::Left},
+            {SDL_SCANCODE_RIGHT, core::AppKey::Right},
+            {SDL_SCANCODE_SPACE, core::AppKey::Confirm},
+            {SDL_SCANCODE_RETURN, core::AppKey::Confirm},
+            {SDL_SCANCODE_ESCAPE, core::AppKey::Back},
+        };
+        for (const auto& m : maps) {
+            if (edge.pressed(st, m.sc)) core::handleKey(app, m.k, now, core::xorShift32);
+        }
+        if (!naming) {  // H, S et L sont des lettres pendant la saisie
+            if (edge.pressed(st, SDL_SCANCODE_H))
+                core::handleKey(app, core::AppKey::Help, now, core::xorShift32);
+            if (edge.pressed(st, SDL_SCANCODE_S))
+                core::handleKey(app, core::AppKey::Settings, now, core::xorShift32);
+            if (edge.pressed(st, SDL_SCANCODE_L))
+                core::handleKey(app, core::AppKey::Board, now, core::xorShift32);
+        } else {
+            edge.pressed(st, SDL_SCANCODE_H);  // consomme les fronts pour ne
+            edge.pressed(st, SDL_SCANCODE_S);  // pas déclencher en sortant
+            edge.pressed(st, SDL_SCANCODE_L);
+        }
+
+        if (app.quitRequested) {
+            saveApp(app);
+            requestQuit();
+            return 0;
+        }
+
+        core::tickApp(app, now, core::xorShift32);
+        while (core::takeCue(app.game) != core::Cue::None) {
+            // Pas de haut-parleur au simulateur : la file est vidée pour ne
+            // pas déborder, le son se juge sur l'appareil.
+        }
+        if (app.dirty && app.game.phase != core::Phase::Spinning) saveApp(app);
+
+        ui::drawApp(canvas, app, now);
         canvas.pushSprite(0, 0);
         SDL_Delay(core::kFrameMs);
     }
@@ -188,16 +286,23 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--shot") && i + 1 < argc) {
             g_outDir = argv[++i];
+            g_mode = Mode::Shot;
             g_frameCount = 1;
         } else if (!std::strcmp(argv[i], "--frames") && i + 2 < argc) {
             g_outDir = argv[++i];
             g_frameCount = std::atoi(argv[++i]);
+            g_mode = Mode::Frames;
+        } else if (!std::strcmp(argv[i], "--screens") && i + 1 < argc) {
+            g_outDir = argv[++i];
+            g_mode = Mode::Screens;
         } else {
-            std::fprintf(stderr, "usage: %s [--shot <dir>] [--frames <dir> <n>]\n", argv[0]);
+            std::fprintf(stderr,
+                         "usage: %s [--shot <dir>] [--frames <dir> <n>] [--screens <dir>]\n",
+                         argv[0]);
             return 2;
         }
     }
-    if (g_frameCount > 0) return runCapture();
+    if (g_mode != Mode::Interactive) return runCapture();
     return lgfx::Panel_sdl::main(simRun);
 }
 

@@ -6,6 +6,7 @@
 #include "machine.h"
 #include "reel_motion.h"
 #include "rng.h"
+#include "sound.h"
 
 namespace core {
 
@@ -43,8 +44,18 @@ struct Game {
     uint32_t phaseT0 = 0;
     uint32_t lastInputMs = 0;
     bool attract = false;         // le tour courant est joué par la machine
-    uint8_t reelsStopped = 0;     // pour déclencher un son par arrêt
+    uint8_t reelsStopped = 0;
+    uint32_t spins = 0;           // compteur de session, persisté
+
+    // File de signaux sonores. La logique dit QUOI jouer et QUAND ; c'est
+    // lib/hal qui sait comment. Une file évite de perdre un son quand deux
+    // événements tombent sur la même image.
+    Cue cueQueue[6] = {};
+    uint8_t cueHead = 0, cueTail = 0;
 };
+
+void pushCue(Game& g, Cue c);
+Cue takeCue(Game& g);  // Cue::None quand la file est vide
 
 Game newGame(uint32_t now, RngFn rng);
 

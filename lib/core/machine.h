@@ -28,9 +28,9 @@ struct Machine {
 
 Machine mvpMachine();
 
-// Joue un tour. Renvoie false sans rien changer si le solde ne permet même
-// pas la plus petite mise ET que le renflouement n'a pas encore eu lieu —
-// appeler bailout() d'abord dans ce cas (playSpin le fait automatiquement).
-bool playSpin(Machine& m, RngFn rng, SpinOutcome& out);
+// Joue un tour. `charge` = false pour le mode démo : le tirage et
+// l'affichage sont réels mais AUCUN jeton ne bouge — une démo qui mise
+// l'argent du joueur serait une faute, pas une animation.
+bool playSpin(Machine& m, RngFn rng, SpinOutcome& out, bool charge = true);
 
 }  // namespace core

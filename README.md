@@ -13,16 +13,18 @@ rouleaux ; l'architecture prévoit d'autres jeux.
 
 ## État
 
-La machine se joue dans le simulateur : rouleaux animés, cascade d'arrêt,
-gains, jackpot, renflouement, mode démo. Le son et le levier IMU restent
-à faire — ils demandent l'appareil réel.
+Le jeu complet tourne sur l'appareil : accueil, machine à sous animée,
+son PCM, levier au geste (secouer l'appareil), aide, réglages,
+multi-joueurs avec classement persistant en NVS.
 
 - [x] Trois environnements PlatformIO (firmware, simulateur, tests)
 - [x] Aléa injecté, testé, sans biais de modulo
 - [x] Design system : palette, fonte 5×7, 8 glyphes, écrans
 - [x] Bandes de rouleaux, table de gains, économie — **RTP exact 95,24 %**
-- [x] Animation des rouleaux, machine à états, mode démo
-- [ ] Son, levier IMU, persistance NVS, écran d'accueil
+- [x] Animation des rouleaux, machine à états, mode démo (gratuit)
+- [x] Son 800–2600 Hz (contrainte testée), geste IMU, NVS signée
+- [x] Accueil, aide (H), réglages globaux et par jeu (S), classement (L)
+- [x] Deux habillages de rouleaux : geek et classique — mêmes gains
 
 ## Construire
 
@@ -41,9 +43,12 @@ aussi produire des captures déterministes, sans fenêtre :
 .pio/build/sim/program --frames captures 300   # une suite, pour un GIF
 ```
 
-Dans la fenêtre : **espace** tire le levier, **←/→** règlent la mise,
-**Échap** quitte. Sans geste pendant douze secondes, le mode démo prend
-la main.
+Dans la fenêtre : **espace/Entrée** valide ou tire, **←/→/↑/↓**
+naviguent, **H** aide, **S** réglages (globaux à l'accueil, du jeu en
+jeu), **L** classement, **Échap** revient (et quitte depuis l'accueil).
+Sur l'appareil, les flèches sont `,` `/` `;` `.` et retour est `` ` `` ;
+secouer l'appareil tire le levier. Sans geste pendant douze secondes en
+jeu, le mode démo prend la main — sans toucher aux jetons.
 
 ## Design system
 

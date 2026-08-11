@@ -23,9 +23,10 @@ void drawNumber(lgfx::LGFX_Sprite& g, int32_t v, int x, int y, uint16_t color,
 int numberWidth(int32_t v, int scale);
 
 // `tint` non nul remplace toutes les couleurs opaques du glyphe — sert aux
-// silhouettes clignotantes et aux symboles éteints.
+// silhouettes clignotantes et aux symboles éteints. `classic` bascule sur
+// l'habillage traditionnel (même index, même gain).
 void drawSymbol(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
-                uint16_t tint = 0);
+                uint16_t tint = 0, bool classic = false);
 
 void drawIcon(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale = 1,
               uint16_t tint = 0);

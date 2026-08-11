@@ -2,6 +2,48 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-013 — 2026-08-11 — Son, geste IMU, persistance — et premier flash
+
+- **Son** : composition dans `core/sound.*` (paliers alignés sur ceux de
+  l'animation), synthèse PCM dans le main appareil — sinusoïdes à
+  décroissance exponentielle, `playRaw` 22 050 Hz. La contrainte
+  « 800–2600 Hz » est un TEST : toute note hors bande casse la suite.
+  Les trois arrêts de rouleaux montent (1300/1550/1850 Hz) — la cascade
+  s'entend. Pas de son au simulateur : il se juge sur l'appareil.
+- **Geste IMU** : détection de secousse par écart à 1 g, hystérésis
+  (redescendre au calme avant de redéclencher) + délai de garde 500 ms.
+  Réglée par tests (`test_shake`), pas au jugé. Secouer = Confirm sur
+  l'écran de jeu uniquement.
+- **Persistance NVS** : la sauvegarde porte roster + réglages, signée
+  (FNV-1a) et bornée ; toute corruption est rejetée EN BLOC (testé octet
+  par octet). Écriture throttlée à 2 s, jamais pendant une rotation.
+- **Mode démo gratuit** : découvert par un test — l'attract misait les
+  jetons du joueur. Désormais tirage réel, jetons intouchés.
+- **Premier flash réel** : panic au boot — `M5Canvas canvas(&M5Cardputer.
+  Display)` en global lit un membre-référence avant l'init de M5 (ordre
+  des globaux indéfini). Piège documenté dans CLAUDE.md ; le sprite est
+  désormais sans parent, la destination passée au push.
+
+## D-012 — 2026-08-11 — Aide, réglages, habillage classique, joueurs
+
+Demandes de Pierre, intégrées dans une couche « app » pure et testée :
+
+- **Page d'aide par jeu (touche H)** : pour SLOTS, la table des gains
+  avec chaque glyphe geek à côté de son équivalent **classique** —
+  cerises, citron, orange, prune, pastèque, cloche, BAR, 7 — dessinés en
+  16×16 et en correspondance stricte rang par rang (validée par gen.py).
+- **Habillage par jeu (touche S en jeu)** : GEEK ou CLASSIC. Même index,
+  même bande, même gain — seul le dessin change.
+- **Réglages généraux (touche S à l'accueil)** : son, volume (3 crans),
+  joueur courant, reset du classement (double pression, désarmé par
+  toute navigation).
+- **Multi-joueurs + leaderboard (touche L)** : jusqu'à 8 joueurs, nom
+  demandé au premier lancement (A–Z 0–9, 8 caractères), bascule par les
+  réglages, un nom existant bascule au lieu de dupliquer. Classement par
+  solde puis meilleur gain, persistant.
+- L'écran d'accueil est réellement implémenté (il n'était qu'une
+  maquette) : sélection de jeu, solde du joueur, jackpot courant.
+
 ## D-011 — 2026-08-11 — Animation : le rythme est de la logique
 
 Le jeu tourne dans le simulateur. Choix structurant : **le mouvement vit

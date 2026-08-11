@@ -118,6 +118,21 @@ static void test_game_returns_to_idle_and_shows_the_outcome() {
     }
 }
 
+static void test_attract_spins_are_free() {
+    // La démo joue avec de vrais tirages mais AUCUN jeton ne bouge.
+    core::seedXorShift(11);
+    uint32_t now = 0;
+    core::Game g = core::newGame(now, core::xorShift32);
+    const int32_t before = g.machine.econ.credits;
+    TEST_ASSERT_TRUE(core::startSpin(g, now, core::xorShift32, /*byPlayer=*/false));
+    for (int i = 0; i < 400; ++i) {
+        now += core::kFrameMs;
+        core::updateGame(g, now, core::xorShift32);
+        if (g.phase != core::Phase::Spinning && g.phase != core::Phase::Celebrate) break;
+    }
+    TEST_ASSERT_EQUAL_INT32(before, g.machine.econ.credits);
+}
+
 static void test_attract_mode_takes_over_when_left_alone() {
     core::seedXorShift(7);
     uint32_t now = 0;
@@ -170,6 +185,7 @@ int main() {
     RUN_TEST(test_reels_stop_in_cascade);
     RUN_TEST(test_tiers_follow_the_paytable);
     RUN_TEST(test_game_returns_to_idle_and_shows_the_outcome);
+    RUN_TEST(test_attract_spins_are_free);
     RUN_TEST(test_attract_mode_takes_over_when_left_alone);
     RUN_TEST(test_a_long_session_never_deadlocks);
     return UNITY_END();

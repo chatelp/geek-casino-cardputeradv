@@ -111,7 +111,8 @@ void drawBlurredReel(lgfx::LGFX_Sprite& g, const core::ReelSet& rs, uint8_t r,
     }
 }
 
-void drawReels(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
+void drawReels(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
+               bool classic) {
     const core::ReelSet& rs = *game.machine.reels;
     const bool celebrating = game.phase == core::Phase::Celebrate;
     const bool dead = game.phase == core::Phase::Bailout;
@@ -137,7 +138,7 @@ void drawReels(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
                 const uint8_t sym =
                     core::symbolAt(rs, r, static_cast<int32_t>(base) + k);
                 drawSymbol(g, sym, symX(r), kSymY + k * kPitch - shift, kSymScale,
-                           dead ? P::ink600 : 0);
+                           dead ? P::ink600 : 0, classic);
             }
         }
         g.clearClipRect();
@@ -265,7 +266,8 @@ void drawJackpot(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
 
 }  // namespace
 
-void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
+void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
+                    bool classic) {
     if (game.phase == core::Phase::Celebrate && game.tier == core::Tier::Jackpot) {
         drawJackpot(g, game, now);
         return;
@@ -274,7 +276,7 @@ void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) 
     drawTraces(g);
     drawHud(g, game);
     drawCabinet(g, game, now);
-    drawReels(g, game, now);
+    drawReels(g, game, now, classic);
     drawPayline(g, game);
     drawLever(g, game, now);
     drawSparks(g, game, now);

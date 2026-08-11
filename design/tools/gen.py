@@ -23,7 +23,7 @@ ROOT = os.path.dirname(DESIGN)
 BUILD = os.path.join(DESIGN, "build")
 
 sys.path.insert(0, HERE)
-from art_symbols import SYMBOLS, ICONS  # noqa: E402
+from art_symbols import SYMBOLS, CLASSIC_SYMBOLS, ICONS  # noqa: E402
 from art_font import GLYPHS, W as FW, H as FH, ADVANCE  # noqa: E402
 
 TOK = json.load(open(os.path.join(DESIGN, "tokens.json")))
@@ -71,6 +71,20 @@ def validate():
             for ch in row:
                 if ch != "." and ch not in KEYS:
                     errs.append("%s ligne %d : clé inconnue %r" % (s["id"], i, ch))
+    if len(CLASSIC_SYMBOLS) != len(SYMBOLS):
+        errs.append("il faut exactement un glyphe classique par glyphe geek")
+    for ci, s_ in enumerate(CLASSIC_SYMBOLS):
+        if len(s_["art"]) != 16:
+            errs.append("%s : %d lignes au lieu de 16" % (s_["id"], len(s_["art"])))
+        for i, row in enumerate(s_["art"]):
+            if len(row) != 16:
+                errs.append("%s ligne %d : %d colonnes au lieu de 16" % (s_["id"], i, len(row)))
+            for ch in row:
+                if ch != "." and ch not in KEYS:
+                    errs.append("%s ligne %d : clé inconnue %r" % (s_["id"], i, ch))
+        if ci < len(SYMBOLS) and s_["maps"] != SYMBOLS[ci]["id"]:
+            errs.append("%s (rang %d) devrait correspondre à %s"
+                        % (s_["id"], ci, SYMBOLS[ci]["id"]))
     for iid, ic in ICONS.items():
         n = ic["size"]
         if len(ic["art"]) != n:
@@ -790,6 +804,35 @@ def card_symbols():
                 "16x16 puis affiché à l'échelle 3, soit 48 px sur l'appareil.")
 
 
+def card_equivalence():
+    rows = []
+    pt3 = [8, 12, 20, 50, 100, 250, 400, 1200]  # miroir de paytable.cpp
+    for i, (gk, cl) in enumerate(zip(SYMBOLS, CLASSIC_SYMBOLS)):
+        pg, pc = Paint(), Paint()
+        pg.rect(0, 0, 16, 16, C["ink900"]); pg.art(gk["art"], 0, 0, 1)
+        pc.rect(0, 0, 16, 16, C["ink900"]); pc.art(cl["art"], 0, 0, 1)
+        rows.append(
+            '<tr><td>%s</td><td><b>%s</b></td><td>%s</td><td><b>%s</b></td>'
+            '<td class="mono">x%d</td></tr>'
+            % (pg.svg(16, 16, cls="eq"), gk["label"], pc.svg(16, 16, cls="eq"),
+               cl["label"], pt3[i]))
+    body = (
+        '<style>.eq{width:48px;height:48px}</style>'
+        '<h2>Geek et classique — même machine, deux habillages</h2>'
+        '<div class="scroll"><table>'
+        '<tr><th>Geek</th><th></th><th>Classique</th><th></th><th>3 en ligne</th></tr>'
+        '%s</table></div>'
+        "<p>Le réglage « GLYPHS » du jeu (touche S en jeu) bascule l'habillage "
+        "sans toucher aux probabilités : même index, même bande, même gain. "
+        "La page d'aide (touche H) montre cette table sur l'appareil.</p>"
+        "<p>Deux identiques en tête de ligne : x2, quel que soit le symbole.</p>"
+        % "".join(rows))
+    return page("symbols/equivalence.html", "Symbols", "Correspondance classique",
+                "Cerises, citron, cloche, BAR, 7... rang pour rang", 720, body,
+                "Chaque glyphe geek a son équivalent de machine traditionnelle, "
+                "au même rang de valeur. C'est la page d'aide du jeu.")
+
+
 def card_screens():
     body = (
         '<h2>Repos</h2>%s'
@@ -909,6 +952,15 @@ def export_symbols():
         out.append("    0x%04X,  // %s (%s)\n" % (PAL[KEYS[k]]["v565"], k, KEYS[k]))
     out.append("};\n\nconstexpr uint8_t kSymbols[kSymbolCount][kSymbolPx * kSymbolPx] = {\n")
     for s in SYMBOLS:
+        out.append("    {  // %s\n" % s["id"])
+        for row in s["art"]:
+            out.append("        " + ",".join("%d" % (0 if c == "." else idx[c]) for c in row) + ",\n")
+        out.append("    },\n")
+    out.append("};\n\n")
+
+    out.append("// Jeu CLASSIQUE — même index, même gain, autre habillage.\n")
+    out.append("constexpr uint8_t kSymbolsClassic[kSymbolCount][kSymbolPx * kSymbolPx] = {\n")
+    for s in CLASSIC_SYMBOLS:
         out.append("    {  // %s\n" % s["id"])
         for row in s["art"]:
             out.append("        " + ",".join("%d" % (0 if c == "." else idx[c]) for c in row) + ",\n")
@@ -1056,7 +1108,8 @@ def main():
     validate()
     os.makedirs(BUILD, exist_ok=True)
     cards = [card_palette(), card_typography(), card_geometry(), card_motion(),
-             card_symbols(), card_cabinet(), card_screens(), card_lobby()]
+             card_symbols(), card_equivalence(), card_cabinet(), card_screens(),
+             card_lobby()]
     json.dump(cards, open(os.path.join(BUILD, "cards.json"), "w"), indent=2,
               ensure_ascii=False)
     export_palette()

@@ -61,9 +61,9 @@ void drawNumber(lgfx::LGFX_Sprite& g, int32_t v, int x, int y, uint16_t color,
 }
 
 void drawSymbol(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
-                uint16_t tint) {
+                uint16_t tint, bool classic) {
     if (sym >= kSymbolCount) return;
-    const uint8_t* art = kSymbols[sym];
+    const uint8_t* art = classic ? kSymbolsClassic[sym] : kSymbols[sym];
     for (int ry = 0; ry < kSymbolPx; ++ry) {
         int c = 0;
         while (c < kSymbolPx) {

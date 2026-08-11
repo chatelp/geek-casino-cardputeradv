@@ -9,6 +9,7 @@
 
 namespace ui {
 
-void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now);
+void drawSlotScreen(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now,
+                    bool classic = false);
 
 }  // namespace ui

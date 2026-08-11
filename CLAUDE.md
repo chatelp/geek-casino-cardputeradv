@@ -146,7 +146,10 @@ pio run -e cardputer-adv -t upload                 # flash
   son désactivable.
 - **Init** : aucune API M5 dans un constructeur global (M5 pas encore
   initialisé). Appliquer le volume au moment de jouer, pas à la
-  construction.
+  construction. **Même `&M5Cardputer.Display` est interdit en global** :
+  Display est un membre-référence, le lire avant l'init de M5 stocke du
+  garbage et `pushSprite` crashe (panic mesuré, 2026-08-11). Sprite sans
+  parent + `pushSprite(&M5Cardputer.Display, 0, 0)` au moment du push.
 - **Clavier** : TCA8418 (I²C), `Keyboard.keysState()`. Flèches en
   caractères : `,`=gauche `/`=droite `;`=haut `.`=bas ; plus `enter` et
   espace.

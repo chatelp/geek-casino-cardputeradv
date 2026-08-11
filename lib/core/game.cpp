@@ -21,6 +21,32 @@ uint32_t celebrateMs(Tier t) {
     return 0;
 }
 
+void pushCue(Game& g, Cue c) {
+    const uint8_t next = static_cast<uint8_t>((g.cueTail + 1) % 6);
+    if (next == g.cueHead) return;  // pleine : on préfère perdre le nouveau
+    g.cueQueue[g.cueTail] = c;      // son que décaler tous les suivants
+    g.cueTail = next;
+}
+
+Cue takeCue(Game& g) {
+    if (g.cueHead == g.cueTail) return Cue::None;
+    const Cue c = g.cueQueue[g.cueHead];
+    g.cueHead = static_cast<uint8_t>((g.cueHead + 1) % 6);
+    return c;
+}
+
+namespace {
+Cue winCue(Tier t) {
+    switch (t) {
+        case Tier::Small: return Cue::WinSmall;
+        case Tier::Mid: return Cue::WinMid;
+        case Tier::Big: return Cue::WinBig;
+        case Tier::Jackpot: return Cue::Jackpot;
+        default: return Cue::None;
+    }
+}
+}  // namespace
+
 Game newGame(uint32_t now, RngFn rng) {
     Game g;
     g.machine = mvpMachine();
@@ -36,7 +62,8 @@ Game newGame(uint32_t now, RngFn rng) {
 
 bool startSpin(Game& g, uint32_t now, RngFn rng, bool byPlayer) {
     if (g.phase == Phase::Spinning) return false;
-    if (!playSpin(g.machine, rng, g.outcome)) return false;
+    // Le mode démo joue gratuitement : tirage réel, jetons intouchés.
+    if (!playSpin(g.machine, rng, g.outcome, /*charge=*/byPlayer)) return false;
 
     const ReelSet& rs = *g.machine.reels;
     for (uint8_t r = 0; r < rs.reels; ++r) {
@@ -51,6 +78,7 @@ bool startSpin(Game& g, uint32_t now, RngFn rng, bool byPlayer) {
     g.reelsStopped = 0;
     g.attract = !byPlayer;
     if (byPlayer) g.lastInputMs = now;
+    pushCue(g, Cue::SpinStart);
     return true;
 }
 
@@ -66,6 +94,9 @@ uint8_t updateGame(Game& g, uint32_t now, RngFn rng) {
             }
             if (stopped > g.reelsStopped) {
                 justStopped = static_cast<uint8_t>(stopped - g.reelsStopped);
+                for (uint8_t k = 0; k < justStopped; ++k) {
+                    pushCue(g, reelStopCue(static_cast<uint8_t>(g.reelsStopped + k)));
+                }
                 g.reelsStopped = stopped;
             }
             if (stopped == rs.reels) {
@@ -73,8 +104,10 @@ uint8_t updateGame(Game& g, uint32_t now, RngFn rng) {
                 g.tier = tierOf(g.outcome.win);
                 if (g.outcome.bailedOut) {
                     g.phase = Phase::Bailout;
+                    pushCue(g, Cue::Bailout);
                 } else {
                     g.phase = g.tier == Tier::None ? Phase::Idle : Phase::Celebrate;
+                    if (g.tier != Tier::None) pushCue(g, winCue(g.tier));
                 }
                 g.phaseT0 = now;
             }
