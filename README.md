@@ -13,7 +13,8 @@ rouleaux ; l'architecture prévoit d'autres jeux.
 
 ## État
 
-Le jeu complet tourne sur l'appareil : accueil, machine à sous animée,
+Trois jeux tournent sur l'appareil : machine à sous 3 rouleaux, machine
+vidéo 5x3 à 5 lignes, blackjack. Accueil, animation,
 son PCM, levier au geste (secouer l'appareil), aide, réglages,
 multi-joueurs avec classement persistant en NVS.
 
@@ -28,7 +29,7 @@ multi-joueurs avec classement persistant en NVS.
 - [x] Blackjack — règles complètes testées, **RTP 95,81 %**
 - [ ] Blackjack : écran de jeu et intégration à l'accueil
 - [x] Format vidéo 5x3, 5 lignes — **RTP par ligne 94,95 %**
-- [ ] Écrans : blackjack et format vidéo (les logiques sont faites)
+- [x] Écrans des trois jeux, aides et réglages dédiés
 
 ## Construire
 

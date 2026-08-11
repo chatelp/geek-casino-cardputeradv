@@ -106,7 +106,8 @@ void loadApp(core::App& a) {
 }
 
 void saveApp(core::App& a) {
-    core::syncPlayer(a.roster, a.game.machine.econ, a.game.spins, 0);
+    core::pullEconomy(a);
+    core::syncPlayer(a.roster, a.econ, a.game.spins + a.video.spins + a.bj.hands, 0);
     const core::SaveData s = core::makeSave(a.roster, a.settings);
     FILE* f = std::fopen(kSavePath, "wb");
     if (!f) return;
@@ -168,7 +169,41 @@ int runCapture() {
         app.screen = core::AppScreen::Slot;
         ui::drawApp(canvas, app, 400);
         if (!saveShot(canvas, "slot_classic.bmp")) return 1;
+        // Les deux nouveaux jeux.
+        app.settings.slotSkin = 0;
+        app.screen = core::AppScreen::Video;
+        uint32_t vt = 500;
+        core::startVideoSpin(app.video, vt, core::xorShift32);
+        for (int i = 0; i < 200; ++i) {
+            vt += core::kFrameMs;
+            core::updateVideoGame(app.video, vt, core::xorShift32);
+            if (app.video.phase == core::Phase::Celebrate) break;
+        }
+        ui::drawApp(canvas, app, vt);
+        if (!saveShot(canvas, "video.bmp")) return 1;
+        app.screen = core::AppScreen::VideoHelp;
+        ui::drawApp(canvas, app, vt);
+        if (!saveShot(canvas, "video_help.bmp")) return 1;
+
+        app.screen = core::AppScreen::Blackjack;
+        app.bj.hintsOn = true;
+        uint32_t bt = 500;
+        core::bjStartHand(app.bj, bt, core::xorShift32);
+        for (int i = 0; i < 60; ++i) {
+            bt += core::kFrameMs;
+            core::bjUpdate(app.bj, bt, core::xorShift32);
+        }
+        ui::drawApp(canvas, app, bt);
+        if (!saveShot(canvas, "blackjack.bmp")) return 1;
+        app.screen = core::AppScreen::BjHelp;
+        ui::drawApp(canvas, app, bt);
+        if (!saveShot(canvas, "bj_help.bmp")) return 1;
+        app.screen = core::AppScreen::BjSettings;
+        ui::drawApp(canvas, app, bt);
+        if (!saveShot(canvas, "bj_settings.bmp")) return 1;
+
         // Le mode démo : monochrome gris, un tour gratuit en cours.
+        app.screen = core::AppScreen::Slot;
         app.settings.slotSkin = 0;
         uint32_t t = 1000;
         core::startSpin(app.game, t, core::xorShift32, /*byPlayer=*/false);
@@ -274,11 +309,13 @@ int simRun(bool* running) {
         }
 
         core::tickApp(app, now, core::xorShift32);
-        while (core::takeCue(app.game) != core::Cue::None) {
-            // Pas de haut-parleur au simulateur : la file est vidée pour ne
-            // pas déborder, le son se juge sur l'appareil.
-        }
-        if (app.dirty && app.game.phase != core::Phase::Spinning) saveApp(app);
+        // Pas de haut-parleur au simulateur : les files sont vidées pour ne
+        // pas déborder, le son se juge sur l'appareil.
+        while (core::takeCue(app.game) != core::Cue::None) {}
+        while (core::takeVideoCue(app.video) != core::Cue::None) {}
+        while (core::takeBjCue(app.bj) != core::Cue::None) {}
+        if (app.dirty && app.game.phase != core::Phase::Spinning &&
+            app.video.phase != core::Phase::Spinning) saveApp(app);
 
         ui::drawApp(canvas, app, now);
         canvas.pushSprite(0, 0);

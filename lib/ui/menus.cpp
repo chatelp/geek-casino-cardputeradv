@@ -3,8 +3,10 @@
 #include "layout.h"
 #include "painter.h"
 #include "palette.h"
+#include "bj_screen.h"
 #include "slot_screen.h"
 #include "symbols.h"
+#include "video_screen.h"
 
 namespace ui {
 
@@ -34,47 +36,49 @@ void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
     drawHeader(g, "GEEK CASINO", P::magenta);
 
-    const core::Player* p =
-        const_cast<core::App&>(app).roster.count
+    const core::Player* p = app.roster.count
             ? &app.roster.players[app.roster.current] : nullptr;
     if (p) {
         // Joueur courant + solde, à droite du titre.
         const int nw = textWidth(p->name, 1);
         drawText(g, p->name, kScreenW - 8 - nw, 3, P::cyan, 1, Align::Left);
         drawIcon(g, ICON_COIN, kScreenW - 76, 10);
-        drawNumber(g, p->credits, kScreenW - 60, 11, P::yellow, 1);
+        drawNumber(g, app.econ.credits, kScreenW - 60, 11, P::yellow, 1);
     }
 
-    struct Entry { const char* name; uint8_t sym; bool live; };
+    struct Entry { const char* name; const char* sub; uint8_t sym; };
     static const Entry entries[3] = {
-        {"SLOTS", core::SYM_INVADER, true},
-        {"BLACKJACK", core::SYM_D20, false},
-        {"VIDEO POKER", core::SYM_GAMEPAD, false},
+        {"SLOTS", "3 REELS 1 LINE", core::SYM_INVADER},
+        {"VIDEO SLOT", "5 REELS 5 LINES", core::SYM_CRT},
+        {"BLACKJACK", "3:2 DEALER S17", core::SYM_D20},
     };
     for (int i = 0; i < 3; ++i) {
         const Entry& e = entries[i];
         const bool sel = app.lobbyIndex == i;
-        const int y = 28 + i * 26;
-        g.fillRect(6, y, kScreenW - 12, 24, e.live ? P::ink700 : P::ink800);
+        const int y = 28 + i * 27;
+        g.fillRect(6, y, kScreenW - 12, 26, sel ? P::ink700 : P::ink800);
         if (sel) {
-            drawFrame(g, 6, y, kScreenW - 12, 24, e.live ? P::cyan : P::steel500, 1);
-            g.fillRect(6, y, 3, 24, e.live ? P::cyan : P::steel500);
+            drawFrame(g, 6, y, kScreenW - 12, 26, P::cyan, 1);
+            g.fillRect(6, y, 3, 26, P::cyan);
         }
-        drawSymbol(g, e.sym, 14, y + 4, 1, e.live ? 0 : P::ink600);
-        drawText(g, e.name, 38, y + 5, e.live ? P::white : P::steel500, 2);
-        if (!e.live) drawText(g, "SOON", kScreenW - 12, y + 5, P::ink600, 2, Align::Right);
+        drawSymbol(g, e.sym, 14, y + 5, 1);
+        drawText(g, e.name, 38, y + 2, sel ? P::white : P::steel300, 2);
+        drawText(g, e.sub, 38, y + 18, sel ? P::cyan : P::ink600, 1);
     }
 
     // Jackpot courant : gain des 3 invaders à la mise en cours.
-    g.fillRect(0, 108, kScreenW, 14, P::ink800);
-    g.fillRect(0, 108, kScreenW, 1, P::greenDk);
-    const int32_t jack = static_cast<int32_t>(
-        app.game.machine.pay->three[core::kJackpotSymbol] * core::bet(app.game.machine.econ));
+    g.fillRect(0, 110, kScreenW, 12, P::ink800);
+    g.fillRect(0, 110, kScreenW, 1, P::greenDk);
+    const int32_t jack = app.lobbyIndex == 1
+        ? static_cast<int32_t>(app.video.pay->pay[core::kJackpotSymbol][5] *
+                               core::bet(app.econ))
+        : static_cast<int32_t>(app.game.machine.pay->three[core::kJackpotSymbol] *
+                               core::bet(app.econ));
     const int w = 16 + 4 + textWidth("JACKPOT ", 1) + numberWidth(jack, 1);
     const int x0 = (kScreenW - w) / 2;
-    drawSymbol(g, core::SYM_INVADER, x0, 109, 1);
-    drawText(g, "JACKPOT", x0 + 20, 111, P::green, 1);
-    drawNumber(g, jack, x0 + 20 + textWidth("JACKPOT ", 1), 111, P::white, 1);
+    drawSymbol(g, core::SYM_INVADER, x0, 112, 1);
+    drawText(g, "JACKPOT", x0 + 20, 113, P::green, 1);
+    drawNumber(g, jack, x0 + 20 + textWidth("JACKPOT ", 1), 113, P::white, 1);
 
     drawHint(g, "H HELP  S SETTINGS  L BOARD");
 }
@@ -132,6 +136,60 @@ void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
     drawHint(g, "H OR ESC BACK");
 }
 
+void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
+    g.fillScreen(P::ink900);
+    drawHeader(g, "VIDEO SLOT", P::cyan);
+    const core::MultiPaytable& pt = *app.video.pay;
+    // Deux groupes de quatre rangs. Les nombres sont alignés à droite sur
+    // des colonnes FIXES : à 15000, un alignement à gauche se chevauche.
+    constexpr int kGroupX[2] = {2, 122};
+    constexpr int kNumX[3] = {52, 84, 116};
+    for (int col = 0; col < 2; ++col) {
+        for (int k = 0; k < 3; ++k) {
+            drawText(g, k == 0 ? "3" : (k == 1 ? "4" : "5"),
+                     kGroupX[col] + kNumX[k], 26, P::steel500, 1, Align::Right);
+        }
+    }
+    for (int i = 0; i < core::kSymbolCount; ++i) {
+        const int col = i / 4, row = i % 4;
+        const int x = kGroupX[col], y = 33 + row * 17;
+        drawSymbol(g, static_cast<uint8_t>(i), x, y, 1, 0,
+                   app.settings.slotSkin != 0);
+        for (int k = 0; k < 3; ++k) {
+            drawNumber(g, pt.pay[i][3 + k], x + kNumX[k], y + 5,
+                       i == core::kJackpotSymbol ? P::green : P::yellow, 1,
+                       Align::Right);
+        }
+    }
+    drawText(g, "5 LINES - BET IS PER LINE", kScreenW / 2, 104, P::steel300, 1,
+             Align::Center);
+    drawHint(g, "H OR ESC BACK");
+}
+
+void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
+    g.fillScreen(P::ink900);
+    drawHeader(g, "BLACKJACK", P::cyan);
+    // Chaque ligne tient en 23 caractères : au-delà, elle passerait sous
+    // les cartes d'exemple posées à droite.
+    static const char* kRules[] = {
+        "BEAT THE DEALER TO 21",
+        "ACE IS 1 OR 11",
+        "FACES ARE WORTH 10",
+        "BLACKJACK PAYS 3:2",
+        "DEALER DRAWS TO 17",
+        "DOUBLE ON FIRST 2",
+    };
+    for (int i = 0; i < 6; ++i) {
+        g.fillRect(10, 30 + i * 13, 3, 3, i == 2 ? P::green : P::cyan);
+        drawText(g, kRules[i], 18, 29 + i * 13, P::steel300, 1);
+    }
+    // Deux cartes d'exemple : le blackjack lui-même.
+    drawCard(g, core::Card{1, SUIT_SPADE}, 168, 34, false);
+    drawCard(g, core::Card{13, SUIT_HEART}, 196, 34, false);
+    drawText(g, "3:2", 196, 80, P::green, 2, Align::Center);
+    drawHint(g, "H OR ESC BACK");
+}
+
 // ------------------------------------------------------------------- réglages
 void drawRow(lgfx::LGFX_Sprite& g, int y, bool sel, const char* label) {
     g.fillRect(6, y, kScreenW - 12, 20, sel ? P::ink700 : P::ink800);
@@ -176,9 +234,24 @@ void drawGlobalSettings(lgfx::LGFX_Sprite& g, const core::App& app) {
                                   : "</> CHANGE  S OR ESC BACK");
 }
 
-void drawSlotSettings(lgfx::LGFX_Sprite& g, const core::App& app) {
+void drawBjSettings(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
-    drawHeader(g, "SLOTS SETTINGS", P::yellow);
+    drawHeader(g, "BLACKJACK SETTINGS", P::yellow);
+    drawRow(g, 34, true, "HINTS");
+    drawText(g, app.bj.hintsOn ? "ON" : "OFF", kScreenW - 16, 37,
+             app.bj.hintsOn ? P::green : P::steel500, 2, Align::Right);
+    drawText(g, "MARKS THE BASIC-STRATEGY MOVE", kScreenW / 2, 66, P::steel300, 1,
+             Align::Center);
+    drawText(g, "WITH A GREEN DOT - IT ADVISES,", kScreenW / 2, 78, P::steel300, 1,
+             Align::Center);
+    drawText(g, "IT NEVER PLAYS FOR YOU", kScreenW / 2, 90, P::steel300, 1,
+             Align::Center);
+    drawHint(g, "</> CHANGE  S OR ESC BACK");
+}
+
+void drawSlotSettings(lgfx::LGFX_Sprite& g, const core::App& app, bool video) {
+    g.fillScreen(P::ink900);
+    drawHeader(g, video ? "VIDEO SETTINGS" : "SLOTS SETTINGS", P::yellow);
 
     drawRow(g, 32, true, "GLYPHS");
     const bool classic = app.settings.slotSkin != 0;
@@ -231,7 +304,15 @@ void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
             drawSlotScreen(g, app.game, now, app.settings.slotSkin != 0);
             break;
         case core::AppScreen::SlotHelp: drawSlotHelp(g, app); break;
-        case core::AppScreen::SlotSettings: drawSlotSettings(g, app); break;
+        case core::AppScreen::SlotSettings: drawSlotSettings(g, app, false); break;
+        case core::AppScreen::Video:
+            drawVideoScreen(g, app.video, now, app.settings.slotSkin != 0);
+            break;
+        case core::AppScreen::VideoHelp: drawVideoHelp(g, app); break;
+        case core::AppScreen::VideoSettings: drawSlotSettings(g, app, true); break;
+        case core::AppScreen::Blackjack: drawBjScreen(g, app.bj, now); break;
+        case core::AppScreen::BjHelp: drawBjHelp(g, app); break;
+        case core::AppScreen::BjSettings: drawBjSettings(g, app); break;
         case core::AppScreen::GlobalSettings: drawGlobalSettings(g, app); break;
         case core::AppScreen::Leaderboard: drawLeaderboard(g, app); break;
     }

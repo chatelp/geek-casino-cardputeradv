@@ -38,6 +38,10 @@ void drawSymbolGray(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
                     bool classic = false);
 void drawIconGray(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale = 1);
 
+// Enseigne de carte 8x8 (blackjack).
+void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale = 1,
+              uint16_t tint = 0);
+
 void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c,
                int t = 1);
 

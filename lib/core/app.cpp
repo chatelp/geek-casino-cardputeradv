@@ -2,9 +2,44 @@
 
 namespace core {
 
+// Le solde est unique et vit dans App ; chaque jeu en reçoit une copie au
+// moment d'être joué et la rend ensuite. Sans ce va-et-vient explicite,
+// trois jeux tiendraient trois comptes qui divergeraient en silence.
+void pushEconomy(App& a) {
+    a.game.machine.econ = a.econ;
+    a.video.econ = a.econ;
+    a.bj.econ = a.econ;
+}
+
+void pullEconomy(App& a) {
+    switch (a.screen) {
+        case AppScreen::Slot:
+        case AppScreen::SlotHelp:
+        case AppScreen::SlotSettings:
+            a.econ = a.game.machine.econ;
+            break;
+        case AppScreen::Video:
+        case AppScreen::VideoHelp:
+        case AppScreen::VideoSettings:
+            a.econ = a.video.econ;
+            break;
+        case AppScreen::Blackjack:
+        case AppScreen::BjHelp:
+        case AppScreen::BjSettings:
+            a.econ = a.bj.econ;
+            break;
+        default:
+            break;
+    }
+}
+
 App newApp(uint32_t now, RngFn rng) {
     App a;
     a.game = newGame(now, rng);
+    a.video = newVideoGame(now, rng);
+    a.bj = newBjSession(now);
+    a.econ = freshEconomy();
+    pushEconomy(a);
     return a;
 }
 
@@ -14,50 +49,72 @@ void enterFromSave(App& a) {
         a.screen = AppScreen::NameEntry;
         return;
     }
-    a.game.machine.econ.credits = p->credits;
+    a.econ.credits = p->credits;
+    clampBet(a.econ);
     a.game.spins = p->spins;
-    clampBet(a.game.machine.econ);
+    pushEconomy(a);
     a.screen = AppScreen::Lobby;
 }
 
 namespace {
 
-void syncAndMarkDirty(App& a) {
-    syncPlayer(a.roster, a.game.machine.econ, a.game.spins,
-               a.game.outcome.payout);
+uint32_t totalSpins(const App& a) {
+    return a.game.spins + a.video.spins + a.bj.hands;
+}
+
+void syncAndMarkDirty(App& a, uint32_t payout = 0) {
+    pullEconomy(a);
+    syncPlayer(a.roster, a.econ, totalSpins(a), payout);
+    pushEconomy(a);
     a.dirty = true;
 }
 
 void commitName(App& a) {
     if (a.nameEntry.len == 0) return;
     if (!addOrSwitchPlayer(a.roster, a.nameEntry.buf)) {
-        a.nameEntry.rosterFull = true;  // plein et nom inconnu
+        a.nameEntry.rosterFull = true;
         return;
     }
-    // Nouveau joueur ou bascule : l'économie suit l'entrée courante.
     Player* p = currentPlayer(a.roster);
-    a.game.machine.econ.credits = p->credits;
-    a.game.machine.econ.betIndex = kDefaultBetIndex;
+    a.econ.credits = p->credits;
+    a.econ.betIndex = kDefaultBetIndex;
+    clampBet(a.econ);
     a.game.spins = p->spins;
-    clampBet(a.game.machine.econ);
+    pushEconomy(a);
     a.nameEntry = NameEntry{};
     a.dirty = true;
     a.screen = AppScreen::Lobby;
 }
 
+AppScreen screenOf(GameId g) {
+    switch (g) {
+        case GameId::Video: return AppScreen::Video;
+        case GameId::Blackjack: return AppScreen::Blackjack;
+        default: return AppScreen::Slot;
+    }
+}
+
+AppScreen helpOf(GameId g) {
+    switch (g) {
+        case GameId::Video: return AppScreen::VideoHelp;
+        case GameId::Blackjack: return AppScreen::BjHelp;
+        default: return AppScreen::SlotHelp;
+    }
+}
+
 void keyLobby(App& a, AppKey k, uint32_t now, RngFn rng) {
     switch (k) {
         case AppKey::Up:
-            if (a.lobbyIndex > 0) { --a.lobbyIndex; pushCue(a.game, Cue::BetChange); }
+            if (a.lobbyIndex > 0) --a.lobbyIndex;
             break;
         case AppKey::Down:
-            if (a.lobbyIndex < 2) { ++a.lobbyIndex; pushCue(a.game, Cue::BetChange); }
+            if (a.lobbyIndex + 1 < kGameCount) ++a.lobbyIndex;
             break;
         case AppKey::Confirm:
-            if (a.lobbyIndex == 0) {  // seuls SLOTS existe
-                noteInput(a.game, now);
-                a.screen = AppScreen::Slot;
-            }
+            pushEconomy(a);
+            noteInput(a.game, now);
+            noteVideoInput(a.video, now);
+            a.screen = screenOf(static_cast<GameId>(a.lobbyIndex));
             break;
         case AppKey::Settings:
             a.menuIndex = 0;
@@ -68,17 +125,20 @@ void keyLobby(App& a, AppKey k, uint32_t now, RngFn rng) {
             a.screen = AppScreen::Leaderboard;
             break;
         case AppKey::Help:
-            if (a.lobbyIndex == 0) {
-                a.helpReturn = AppScreen::Lobby;
-                a.screen = AppScreen::SlotHelp;
-            }
+            a.helpReturn = AppScreen::Lobby;
+            a.screen = helpOf(static_cast<GameId>(a.lobbyIndex));
             break;
         case AppKey::Back:
-            a.quitRequested = true;  // ignoré par l'appareil
+            a.quitRequested = true;
             break;
         default:
             break;
     }
+}
+
+void leaveGame(App& a) {
+    syncAndMarkDirty(a);
+    a.screen = AppScreen::Lobby;
 }
 
 void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
@@ -87,7 +147,7 @@ void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
             noteInput(a.game, now);
             if (startSpin(a.game, now, rng)) {
                 ++a.game.spins;
-                syncAndMarkDirty(a);
+                syncAndMarkDirty(a, a.game.outcome.payout);
             }
             break;
         case AppKey::Left:
@@ -109,8 +169,7 @@ void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
             a.screen = AppScreen::SlotSettings;
             break;
         case AppKey::Back:
-            syncAndMarkDirty(a);
-            a.screen = AppScreen::Lobby;
+            leaveGame(a);
             break;
         default:
             noteInput(a.game, now);
@@ -118,8 +177,81 @@ void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
     }
 }
 
+void keyVideo(App& a, AppKey k, uint32_t now, RngFn rng) {
+    switch (k) {
+        case AppKey::Confirm:
+            noteVideoInput(a.video, now);
+            if (startVideoSpin(a.video, now, rng)) {
+                syncAndMarkDirty(a, a.video.payout);
+            }
+            break;
+        case AppKey::Left:
+            noteVideoInput(a.video, now);
+            lowerBet(a.video.econ);
+            pushVideoCue(a.video, Cue::BetChange);
+            break;
+        case AppKey::Right:
+            noteVideoInput(a.video, now);
+            raiseBet(a.video.econ);
+            pushVideoCue(a.video, Cue::BetChange);
+            break;
+        case AppKey::Help:
+            a.helpReturn = AppScreen::Video;
+            a.screen = AppScreen::VideoHelp;
+            break;
+        case AppKey::Settings:
+            a.menuIndex = 0;
+            a.screen = AppScreen::VideoSettings;
+            break;
+        case AppKey::Back:
+            leaveGame(a);
+            break;
+        default:
+            noteVideoInput(a.video, now);
+            break;
+    }
+}
+
+void keyBlackjack(App& a, AppKey k, uint32_t now, RngFn rng) {
+    switch (k) {
+        case AppKey::Confirm:
+            if (a.bj.bj.phase == BjPhase::PlayerTurn) {
+                bjConfirm(a.bj, now, rng);
+            } else if (a.bj.bj.phase != BjPhase::DealerTurn) {
+                // Entre deux mains : Espace distribue.
+                if (bjStartHand(a.bj, now, rng)) syncAndMarkDirty(a, a.bj.bj.payout);
+            }
+            break;
+        case AppKey::Left:
+            if (a.bj.bj.phase == BjPhase::PlayerTurn) bjMoveChoice(a.bj, -1, now);
+            else { lowerBet(a.bj.econ); pushBjCue(a.bj, Cue::BetChange); }
+            break;
+        case AppKey::Right:
+            if (a.bj.bj.phase == BjPhase::PlayerTurn) bjMoveChoice(a.bj, +1, now);
+            else { raiseBet(a.bj.econ); pushBjCue(a.bj, Cue::BetChange); }
+            break;
+        case AppKey::Help:
+            a.helpReturn = AppScreen::Blackjack;
+            a.screen = AppScreen::BjHelp;
+            break;
+        case AppKey::Settings:
+            a.menuIndex = 0;
+            a.screen = AppScreen::BjSettings;
+            break;
+        case AppKey::Back:
+            // On ne quitte pas une main en cours : elle se solderait sans
+            // que le joueur voie le résultat de sa mise.
+            if (a.bj.bj.phase != BjPhase::PlayerTurn &&
+                a.bj.bj.phase != BjPhase::DealerTurn) {
+                leaveGame(a);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 void keyGlobalSettings(App& a, AppKey k) {
-    // Lignes : 0 SOUND, 1 VOLUME, 2 PLAYER, 3 RESET LEADERBOARD
     switch (k) {
         case AppKey::Up:
             if (a.menuIndex > 0) --a.menuIndex;
@@ -139,35 +271,36 @@ void keyGlobalSettings(App& a, AppKey k) {
                 if (inc && a.settings.volume < 3) ++a.settings.volume;
                 if (!inc && a.settings.volume > 0) --a.settings.volume;
                 a.dirty = true;
-                pushCue(a.game, Cue::BetChange);  // témoin sonore du volume
+                pushCue(a.game, Cue::BetChange);
             } else if (a.menuIndex == 2 && a.roster.count > 0) {
-                // Fait défiler les joueurs existants.
-                syncPlayer(a.roster, a.game.machine.econ, a.game.spins, 0);
+                syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 const uint8_t n = a.roster.count;
                 a.roster.current = static_cast<uint8_t>(
                     (a.roster.current + (inc ? 1 : n - 1)) % n);
                 Player* p = currentPlayer(a.roster);
-                a.game.machine.econ.credits = p->credits;
-                a.game.spins = p->spins;
-                clampBet(a.game.machine.econ);
+                a.econ.credits = p->credits;
+                clampBet(a.econ);
+                pushEconomy(a);
                 a.dirty = true;
             }
             break;
         }
         case AppKey::Confirm:
             if (a.menuIndex == 2) {
-                // Nouveau joueur : passe par la saisie du nom.
-                syncPlayer(a.roster, a.game.machine.econ, a.game.spins, 0);
+                syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 a.screen = AppScreen::NameEntry;
             } else if (a.menuIndex == 3) {
                 if (!a.resetArmed) {
-                    a.resetArmed = true;  // première pression : on arme
+                    a.resetArmed = true;
                 } else {
-                    resetRoster(a.roster);   // seconde : on efface tout
+                    resetRoster(a.roster);
                     a.resetArmed = false;
                     a.dirty = true;
-                    a.game.machine.econ = freshEconomy();
+                    a.econ = freshEconomy();
                     a.game.spins = 0;
+                    a.video.spins = 0;
+                    a.bj.hands = 0;
+                    pushEconomy(a);
                     a.screen = AppScreen::NameEntry;
                 }
             }
@@ -182,54 +315,57 @@ void keyGlobalSettings(App& a, AppKey k) {
     }
 }
 
-void keySlotSettings(App& a, AppKey k) {
-    switch (k) {
-        case AppKey::Left:
-        case AppKey::Right:
-        case AppKey::Confirm:
-            // Ligne unique : GLYPHS geek ↔ classique.
-            a.settings.slotSkin = a.settings.slotSkin ? 0 : 1;
-            a.dirty = true;
-            break;
-        case AppKey::Settings:
-        case AppKey::Back:
-            a.screen = AppScreen::Slot;
-            break;
-        default:
-            break;
-    }
-}
-
 }  // namespace
 
 void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
     if (k == AppKey::None) return;
     switch (a.screen) {
         case AppScreen::NameEntry:
-            // Enter est géré ici ; les caractères par feedNameChar.
             if (k == AppKey::Confirm) commitName(a);
             if (k == AppKey::Back && a.roster.count > 0) {
                 a.nameEntry = NameEntry{};
-                a.screen = AppScreen::Lobby;  // annulation possible s'il
-            }                                 // existe déjà des joueurs
-            break;
-        case AppScreen::Lobby:
-            keyLobby(a, k, now, rng);
-            break;
-        case AppScreen::Slot:
-            keySlot(a, k, now, rng);
-            break;
-        case AppScreen::SlotHelp:
-            if (k == AppKey::Help || k == AppKey::Back || k == AppKey::Confirm) {
-                a.screen = a.helpReturn;  // on revient d'où l'on vient
+                a.screen = AppScreen::Lobby;
             }
             break;
+        case AppScreen::Lobby: keyLobby(a, k, now, rng); break;
+        case AppScreen::Slot: keySlot(a, k, now, rng); break;
+        case AppScreen::Video: keyVideo(a, k, now, rng); break;
+        case AppScreen::Blackjack: keyBlackjack(a, k, now, rng); break;
+
+        case AppScreen::SlotHelp:
+        case AppScreen::VideoHelp:
+        case AppScreen::BjHelp:
+            if (k == AppKey::Help || k == AppKey::Back || k == AppKey::Confirm) {
+                a.screen = a.helpReturn;
+            }
+            break;
+
         case AppScreen::SlotSettings:
-            keySlotSettings(a, k);
+            if (k == AppKey::Left || k == AppKey::Right || k == AppKey::Confirm) {
+                a.settings.slotSkin = a.settings.slotSkin ? 0 : 1;
+                a.dirty = true;
+            } else if (k == AppKey::Settings || k == AppKey::Back) {
+                a.screen = AppScreen::Slot;
+            }
             break;
-        case AppScreen::GlobalSettings:
-            keyGlobalSettings(a, k);
+        case AppScreen::VideoSettings:
+            if (k == AppKey::Left || k == AppKey::Right || k == AppKey::Confirm) {
+                a.settings.slotSkin = a.settings.slotSkin ? 0 : 1;
+                a.dirty = true;
+            } else if (k == AppKey::Settings || k == AppKey::Back) {
+                a.screen = AppScreen::Video;
+            }
             break;
+        case AppScreen::BjSettings:
+            if (k == AppKey::Left || k == AppKey::Right || k == AppKey::Confirm) {
+                a.bj.hintsOn = !a.bj.hintsOn;
+                a.dirty = true;
+            } else if (k == AppKey::Settings || k == AppKey::Back) {
+                a.screen = AppScreen::Blackjack;
+            }
+            break;
+
+        case AppScreen::GlobalSettings: keyGlobalSettings(a, k); break;
         case AppScreen::Leaderboard:
             if (k == AppKey::Board || k == AppKey::Back || k == AppKey::Confirm) {
                 a.screen = AppScreen::Lobby;
@@ -255,16 +391,34 @@ void nameBackspace(App& a) {
 }
 
 void tickApp(App& a, uint32_t now, RngFn rng) {
-    // Le jeu n'avance (et le mode démo ne s'arme) que sur son écran.
-    if (a.screen != AppScreen::Slot) {
-        noteInput(a.game, now);
-        return;
-    }
-    updateGame(a.game, now, rng);
-    // Un tour fini → l'entrée du joueur au classement est à jour.
-    if (a.game.phase != Phase::Spinning && a.game.reelsStopped > 0) {
-        syncAndMarkDirty(a);
-        a.game.reelsStopped = 0;
+    switch (a.screen) {
+        case AppScreen::Slot:
+            updateGame(a.game, now, rng);
+            if (a.game.phase != Phase::Spinning && a.game.reelsStopped > 0) {
+                a.game.reelsStopped = 0;
+                syncAndMarkDirty(a, a.game.outcome.payout);
+            }
+            break;
+        case AppScreen::Video:
+            updateVideoGame(a.video, now, rng);
+            if (a.video.phase != Phase::Spinning && a.video.reelsStopped > 0) {
+                a.video.reelsStopped = 0;
+                syncAndMarkDirty(a, a.video.payout);
+            }
+            break;
+        case AppScreen::Blackjack: {
+            const BjPhase before = a.bj.bj.phase;
+            bjUpdate(a.bj, now, rng);
+            if (before != BjPhase::Settle && a.bj.bj.phase == BjPhase::Settle) {
+                syncAndMarkDirty(a, a.bj.bj.payout);
+            }
+            break;
+        }
+        default:
+            // Hors jeu, le mode démo ne doit pas s'armer.
+            noteInput(a.game, now);
+            noteVideoInput(a.video, now);
+            break;
     }
 }
 

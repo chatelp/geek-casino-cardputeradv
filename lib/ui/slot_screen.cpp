@@ -77,7 +77,7 @@ void drawHud(lgfx::LGFX_Sprite& g, const core::Game& game) {
     const bool low = e.credits < core::kBetLadder[0] * 10;
     drawNumber(g, e.credits, 22, 4, A(low ? P::red : P::yellow), 2);
     const int bw = numberWidth(core::bet(e), 2);
-    drawText(g, "BET", kScreenW - 6 - bw - 8, 4, P::steel300, 2, Align::Right);
+    drawText(g, "BET", kScreenW - 6 - bw - 9, 4, P::steel300, 2, Align::Right);
     drawNumber(g, core::bet(e), kScreenW - 6, 4, A(P::cyan), 2, Align::Right);
 }
 

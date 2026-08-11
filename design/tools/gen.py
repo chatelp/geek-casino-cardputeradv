@@ -1179,7 +1179,33 @@ def export_layout():
             out.append("constexpr int %-14s = %d;\n" % (names[key], GEO[key]))
     out.append("\nconstexpr int winX(int i) { return kWinX0 + i * (kWinW + kWinGap); }\n")
     out.append("constexpr int symX(int i) { return winX(i) + (kWinW - kSym) / 2; }\n")
-    out.append("\n}  // namespace layout\n}  // namespace ui\n")
+    out.append("\n}  // namespace layout\n\n")
+
+    # --- format vidéo 5x3 : chiffres vérifiés sur la carte « Formats ».
+    out.append("// Format vidéo 5x3 — zéro chrome : ni cabinet ni hublot, le HUD\n")
+    out.append("// est en surimpression et les lignes sont signalées par des\n")
+    out.append("// chevrons latéraux. Le levier garde sa colonne à droite.\n")
+    out.append("namespace vlayout {\n\n")
+    v = {"kCols": 5, "kRows": 3, "kCell": 32, "kGap": 3, "kGridX": 16,
+         "kGridY": 18, "kScale": 2, "kLeverCx": 214, "kLeverTop": 30,
+         "kLeverBaseY": 106, "kLeverTravel": 34, "kMsgY": 121}
+    v["kGridW"] = v["kCols"] * v["kCell"] + (v["kCols"] - 1) * v["kGap"]
+    v["kGridH"] = v["kRows"] * v["kCell"] + (v["kRows"] - 1) * v["kGap"]
+    for k in sorted(v):
+        out.append("constexpr int %-12s = %d;\n" % (k, v[k]))
+    out.append("\nconstexpr int cellX(int c) { return kGridX + c * (kCell + kGap); }\n")
+    out.append("constexpr int cellY(int r) { return kGridY + r * (kCell + kGap); }\n")
+    out.append("\n}  // namespace vlayout\n\n")
+
+    # --- blackjack : deux rangées de cartes, HUD en surimpression.
+    out.append("// Blackjack — mêmes règles de chrome : rien que les cartes,\n")
+    out.append("// les totaux et le choix d'action.\n")
+    out.append("namespace bjlayout {\n\n")
+    b = {"kCardW": 28, "kCardH": 40, "kCardStep": 31, "kCardStepTight": 20,
+         "kDealerY": 20, "kPlayerY": 66, "kActionsY": 110, "kHandX": 24}
+    for k in sorted(b):
+        out.append("constexpr int %-16s = %d;\n" % (k, b[k]))
+    out.append("\n}  // namespace bjlayout\n}  // namespace ui\n")
     cpp_header("lib/ui/layout.h", "".join(out))
 
 

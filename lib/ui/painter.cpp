@@ -103,6 +103,12 @@ void drawIcon(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale,
     blitIndexed(g, kIcons[icon], kIconPx, x, y, scale, tint, kSymbolPalette);
 }
 
+void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale,
+              uint16_t tint) {
+    if (suit >= kSuitCount) return;
+    blitIndexed(g, kSuits[suit], kSuitPx, x, y, scale, tint, kSymbolPalette);
+}
+
 void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c, int t) {
     g.fillRect(x, y, w, t, c);
     g.fillRect(x, y + h - t, w, t, c);

@@ -73,9 +73,12 @@ static void loadFromNvs() {
 
 static void saveToNvs(uint32_t now) {
     // Throttle : la NVS s'use, on n'écrit pas à chaque image.
-    if (!app.dirty || app.game.phase == core::Phase::Spinning) return;
+    if (!app.dirty || app.game.phase == core::Phase::Spinning ||
+        app.video.phase == core::Phase::Spinning) return;
     if (now - lastSaveMs < 2000) return;
-    core::syncPlayer(app.roster, app.game.machine.econ, app.game.spins, 0);
+    core::pullEconomy(app);
+    core::syncPlayer(app.roster, app.econ,
+                     app.game.spins + app.video.spins + app.bj.hands, 0);
     const core::SaveData s = core::makeSave(app.roster, app.settings);
     prefs.putBytes("save", &s, sizeof(s));
     app.dirty = false;
@@ -119,7 +122,9 @@ static void handleKeyboard(uint32_t now) {
 
 // --------------------------------------------------------------------- IMU
 static void handleShake(uint32_t now) {
-    if (app.screen != core::AppScreen::Slot) return;
+    // Le geste vaut pour les deux machines à sous, pas au blackjack.
+    if (app.screen != core::AppScreen::Slot &&
+        app.screen != core::AppScreen::Video) return;
     // L'IMU n'est pas ré-exposée par le wrapper Cardputer : API M5Unified.
     float ax = 0, ay = 0, az = 0;
     M5.Imu.update();
@@ -151,10 +156,13 @@ void loop() {
     handleShake(now);
     core::tickApp(app, now, trng);
 
+    // Les trois jeux ont leur file ; un seul est à l'écran à la fois.
     for (core::Cue c = core::takeCue(app.game); c != core::Cue::None;
-         c = core::takeCue(app.game)) {
-        playCue(c);
-    }
+         c = core::takeCue(app.game)) playCue(c);
+    for (core::Cue c = core::takeVideoCue(app.video); c != core::Cue::None;
+         c = core::takeVideoCue(app.video)) playCue(c);
+    for (core::Cue c = core::takeBjCue(app.bj); c != core::Cue::None;
+         c = core::takeBjCue(app.bj)) playCue(c);
 
     saveToNvs(now);
 

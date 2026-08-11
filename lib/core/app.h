@@ -12,9 +12,11 @@
 #pragma once
 #include <cstdint>
 
+#include "bj_session.h"
 #include "game.h"
 #include "persist.h"
 #include "players.h"
+#include "video_game.h"
 
 namespace core {
 
@@ -24,6 +26,12 @@ enum class AppScreen : uint8_t {
     Slot,
     SlotHelp,        // H — correspondances geek ↔ classique et gains
     SlotSettings,    // S en jeu — glyphes geek/classique
+    Video,           // 5×3, 5 lignes
+    VideoHelp,
+    VideoSettings,
+    Blackjack,
+    BjHelp,
+    BjSettings,
     GlobalSettings,  // S à l'accueil — son, volume, joueur, reset
     Leaderboard,     // L à l'accueil
 };
@@ -41,8 +49,15 @@ struct NameEntry {
     bool rosterFull = false;  // affiché quand l'ajout est refusé
 };
 
+// Trois jeux, un solde commun. L'entrée de l'accueil pointe l'un d'eux ;
+// c'est ce qui donne son sens au mot « casino ».
+enum class GameId : uint8_t { Slots = 0, Video = 1, Blackjack = 2 };
+constexpr uint8_t kGameCount = 3;
+
 struct App {
     Game game;
+    VideoGame video;
+    BjSession bj;
     Roster roster;
     Settings settings;
     AppScreen screen = AppScreen::NameEntry;
@@ -52,6 +67,9 @@ struct App {
     // L'aide s'ouvre depuis l'accueil OU depuis le jeu : on revient
     // toujours d'où l'on vient, jamais vers un écran câblé en dur.
     AppScreen helpReturn = AppScreen::Lobby;
+    // Le solde vit dans App : les trois jeux le partagent au lieu d'en
+    // garder chacun une copie qui divergerait.
+    Economy econ;
     bool resetArmed = false;    // le reset demande une seconde pression
     bool quitRequested = false; // Échap depuis l'accueil (sim uniquement)
     bool dirty = false;         // une sauvegarde est due
@@ -76,5 +94,10 @@ void tickApp(App& a, uint32_t now, RngFn rng);
 // Nombre de lignes des menus (pour l'affichage et la navigation).
 constexpr uint8_t kGlobalSettingsRows = 4;  // SOUND, VOLUME, PLAYER, RESET
 constexpr uint8_t kSlotSettingsRows = 1;    // GLYPHS
+constexpr uint8_t kBjSettingsRows = 1;      // HINTS
+
+// Synchronise le solde partagé vers le jeu courant et retour.
+void pushEconomy(App& a);
+void pullEconomy(App& a);
 
 }  // namespace core

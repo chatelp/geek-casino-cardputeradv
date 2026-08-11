@@ -2,6 +2,32 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-018 — 2026-08-11 — Les trois jeux à l'écran
+
+Les deux nouveaux jeux sont jouables, l'accueil compte trois entrées.
+
+- **Le solde vit désormais dans `App`**, pas dans chaque jeu. Trois jeux
+  qui tiendraient chacun leur compte divergeraient en silence ; le
+  va-et-vient est explicite (`pushEconomy` / `pullEconomy`) et testé :
+  jouer à la vidéo puis passer au blackjack conserve le solde exact.
+- **Format vidéo** : zéro chrome comme demandé. HUD en surimpression,
+  chevrons latéraux pour les cinq lignes, tracé de la ligne gagnante en
+  reliant les cellules — un chevron ne se lit pas autrement sur grille.
+  Les lignes gagnantes **défilent une à une** : cinq allumées ensemble ne
+  se lisent pas. La mise affichée est le **total engagé** (mise × 5) ;
+  afficher la mise par ligne obligeait à un calcul mental.
+- **Blackjack** : distribution progressive (une carte toutes les 260 ms),
+  carte du croupier cachée jusqu'à son tour, croupier qui tire une carte
+  toutes les 620 ms. Choix HIT / STAND / DOUBLE aux flèches. On ne peut
+  pas quitter une main en cours : elle se solderait sans que le joueur
+  voie le résultat de sa mise.
+- **Réglage blackjack : HINTS** — un point vert marque le coup de la
+  stratégie de base. Il conseille, il ne joue jamais. La fonction est
+  testée contre les cas contre-intuitifs de la table de référence
+  (16 contre 5 → rester, 12 contre 3 → tirer).
+- Le geste IMU vaut pour les **deux** machines à sous, pas au blackjack.
+- Les cartes ont un dos en motif de circuit, cohérent avec le cabinet.
+
 ## D-017 — 2026-08-11 — Format vidéo 5×3 retenu, 5 lignes
 
 Pierre : « finalement en 5x3 il reste de la place pour du chrome, comme

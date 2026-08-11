@@ -25,7 +25,7 @@ static void test_first_launch_asks_for_a_name() {
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     TEST_ASSERT_EQUAL(AppScreen::Lobby, a.screen);
     TEST_ASSERT_EQUAL_STRING("PIERRE", a.roster.players[0].name);
-    TEST_ASSERT_EQUAL_INT32(core::kStartingCredits, a.game.machine.econ.credits);
+    TEST_ASSERT_EQUAL_INT32(core::kStartingCredits, a.econ.credits);
 }
 
 static void test_lobby_keys_route_to_the_right_screens() {
@@ -126,7 +126,8 @@ static void test_switching_player_swaps_the_balance() {
     App a = core::newApp(0, core::xorShift32);
     typeName(a, "ONE");
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
-    a.game.machine.econ.credits = 750;  // ONE joue et perd un peu
+    a.econ.credits = 750;  // ONE joue et perd un peu
+    core::pushEconomy(a);
 
     // Nouveau joueur via réglages (ligne PLAYER, Enter).
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
@@ -138,7 +139,7 @@ static void test_switching_player_swaps_the_balance() {
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
 
     // TWO démarre au solde neuf ; le solde de ONE est resté à 750.
-    TEST_ASSERT_EQUAL_INT32(core::kStartingCredits, a.game.machine.econ.credits);
+    TEST_ASSERT_EQUAL_INT32(core::kStartingCredits, a.econ.credits);
     TEST_ASSERT_EQUAL_INT32(750, a.roster.players[0].credits);
 
     // Retour à ONE par ←/→ sur la ligne PLAYER : son solde revient.
@@ -147,7 +148,7 @@ static void test_switching_player_swaps_the_balance() {
     core::handleKey(a, AppKey::Down, 0, core::xorShift32);
     core::handleKey(a, AppKey::Right, 0, core::xorShift32);
     TEST_ASSERT_EQUAL_STRING("ONE", a.roster.players[a.roster.current].name);
-    TEST_ASSERT_EQUAL_INT32(750, a.game.machine.econ.credits);
+    TEST_ASSERT_EQUAL_INT32(750, a.econ.credits);
 }
 
 static void test_same_name_switches_instead_of_duplicating() {
@@ -203,7 +204,7 @@ static void test_spin_updates_the_leaderboard_entry() {
         core::tickApp(a, now, core::xorShift32);
     }
     TEST_ASSERT_EQUAL_UINT32(1, a.roster.players[0].spins);
-    TEST_ASSERT_EQUAL_INT32(a.game.machine.econ.credits, a.roster.players[0].credits);
+    TEST_ASSERT_EQUAL_INT32(a.econ.credits, a.roster.players[0].credits);
     TEST_ASSERT_TRUE(a.dirty);  // une sauvegarde est due
 }
 
