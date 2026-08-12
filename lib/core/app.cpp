@@ -11,11 +11,13 @@ void pushEconomy(App& a) {
     a.video.econ.credits = a.econ.credits;
     a.bj.econ.credits = a.econ.credits;
     a.poker.econ.credits = a.econ.credits;
+    a.roulette.econ.credits = a.econ.credits;
     // Chaque mise reste dans son jeu, ramenée à ce que le solde permet.
     clampBet(a.game.machine.econ);
     clampBetFor(a.video.econ, kVideoLines);
     clampBet(a.bj.econ);
     clampBet(a.poker.econ);
+    clampBet(a.roulette.econ);
 }
 
 void storePlayerBets(App& a) {
@@ -25,6 +27,7 @@ void storePlayerBets(App& a) {
     row[1] = a.video.econ.betIndex;
     row[2] = a.bj.econ.betIndex;
     row[3] = a.poker.econ.betIndex;
+    row[4] = a.roulette.econ.betIndex;
     a.bets = makeBets(a.bets);  // somme de contrôle à jour
 }
 
@@ -35,6 +38,7 @@ void loadPlayerBets(App& a) {
     a.video.econ.betIndex = row[1] < kBetSteps ? row[1] : kDefaultBetIndex;
     a.bj.econ.betIndex = row[2] < kBetSteps ? row[2] : kDefaultBetIndex;
     a.poker.econ.betIndex = row[3] < kBetSteps ? row[3] : kDefaultBetIndex;
+    a.roulette.econ.betIndex = row[4] < kBetSteps ? row[4] : kDefaultBetIndex;
     pushEconomy(a);  // ramène chaque mise à ce que le solde permet
 }
 
@@ -43,6 +47,7 @@ uint16_t betOfGame(const App& a, GameId g) {
         case GameId::Video: return bet(a.video.econ);
         case GameId::Blackjack: return bet(a.bj.econ);
         case GameId::Poker: return bet(a.poker.econ);
+        case GameId::Roulette: return bet(a.roulette.econ);
         default: return bet(a.game.machine.econ);
     }
 }
@@ -69,6 +74,10 @@ void pullEconomy(App& a) {
         case AppScreen::PokerHelp:
             a.econ.credits = a.poker.econ.credits;
             break;
+        case AppScreen::Roulette:
+        case AppScreen::RouletteHelp:
+            a.econ.credits = a.roulette.econ.credits;
+            break;
         default:
             break;
     }
@@ -80,6 +89,7 @@ App newApp(uint32_t now, RngFn rng) {
     a.video = newVideoGame(now, rng);
     a.bj = newBjSession(now);
     a.poker = newVpSession(now);
+    a.roulette = newRouletteSession(now, rng);
     a.econ = freshEconomy();
     a.bets = freshBets();
     pushEconomy(a);
@@ -101,7 +111,8 @@ void enterFromSave(App& a) {
 namespace {
 
 uint32_t totalSpins(const App& a) {
-    return a.game.spins + a.video.spins + a.bj.hands + a.poker.hands;
+    return a.game.spins + a.video.spins + a.bj.hands + a.poker.hands +
+           a.roulette.spins;
 }
 
 void syncAndMarkDirty(App& a, uint32_t payout = 0) {
@@ -132,6 +143,7 @@ AppScreen screenOf(GameId g) {
         case GameId::Video: return AppScreen::Video;
         case GameId::Blackjack: return AppScreen::Blackjack;
         case GameId::Poker: return AppScreen::Poker;
+        case GameId::Roulette: return AppScreen::Roulette;
         default: return AppScreen::Slot;
     }
 }
@@ -141,6 +153,7 @@ AppScreen helpOf(GameId g) {
         case GameId::Video: return AppScreen::VideoHelp;
         case GameId::Blackjack: return AppScreen::BjHelp;
         case GameId::Poker: return AppScreen::PokerHelp;
+        case GameId::Roulette: return AppScreen::RouletteHelp;
         default: return AppScreen::SlotHelp;
     }
 }
@@ -334,6 +347,36 @@ void keyPoker(App& a, AppKey k, uint32_t now, RngFn rng) {
     }
 }
 
+void keyRoulette(App& a, AppKey k, uint32_t now, RngFn rng) {
+    switch (k) {
+        case AppKey::Confirm:
+            if (rltSpin(a.roulette, now, rng)) syncAndMarkDirty(a, 0);
+            break;
+        case AppKey::Left:  rltCycleBet(a.roulette, -1); break;
+        case AppKey::Right: rltCycleBet(a.roulette, +1); break;
+        case AppKey::Up:
+            // Sur un plein, les flèches verticales choisissent le numéro ;
+            // ailleurs elles règlent la mise.
+            if (a.roulette.kind == BetKind::Straight) rltCycleNumber(a.roulette, +1);
+            else if (a.roulette.phase != RltPhase::Spinning) raiseBet(a.roulette.econ);
+            break;
+        case AppKey::Down:
+            if (a.roulette.kind == BetKind::Straight) rltCycleNumber(a.roulette, -1);
+            else if (a.roulette.phase != RltPhase::Spinning) lowerBet(a.roulette.econ);
+            break;
+        case AppKey::Help:
+            a.helpReturn = AppScreen::Roulette;
+            a.helpPage = 0;
+            a.screen = AppScreen::RouletteHelp;
+            break;
+        case AppKey::Back:
+            if (a.roulette.phase != RltPhase::Spinning) leaveGame(a);
+            break;
+        default:
+            break;
+    }
+}
+
 void keyGlobalSettings(App& a, AppKey k) {
     switch (k) {
         case AppKey::Up:
@@ -386,6 +429,7 @@ void keyGlobalSettings(App& a, AppKey k) {
                     a.video.spins = 0;
                     a.bj.hands = 0;
                     a.poker.hands = 0;
+                    a.roulette.spins = 0;
                     pushEconomy(a);
                     a.screen = AppScreen::NameEntry;
                 }
@@ -407,6 +451,7 @@ uint8_t helpPageCount(AppScreen help) {
     switch (help) {
         case AppScreen::SlotHelp: return 2;   // gains, règles
         case AppScreen::PokerHelp: return 2;  // gains, règles
+        case AppScreen::RouletteHelp: return 2;
         case AppScreen::VideoHelp: return 3;  // gains, lignes, règles
         case AppScreen::BjHelp: return 2;     // règles, actions
         default: return 1;
@@ -428,11 +473,13 @@ void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
         case AppScreen::Video: keyVideo(a, k, now, rng); break;
         case AppScreen::Blackjack: keyBlackjack(a, k, now, rng); break;
         case AppScreen::Poker: keyPoker(a, k, now, rng); break;
+        case AppScreen::Roulette: keyRoulette(a, k, now, rng); break;
 
         case AppScreen::SlotHelp:
         case AppScreen::VideoHelp:
         case AppScreen::BjHelp:
-        case AppScreen::PokerHelp: {
+        case AppScreen::PokerHelp:
+        case AppScreen::RouletteHelp: {
             const uint8_t pages = helpPageCount(a.screen);
             if (k == AppKey::Down && a.helpPage + 1 < pages) {
                 ++a.helpPage;
@@ -515,6 +562,14 @@ void tickApp(App& a, uint32_t now, RngFn rng) {
         case AppScreen::Poker:
             vpUpdate(a.poker, now, rng);
             break;
+        case AppScreen::Roulette: {
+            const RltPhase before = a.roulette.phase;
+            rltUpdate(a.roulette, now);
+            if (before == RltPhase::Spinning && a.roulette.phase != before) {
+                syncAndMarkDirty(a, a.roulette.payout);
+            }
+            break;
+        }
         case AppScreen::Blackjack: {
             const BjPhase before = a.bj.bj.phase;
             bjUpdate(a.bj, now, rng);

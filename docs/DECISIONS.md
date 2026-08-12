@@ -2,6 +2,38 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-027 — 2026-08-11 — Roulette européenne
+
+Cinquième jeu. Un seul zéro, 37 cases.
+
+- **La roue suit l'ordre PHYSIQUE réel** (0, 32, 15, 19, 4, 21…), pas
+  l'ordre numérique. C'est ce qui rend le ralenti crédible : les cases
+  qui défilent sont celles qu'on verrait vraiment passer. Un test vérifie
+  l'invariant du plan de roue — **deux cases voisines sont toujours de
+  couleurs opposées**, le zéro mis à part.
+- **Rendue en BANDE horizontale**, pas en rond : 37 cases en cercle sont
+  illisibles sur 240 px. Le mouvement réutilise `ReelMotion`, avec une
+  durée propre (3,2 s) — une bille tourne bien plus longtemps qu'un
+  rouleau, et ça ne coûte rien puisque le joueur a tout décidé avant.
+- **Un seul pari à la fois**, choisi aux flèches. Placer des jetons sur un
+  tapis demanderait un curseur en deux dimensions, désagréable au clavier.
+  Dix paris : rouge, noir, pair, impair, 1-18, 19-36, trois douzaines,
+  plein.
+- Geek **par le décor** : la bande est montée sur un **encodeur rotatif**
+  (crans entre les cases, corps et pattes dorées sous la bande). Les
+  numéros restent des numéros.
+
+**Le fait vérifié exactement** : toutes les mises rendent **36/37 =
+97,297 %**, au millionième — y compris chacun des 37 pleins pris
+séparément. C'est une propriété du jeu, pas un réglage : si une seule
+mise différait, un joueur pourrait trouver l'avantage. Le zéro est le
+seul endroit où la maison gagne, et c'est testé.
+
+Le test du hall a été **généralisé** au passage : il vérifiait un compte
+figé de quatre jeux, il vérifie maintenant que chaque entrée ouvre le bon
+écran et possède son aide. Ajouter un jeu ne casse plus le test ; en
+oublier le câblage le casse.
+
 ## D-026 — 2026-08-11 — Video poker (Jacks or Better 9/6)
 
 Quatrième jeu, validé par Pierre. Barème **9/6 « full pay »** — celui qui

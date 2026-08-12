@@ -41,6 +41,13 @@ ReelMotion armReel(uint32_t now, uint8_t reel, uint16_t from, uint16_t to,
     return m;
 }
 
+ReelMotion armReelMs(uint32_t now, uint16_t from, uint16_t to,
+                     uint16_t stripLen, uint8_t minTurns, uint32_t durMs) {
+    ReelMotion m = armReel(now, 0, from, to, stripLen, minTurns);
+    m.dur = durMs ? durMs : 1;
+    return m;
+}
+
 float reelPosition(const ReelMotion& m, uint32_t now) {
     if (now <= m.t0) return m.startPos;
     const uint32_t dt = now - m.t0;

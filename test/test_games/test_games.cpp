@@ -4,6 +4,7 @@
 
 #include "app.h"
 #include "poker.h"
+#include "roulette.h"
 
 void setUp() {}
 void tearDown() {}
@@ -265,18 +266,78 @@ static void test_poker_cursor_wraps_over_the_draw_slot() {
     TEST_ASSERT_EQUAL_UINT8(0, s.cursor);
 }
 
-static void test_lobby_now_offers_four_games() {
-    App a = started(62);
-    TEST_ASSERT_EQUAL_UINT8(4, core::kGameCount);
-    for (int i = 0; i < 3; ++i) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
-    TEST_ASSERT_EQUAL_UINT8(3, a.lobbyIndex);
-    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
-    TEST_ASSERT_EQUAL(AppScreen::Poker, a.screen);
-    // On ne quitte pas au milieu d'une main : la mise est engagée.
-    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);  // distribue
-    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
-    TEST_ASSERT_EQUAL_MESSAGE(AppScreen::Poker, a.screen,
-                              "on a pu quitter avec une mise engagee");
+static void test_every_lobby_entry_opens_its_game() {
+    // Vérifie CHAQUE entrée plutôt qu'un compte figé : ajouter un jeu ne
+    // doit pas casser le test, mais en oublier le câblage doit le casser.
+    static const AppScreen kExpected[] = {
+        AppScreen::Slot, AppScreen::Video, AppScreen::Blackjack,
+        AppScreen::Poker, AppScreen::Roulette,
+    };
+    TEST_ASSERT_EQUAL_UINT8_MESSAGE(
+        sizeof(kExpected) / sizeof(kExpected[0]), core::kGameCount,
+        "un jeu a ete ajoute sans etre couvert par ce test");
+
+    for (uint8_t i = 0; i < core::kGameCount; ++i) {
+        App a = started(static_cast<uint32_t>(70 + i));
+        for (uint8_t k = 0; k < i; ++k) {
+            core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+        }
+        TEST_ASSERT_EQUAL_UINT8(i, a.lobbyIndex);
+        core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+        TEST_ASSERT_EQUAL_MESSAGE(kExpected[i], a.screen, "mauvais ecran ouvert");
+        // Et chacun a son aide.
+        core::handleKey(a, AppKey::Help, 0, core::xorShift32);
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(kExpected[i], a.screen, "aide absente");
+        core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+        TEST_ASSERT_EQUAL(kExpected[i], a.screen);
+    }
+}
+
+static void test_roulette_spin_charges_and_settles() {
+    core::seedXorShift(80);
+    core::RouletteSession r = core::newRouletteSession(0, core::xorShift32);
+    r.econ.credits = 1000;
+    r.kind = core::BetKind::Red;
+    const int32_t before = r.econ.credits;
+    TEST_ASSERT_TRUE(core::rltSpin(r, 0, core::xorShift32));
+    TEST_ASSERT_EQUAL_INT32(before - r.stake, r.econ.credits);
+
+    uint32_t now = 0;
+    for (int i = 0; i < 400 && r.phase == core::RltPhase::Spinning; ++i) {
+        now += core::kFrameMs;
+        core::rltUpdate(r, now);
+    }
+    TEST_ASSERT_EQUAL(core::RltPhase::Result, r.phase);
+    // Le gain doit correspondre exactement à la règle du pari joué.
+    const bool shouldWin = core::betWins(r.kind, r.straight, r.winNumber);
+    TEST_ASSERT_EQUAL(shouldWin, r.won);
+    TEST_ASSERT_EQUAL_UINT32(
+        shouldWin ? core::roulettePayout(r.kind) * r.stake : 0u, r.payout);
+    // La bille s'arrête EXACTEMENT sur la case annoncée.
+    const float pos = core::rltWheelPos(r, now);
+    TEST_ASSERT_EQUAL_UINT8(r.winNumber,
+        core::pocketAt(static_cast<uint8_t>(
+            static_cast<uint32_t>(pos + 0.5f) % core::kPockets)));
+}
+
+static void test_roulette_long_session_never_deadlocks() {
+    core::seedXorShift(81);
+    core::RouletteSession r = core::newRouletteSession(0, core::xorShift32);
+    uint32_t now = 0;
+    int spins = 0;
+    for (int h = 0; h < 500; ++h) {
+        r.econ.credits = 5000;
+        if (!core::rltSpin(r, now, core::xorShift32)) break;
+        ++spins;
+        int guard = 0;
+        while (r.phase != core::RltPhase::Idle && ++guard < 400) {
+            now += core::kFrameMs;
+            core::rltUpdate(r, now);
+        }
+        TEST_ASSERT_TRUE_MESSAGE(guard < 400, "tour de roulette sans fin");
+        TEST_ASSERT_TRUE(r.econ.credits >= 0);
+    }
+    TEST_ASSERT_TRUE(spins > 490);
 }
 
 static void test_blackjack_deal_is_progressive_then_playable() {
@@ -353,7 +414,9 @@ int main() {
     RUN_TEST(test_bet_memory_survives_a_save_round_trip);
     RUN_TEST(test_poker_hand_runs_deal_hold_draw);
     RUN_TEST(test_poker_cursor_wraps_over_the_draw_slot);
-    RUN_TEST(test_lobby_now_offers_four_games);
+    RUN_TEST(test_every_lobby_entry_opens_its_game);
+    RUN_TEST(test_roulette_spin_charges_and_settles);
+    RUN_TEST(test_roulette_long_session_never_deadlocks);
     RUN_TEST(test_blackjack_deal_is_progressive_then_playable);
     RUN_TEST(test_blackjack_hand_always_terminates);
     RUN_TEST(test_basic_strategy_matches_the_reference_table);

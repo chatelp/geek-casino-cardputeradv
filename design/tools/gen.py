@@ -1232,7 +1232,17 @@ def export_layout():
     for k in sorted(vp):
         out.append("constexpr int %-10s = %d;\n" % (k, vp[k]))
     out.append("\nconstexpr int cardX(int i) { return kRowX + i * kStep; }\n")
-    out.append("\n}  // namespace vplayout\n}  // namespace ui\n")
+    out.append("\n}  // namespace vplayout\n\n")
+    out.append("// Roulette — la roue est rendue en BANDE horizontale : une\n")
+    out.append("// roue ronde de 37 cases est illisible sur 240 px de large.\n")
+    out.append("namespace rlayout {\n\n")
+    rl = {"kCellW": 44, "kStripY": 24, "kStripH": 36, "kVisible": 5,
+          "kBetY": 70, "kBetH": 28, "kMsgY": 104}
+    rl["kStripX"] = (SCREEN_W - rl["kVisible"] * rl["kCellW"]) // 2
+    for k in sorted(rl):
+        out.append("constexpr int %-10s = %d;\n" % (k, rl[k]))
+    out.append("\nconstexpr int cellLeft(int i) { return kStripX + i * kCellW; }\n")
+    out.append("\n}  // namespace rlayout\n}  // namespace ui\n")
     cpp_header("lib/ui/layout.h", "".join(out))
 
 

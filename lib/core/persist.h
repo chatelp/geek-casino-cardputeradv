@@ -47,8 +47,8 @@ bool applySave(const SaveData& s, Roster& r, Settings& st);
 // bumper la version, donc d'invalider les sauvegardes existantes et
 // d'effacer le classement. Son absence rend simplement les mises par
 // défaut, sans rien casser.
-constexpr uint32_t kBetMagic = 0x47434232;  // "GCB2"
-constexpr uint8_t kBetGames = 3;            // slots, vidéo, blackjack
+constexpr uint32_t kBetMagic = 0x47434233;  // "GCB3" — 5 jeux
+constexpr uint8_t kBetGames = 5;            // un cran par jeu
 
 struct BetMemory {
     uint32_t magic;

@@ -277,6 +277,29 @@ int runCapture() {
         const_cast<core::App&>(app).helpPage = 0;
         app.screen = core::AppScreen::Poker;
 
+        // Roulette : bille arrêtée, pari sur rouge.
+        app.screen = core::AppScreen::Roulette;
+        uint32_t rt = 500;
+        app.roulette.kind = core::BetKind::Red;
+        core::rltSpin(app.roulette, rt, core::xorShift32);
+        for (int i = 0; i < 200 && app.roulette.phase == core::RltPhase::Spinning; ++i) {
+            rt += core::kFrameMs;
+            core::rltUpdate(app.roulette, rt);
+        }
+        ui::drawApp(canvas, app, rt);
+        if (!saveShot(canvas, "roulette.bmp")) return 1;
+        // En pleine rotation, et sur un plein.
+        app.roulette.kind = core::BetKind::Straight;
+        app.roulette.straight = 17;
+        core::rltSpin(app.roulette, rt, core::xorShift32);
+        for (int i = 0; i < 20; ++i) { rt += core::kFrameMs; core::rltUpdate(app.roulette, rt); }
+        ui::drawApp(canvas, app, rt);
+        if (!saveShot(canvas, "roulette_spin.bmp")) return 1;
+        app.screen = core::AppScreen::RouletteHelp;
+        ui::drawApp(canvas, app, rt);
+        if (!saveShot(canvas, "roulette_help.bmp")) return 1;
+        app.screen = core::AppScreen::Roulette;
+
         // Le mode démo : monochrome gris, un tour gratuit en cours.
         app.screen = core::AppScreen::Slot;
         app.settings.slotSkin = 0;

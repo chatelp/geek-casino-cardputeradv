@@ -7,6 +7,7 @@
 #include "slot_screen.h"
 #include "symbols.h"
 #include "video_screen.h"
+#include "roulette_screen.h"
 #include "vp_screen.h"
 
 namespace ui {
@@ -90,20 +91,21 @@ void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
         {"VIDEO SLOT", "5 REELS 5 LINES", core::SYM_CRT},
         {"BLACKJACK", "3:2 DEALER S17", core::SYM_D20},
         {"VIDEO POKER", "JACKS OR BETTER 9/6", core::SYM_CHIP},
+        {"ROULETTE", "EUROPEAN - SINGLE ZERO", core::SYM_GAMEPAD},
     };
     // Quatre entrées : les lignes se resserrent pour tenir sans le bandeau
     // de jackpot, qui n'a plus sa place.
     for (int i = 0; i < core::kGameCount; ++i) {
         const Entry& e = entries[i];
         const bool sel = app.lobbyIndex == i;
-        const int y = 26 + i * 20;
-        g.fillRect(6, y, kScreenW - 12, 19, sel ? P::ink700 : P::ink800);
+        const int y = 26 + i * 17;
+        g.fillRect(6, y, kScreenW - 12, 16, sel ? P::ink700 : P::ink800);
         if (sel) {
-            drawFrame(g, 6, y, kScreenW - 12, 19, P::cyan, 1);
-            g.fillRect(6, y, 3, 19, P::cyan);
+            drawFrame(g, 6, y, kScreenW - 12, 16, P::cyan, 1);
+            g.fillRect(6, y, 3, 16, P::cyan);
         }
-        drawSymbol(g, e.sym, 12, y + 2, 1);
-        drawText(g, e.name, 34, y + 2, sel ? P::white : P::steel300, 2);
+        drawSymbol(g, e.sym, 12, y, 1);
+        drawText(g, e.name, 34, y + 1, sel ? P::white : P::steel300, 2);
         // Le sous-titre ne tient PAS sur la ligne : « VIDEO POKER » à
         // l'échelle 2 mange déjà la place. Il vit dans le bandeau du bas,
         // pour l'entrée sélectionnée seulement.
@@ -113,9 +115,9 @@ void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillRect(0, 110, kScreenW, 12, P::ink800);
     g.fillRect(0, 110, kScreenW, 1, P::greenDk);
     // Bandeau de description : une seule ligne, celle du jeu pointé.
-    g.fillRect(0, 108, kScreenW, 13, P::ink800);
-    g.fillRect(0, 108, kScreenW, 1, P::ink600);
-    drawText(g, entries[app.lobbyIndex].sub, kScreenW / 2, 111, P::cyan, 1,
+    g.fillRect(0, 112, kScreenW, 10, P::ink800);
+    g.fillRect(0, 112, kScreenW, 1, P::ink600);
+    drawText(g, entries[app.lobbyIndex].sub, kScreenW / 2, 113, P::cyan, 1,
              Align::Center);
 
     drawHint(g, "H HELP  S SETTINGS  L BOARD");
@@ -381,6 +383,48 @@ void drawPokerHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
                   app.helpPage + 1 < pages, now);
 }
 
+void drawRouletteHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
+    g.fillScreen(P::ink900);
+    const uint8_t pages = core::helpPageCount(core::AppScreen::RouletteHelp);
+
+    if (app.helpPage == 0) {
+        drawHeader(g, "ROULETTE BETS", P::cyan, true);
+        // Une colonne de paris, une de gains. Tous rendent la même chose —
+        // c'est le fait le plus intéressant du jeu, il est dit en bas.
+        for (int i = 0; i < core::kBetKinds; ++i) {
+            const int col = i / 5, row = i % 5;
+            const int x = 10 + col * 116, y = 30 + row * 13;
+            const core::BetKind k = static_cast<core::BetKind>(i);
+            drawText(g, core::betName(k), x, y, P::steel300, 1);
+            drawText(g, "x", x + 76, y, P::steel500, 1);
+            drawNumber(g, core::roulettePayout(k), x + 106, y, P::yellow, 1,
+                       Align::Right);
+        }
+        drawText(g, "EVERY BET RETURNS 97.3 % - THE ZERO", kScreenW / 2, 100,
+                 P::green, 1, Align::Center);
+        drawText(g, "IS THE ONLY HOUSE EDGE", kScreenW / 2, 109, P::green, 1,
+                 Align::Center);
+    } else {
+        drawHeader(g, "ROULETTE RULES", P::cyan, true);
+        static const char* kRules[] = {
+            "37 POCKETS: ZERO PLUS 1 TO 36",
+            "ONE BET AT A TIME, PICK WITH </>",
+            "ON STRAIGHT, UP/DOWN PICKS IT",
+            "OTHERWISE UP/DOWN SETS THE BET",
+            "ZERO LOSES EVERY OUTSIDE BET",
+            "THE WHEEL RUNS IN REAL ORDER",
+        };
+        constexpr int kn = sizeof(kRules) / sizeof(kRules[0]);
+        for (int i = 0; i < kn; ++i) {
+            g.fillRect(10, 32 + i * 13, 3, 3, i == 4 ? P::green : P::cyan);
+            drawText(g, kRules[i], 18, 31 + i * 13, P::steel300, 1);
+        }
+    }
+    drawPager(g, app.helpPage, pages, now);
+    drawHintPaged(g, "H OR ESC BACK", app.helpPage > 0,
+                  app.helpPage + 1 < pages, now);
+}
+
 // ------------------------------------------------------------------- réglages
 void drawRow(lgfx::LGFX_Sprite& g, int y, bool sel, const char* label) {
     g.fillRect(6, y, kScreenW - 12, 20, sel ? P::ink700 : P::ink800);
@@ -505,6 +549,10 @@ void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         case core::AppScreen::BjHelp: drawBjHelp(g, app, now); break;
         case core::AppScreen::Poker: drawVpScreen(g, app.poker, now); break;
         case core::AppScreen::PokerHelp: drawPokerHelp(g, app, now); break;
+        case core::AppScreen::Roulette:
+            drawRouletteScreen(g, app.roulette, now);
+            break;
+        case core::AppScreen::RouletteHelp: drawRouletteHelp(g, app, now); break;
         case core::AppScreen::BjSettings: drawBjSettings(g, app); break;
         case core::AppScreen::GlobalSettings: drawGlobalSettings(g, app); break;
         case core::AppScreen::Leaderboard: drawLeaderboard(g, app); break;

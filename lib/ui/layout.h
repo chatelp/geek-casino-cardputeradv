@@ -96,4 +96,21 @@ constexpr int kStep      = 36;
 constexpr int cardX(int i) { return kRowX + i * kStep; }
 
 }  // namespace vplayout
+
+// Roulette — la roue est rendue en BANDE horizontale : une
+// roue ronde de 37 cases est illisible sur 240 px de large.
+namespace rlayout {
+
+constexpr int kBetH      = 28;
+constexpr int kBetY      = 70;
+constexpr int kCellW     = 44;
+constexpr int kMsgY      = 104;
+constexpr int kStripH    = 36;
+constexpr int kStripX    = 10;
+constexpr int kStripY    = 24;
+constexpr int kVisible   = 5;
+
+constexpr int cellLeft(int i) { return kStripX + i * kCellW; }
+
+}  // namespace rlayout
 }  // namespace ui
