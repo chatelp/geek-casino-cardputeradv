@@ -2,6 +2,41 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-035 — 2026-08-12 — La secousse brouille la courbe ; la bille rebondit avant le règlement
+
+**Le paquet qui défilait se lisait comme des diodes.** Retour de Pierre
+sur la trace d'oscilloscope : plutôt qu'une salve qui voyage, un
+**brouillage** de la courbe entière au moment du choc. La secousse
+n'est plus un objet qui traverse — la trace **se déchire par blocs de
+9 px** (comme un balayage qui perd sa synchro), grésille par-dessus,
+passe au magenta sur toute sa largeur, puis se recale en 380 ms avec une
+décroissance au carré : elle frappe fort et lâche vite, sinon le
+brouillage devient un état et les rouleaux ne se distinguent plus.
+
+Leçon de réglage au passage : le premier brouillage était mou parce que
+l'écart des blocs était tiré **uniformément** — la plupart tombaient près
+de zéro et ne bougeaient presque pas. L'écart est maintenant tiré **loin
+de zéro** (55 à 100, d'un côté ou de l'autre) et le brouillage **remplace**
+le signal de repos au lieu de s'y ajouter. Trois tests : le brouillage
+prend toute la largeur, il déchire par blocs, il s'éteint.
+
+**L'arrêt de la roulette était trop franc** (Pierre). Deux causes dans le
+code : le règlement tombait **la même image** que l'arrêt — le son de
+gain claquait à l'instant précis où la bille se posait — et la bille ne
+rebondissait jamais. Une phase **Landing** (520 ms) s'intercale : la
+bille touche (dernier clic), **rebondit dans sa case** — deux
+allers-retours amortis en `sin·(1-p)²`, ±0,42 case — et alors seulement
+le règlement se fait, sons compris. Le rebond est pur (fonction de l'âge
+de la phase) et testé : il existe, il reste dans la case, il finit
+exactement dessus, et le solde ne bouge pas pendant qu'il dure.
+
+**Erreur de méthode commise et payée** : les gabarits du video poker
+(D-034) avaient été écrits dans `lib/ui/layout.h` — un fichier **généré**.
+`gen.py` les a écrasés à la régénération suivante, et la compilation a
+cassé. C'est le piège documenté depuis le premier jour (« ne jamais
+éditer les fichiers générés ») ; les valeurs vivent désormais dans le
+générateur, leur seule source légitime.
+
 ## D-034 — 2026-08-12 — Le video poker rend sa hauteur aux cartes
 
 Constat de Pierre : l'espace vertical y était mal utilisé. Mesure :

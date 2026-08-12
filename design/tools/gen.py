@@ -1334,7 +1334,7 @@ def export_layout():
     out.append("namespace vlayout {\n\n")
     v = {"kCols": 5, "kRows": 3, "kCell": 32, "kGap": 3, "kGridX": 16,
          "kGridY": 18, "kScale": 2, "kLeverCx": 214, "kLeverTop": 30,
-         "kLeverBaseY": 106, "kLeverTravel": 34, "kMsgY": 121}
+         "kLeverBaseY": 106, "kLeverTravel": 34, "kMsgY": 120}
     v["kGridW"] = v["kCols"] * v["kCell"] + (v["kCols"] - 1) * v["kGap"]
     v["kGridH"] = v["kRows"] * v["kCell"] + (v["kRows"] - 1) * v["kGap"]
     for k in sorted(v):
@@ -1352,12 +1352,17 @@ def export_layout():
     for k in sorted(b):
         out.append("constexpr int %-16s = %d;\n" % (k, b[k]))
     out.append("\n}  // namespace bjlayout\n\n")
-    out.append("// Video poker — cinq cartes en ligne, pas assez de place\n")
-    out.append("// pour l'écart du blackjack : on resserre.\n")
+    out.append("// Video poker — les cartes SONT le jeu, elles ont leur propre\n")
+    out.append("// gabarit 38x54 (D-034), plus grand que celui du blackjack qui\n")
+    out.append("// doit loger cinq cartes par main sur deux mains.\n")
     out.append("namespace vplayout {\n\n")
-    vp = {"kCardsY": 26, "kStep": 36, "kHeldY": 68, "kActionY": 84,
-          "kMsgY": 106}
-    vp["kRowW"] = 4 * vp["kStep"] + 28
+    vp = {"kCardW": 38, "kCardH": 53, "kCardsY": 23, "kStep": 44,
+          "kHeldY": 77, "kActionY": 91, "kMsgY": 113}
+    # La bande de message loge DEUX lignes dans le pire cas (« NO WIN » à
+    # l'échelle 2 puis l'invite à l'échelle 1) : la seconde a sa constante,
+    # pas un décalage recopié aux points d'appel.
+    vp["kMsgLine2"] = vp["kMsgY"] + 15
+    vp["kRowW"] = 4 * vp["kStep"] + vp["kCardW"]
     vp["kRowX"] = (SCREEN_W - vp["kRowW"]) // 2
     for k in sorted(vp):
         out.append("constexpr int %-10s = %d;\n" % (k, vp[k]))

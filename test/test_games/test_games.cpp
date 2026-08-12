@@ -320,7 +320,9 @@ static void test_roulette_spin_charges_and_settles() {
     TEST_ASSERT_EQUAL_INT32(before - r.stake, r.econ.credits);
 
     uint32_t now = 0;
-    for (int i = 0; i < 400 && r.phase == core::RltPhase::Spinning; ++i) {
+    // La bille roule, puis REBONDIT dans sa case (Landing) avant que quoi
+    // que ce soit ne se règle : le test traverse les deux phases.
+    for (int i = 0; i < 500 && r.phase != core::RltPhase::Result; ++i) {
         now += core::kFrameMs;
         core::rltUpdate(r, now);
     }

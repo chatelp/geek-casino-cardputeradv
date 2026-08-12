@@ -1,5 +1,7 @@
 #include "roulette_session.h"
 
+#include <cmath>
+
 namespace core {
 
 void pushRltCue(RouletteSession& s, Cue c) {
@@ -86,6 +88,15 @@ void rltUpdate(RouletteSession& s, uint32_t now) {
                 pushRltCue(s, Cue::Tick);
             }
             if (!reelSettled(s.motion, now)) break;
+            // La bille touche : un dernier clic, puis elle rebondit dans sa
+            // case le temps de la phase Landing. Le règlement attend.
+            pushRltCue(s, Cue::Tick);
+            s.phase = RltPhase::Landing;
+            s.phaseT0 = now;
+            break;
+        }
+        case RltPhase::Landing: {
+            if (now - s.phaseT0 < kRltLandMs) break;
             s.won = betWins(s.kind, s.straight, s.winNumber);
             if (s.attract) {
                 s.payout = s.won ? roulettePayout(s.kind) * s.stake : 0;
@@ -123,6 +134,20 @@ void rltUpdate(RouletteSession& s, uint32_t now) {
 
 float rltWheelPos(const RouletteSession& s, uint32_t now) {
     if (s.phase == RltPhase::Spinning) return reelPosition(s.motion, now);
+    if (s.phase == RltPhase::Landing) {
+        // Rebond amorti autour de la case gagnante : deux allers-retours
+        // qui s'éteignent. Pur — l'écart ne dépend que de l'âge de la
+        // phase, donc capturable et testable image par image.
+        const uint32_t age = now - s.phaseT0;
+        if (age < kRltLandMs) {
+            const float p = static_cast<float>(age) / static_cast<float>(kRltLandMs);
+            const float damp = (1.0f - p) * (1.0f - p);
+            const float bounce = 0.42f * damp *
+                std::sin(p * 2.0f * 2.0f * 3.14159265f);
+            return static_cast<float>(s.winNumber) + bounce;
+        }
+        return static_cast<float>(s.winNumber);
+    }
     return static_cast<float>(s.restIndex);
 }
 

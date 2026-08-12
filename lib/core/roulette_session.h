@@ -12,12 +12,20 @@
 
 namespace core {
 
-enum class RltPhase : uint8_t { Idle, Spinning, Result };
+// Landing : la bille est arrivée mais rien n'est réglé — elle rebondit
+// dans sa case pendant que la roue est déjà immobile. Sans cette phase,
+// le son de gain claquait à l'image exacte où la bille se posait :
+// l'arrêt était trop franc, il manquait le petit chaos de fin de course.
+enum class RltPhase : uint8_t { Idle, Spinning, Landing, Result };
 
 // La bille tourne trois fois plus longtemps qu'un rouleau : c'est le
 // suspense propre au jeu, et il ne coûte rien puisque le joueur a déjà
 // tout décidé avant de lancer.
 constexpr uint32_t kRltSpinMs = 3200;
+// Le rebond : deux allers-retours amortis autour de la case, puis plus
+// rien. Assez long pour se voir, assez court pour ne pas retarder un
+// résultat que le joueur connaît déjà des yeux.
+constexpr uint32_t kRltLandMs = 520;
 constexpr uint32_t kRltResultMs = 2600;
 
 struct RouletteSession {

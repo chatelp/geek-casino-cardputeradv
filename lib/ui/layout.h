@@ -57,7 +57,7 @@ constexpr int kLeverBaseY  = 106;
 constexpr int kLeverCx     = 214;
 constexpr int kLeverTop    = 30;
 constexpr int kLeverTravel = 34;
-constexpr int kMsgY        = 121;
+constexpr int kMsgY        = 120;
 constexpr int kRows        = 3;
 constexpr int kScale       = 2;
 
@@ -81,17 +81,21 @@ constexpr int kPlayerY         = 66;
 
 }  // namespace bjlayout
 
-// Video poker — cinq cartes en ligne, pas assez de place
-// pour l'écart du blackjack : on resserre.
+// Video poker — les cartes SONT le jeu, elles ont leur propre
+// gabarit 38x54 (D-034), plus grand que celui du blackjack qui
+// doit loger cinq cartes par main sur deux mains.
 namespace vplayout {
 
-constexpr int kActionY   = 84;
-constexpr int kCardsY    = 26;
-constexpr int kHeldY     = 68;
-constexpr int kMsgY      = 106;
-constexpr int kRowW      = 172;
-constexpr int kRowX      = 34;
-constexpr int kStep      = 36;
+constexpr int kActionY   = 91;
+constexpr int kCardH     = 53;
+constexpr int kCardW     = 38;
+constexpr int kCardsY    = 23;
+constexpr int kHeldY     = 77;
+constexpr int kMsgLine2  = 128;
+constexpr int kMsgY      = 113;
+constexpr int kRowW      = 214;
+constexpr int kRowX      = 13;
+constexpr int kStep      = 44;
 
 constexpr int cardX(int i) { return kRowX + i * kStep; }
 

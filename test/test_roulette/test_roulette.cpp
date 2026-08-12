@@ -5,6 +5,7 @@
 #include <unity.h>
 
 #include "roulette.h"
+#include "roulette_session.h"
 
 void setUp() {}
 void tearDown() {}
@@ -99,6 +100,38 @@ static void test_bet_coverage_is_what_it_claims() {
     TEST_ASSERT_EQUAL_UINT8(36, d1 + d2 + d3);
 }
 
+static void test_the_ball_bounces_then_rests_in_its_pocket() {
+    // L'arrêt était trop franc : la bille se posait net et le règlement
+    // tombait la même image. Elle rebondit désormais pendant Landing —
+    // l'écart existe, s'amortit, et finit exactement sur la case.
+    core::seedXorShift(77);
+    core::RouletteSession r = core::newRouletteSession(0, core::xorShift32);
+    r.econ.credits = 1000;
+    TEST_ASSERT_TRUE(core::rltSpin(r, 0, core::xorShift32));
+
+    uint32_t now = 0;
+    while (r.phase == core::RltPhase::Spinning && now < 10000) {
+        now += core::kFrameMs;
+        core::rltUpdate(r, now);
+    }
+    TEST_ASSERT_EQUAL(core::RltPhase::Landing, r.phase);
+
+    // Tôt dans le rebond : la bille n'est PAS posée sur la case.
+    const float early = core::rltWheelPos(r, r.phaseT0 + 60);
+    float dev = early - static_cast<float>(r.winNumber);
+    if (dev < 0) dev = -dev;
+    TEST_ASSERT_TRUE_MESSAGE(dev > 0.05f, "le rebond doit exister");
+    TEST_ASSERT_TRUE_MESSAGE(dev < 0.6f, "sans sortir de la case voisine");
+
+    // Fin du rebond : posée exactement, avant même le règlement.
+    const float late = core::rltWheelPos(r, r.phaseT0 + core::kRltLandMs);
+    TEST_ASSERT_EQUAL_FLOAT(static_cast<float>(r.winNumber), late);
+
+    // Et le règlement n'est pas encore fait : le solde n'a pas bougé
+    // pendant le rebond.
+    TEST_ASSERT_EQUAL(core::RltPhase::Landing, r.phase);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_every_bet_has_the_same_exact_return);
@@ -106,5 +139,6 @@ int main() {
     RUN_TEST(test_colours_match_the_layout);
     RUN_TEST(test_zero_beats_every_outside_bet);
     RUN_TEST(test_bet_coverage_is_what_it_claims);
+    RUN_TEST(test_the_ball_bounces_then_rests_in_its_pocket);
     return UNITY_END();
 }

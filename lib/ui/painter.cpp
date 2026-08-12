@@ -228,16 +228,17 @@ void drawScope(lgfx::LGFX_Sprite& g, int x, int y, int w, int h,
     }
     g.fillRect(x, mid, w, 1, P::ink700);
 
+    const int shock = core::scopeShock(now, d);
     int prev = mid;
     for (int i = 0; i < w; ++i) {
         const int v = core::scopeAt(i, w, now, d);
         int yy = mid - (v * halfH) / 100;
         if (yy < y) yy = y;
         if (yy > y + h - 1) yy = y + h - 1;
-        // Au-delà des deux tiers d'amplitude on passe au magenta : la
-        // salve se distingue du repos par la couleur autant que par la
-        // hauteur, et reste lisible même figée sur une capture.
-        const uint16_t c = (v > 62 || v < -62) ? P::magenta : P::cyan;
+        // Pendant une secousse, la trace décroche : elle passe au magenta
+        // sur TOUTE sa largeur. La couleur dit l'événement, la déchirure
+        // dit sa violence — un seul des deux signaux se raterait.
+        const uint16_t c = shock > 25 ? P::magenta : P::cyan;
         const int a = yy < prev ? yy : prev;
         const int b = yy > prev ? yy : prev;
         g.fillRect(x + i, a, 1, b - a + 1, c);
