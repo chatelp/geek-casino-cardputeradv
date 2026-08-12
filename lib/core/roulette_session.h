@@ -36,6 +36,10 @@ struct RouletteSession {
     bool bailedOut = false;
     uint32_t phaseT0 = 0;
     uint32_t spins = 0;
+    // Dernière case franchie : sert à cliqueter une fois par case, et à
+    // espacer les clics quand la bille va trop vite pour être suivie.
+    int32_t lastTickPocket = -1;
+    uint32_t lastTickMs = 0;
 
     Cue cueQueue[6] = {};
     uint8_t cueHead = 0, cueTail = 0;

@@ -494,6 +494,60 @@ static void test_demo_delay_follows_the_setting() {
     TEST_ASSERT_TRUE_MESSAGE(backToColour, "la demo ne s'est jamais arretee");
 }
 
+static void test_every_game_actually_makes_sound() {
+    // Le bug qui a rendu poker et roulette muets : leurs files de sons
+    // existaient et se remplissaient, mais les mains ne les vidaient pas.
+    // Rien ne plantait — le son manquait, simplement. Ce test parcourt les
+    // cinq jeux et exige qu'un son sorte du point de drainage unique.
+    static const char* kNames[core::kGameCount] = {
+        "SLOTS", "VIDEO", "BLACKJACK", "POKER", "ROULETTE",
+    };
+    for (uint8_t gidx = 0; gidx < core::kGameCount; ++gidx) {
+        App a = started(static_cast<uint32_t>(200 + gidx));
+        a.settings.demoOn = 0;  // on veut le son du JOUEUR, pas de la démo
+        for (uint8_t k = 0; k < gidx; ++k) {
+            core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+        }
+        core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+        while (core::takeAppCue(a) != core::Cue::None) {}
+
+        uint32_t now = 0;
+        int heard = 0;
+        // Un tour joué normalement : on tire, on laisse tourner, et au
+        // besoin on confirme (poker et blackjack demandent une action).
+        core::handleKey(a, AppKey::Confirm, now, core::xorShift32);
+        for (int i = 0; i < 400; ++i) {
+            now += core::kFrameMs;
+            core::tickApp(a, now, core::xorShift32);
+            while (core::takeAppCue(a) != core::Cue::None) ++heard;
+            if (i % 40 == 39) core::handleKey(a, AppKey::Confirm, now, core::xorShift32);
+        }
+        TEST_ASSERT_TRUE_MESSAGE(heard > 0, kNames[gidx]);
+    }
+}
+
+static void test_the_roulette_ball_clicks_while_it_runs() {
+    // Une bille de roulette cliquette, c'est LE son du jeu. Sans lui, le
+    // lancer est un silence de trois secondes.
+    core::seedXorShift(210);
+    core::RouletteSession r = core::newRouletteSession(0, core::xorShift32);
+    r.econ.credits = 1000;
+    TEST_ASSERT_TRUE(core::rltSpin(r, 0, core::xorShift32));
+    while (core::takeRltCue(r) != core::Cue::None) {}
+
+    uint32_t now = 0;
+    int ticks = 0;
+    while (r.phase == core::RltPhase::Spinning && now < 10000) {
+        now += core::kFrameMs;
+        core::rltUpdate(r, now);
+        for (core::Cue c = core::takeRltCue(r); c != core::Cue::None;
+             c = core::takeRltCue(r)) {
+            if (c == core::Cue::Tick) ++ticks;
+        }
+    }
+    TEST_ASSERT_TRUE_MESSAGE(ticks > 10, "la bille ne cliquette pas");
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_lobby_offers_three_playable_games);
@@ -509,6 +563,8 @@ int main() {
     RUN_TEST(test_poker_hand_runs_deal_hold_draw);
     RUN_TEST(test_poker_cursor_wraps_over_the_draw_slot);
     RUN_TEST(test_every_lobby_entry_opens_its_game);
+    RUN_TEST(test_every_game_actually_makes_sound);
+    RUN_TEST(test_the_roulette_ball_clicks_while_it_runs);
     RUN_TEST(test_demo_runs_free_and_silent_in_every_game);
     RUN_TEST(test_demo_can_be_switched_off);
     RUN_TEST(test_demo_delay_follows_the_setting);

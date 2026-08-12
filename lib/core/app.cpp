@@ -12,6 +12,15 @@ uint32_t demoDelayMs(const App& a) {
     return static_cast<uint32_t>(kDemoDelays[i]) * 1000u;
 }
 
+Cue takeAppCue(App& a) {
+    Cue c = takeCue(a.game);
+    if (c == Cue::None) c = takeVideoCue(a.video);
+    if (c == Cue::None) c = takeBjCue(a.bj);
+    if (c == Cue::None) c = takeVpCue(a.poker);
+    if (c == Cue::None) c = takeRltCue(a.roulette);
+    return c;
+}
+
 bool appInDemo(const App& a) {
     switch (a.screen) {
         case AppScreen::Slot: return a.game.attract;

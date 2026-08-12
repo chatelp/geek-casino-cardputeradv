@@ -161,13 +161,11 @@ void loop() {
     handleShake(now);
     core::tickApp(app, now, trng);
 
-    // Les trois jeux ont leur file ; un seul est à l'écran à la fois.
-    for (core::Cue c = core::takeCue(app.game); c != core::Cue::None;
-         c = core::takeCue(app.game)) playCue(c);
-    for (core::Cue c = core::takeVideoCue(app.video); c != core::Cue::None;
-         c = core::takeVideoCue(app.video)) playCue(c);
-    for (core::Cue c = core::takeBjCue(app.bj); c != core::Cue::None;
-         c = core::takeBjCue(app.bj)) playCue(c);
+    // Un seul point de drainage, quel que soit le nombre de jeux.
+    for (core::Cue c = core::takeAppCue(app); c != core::Cue::None;
+         c = core::takeAppCue(app)) {
+        playCue(c);
+    }
 
     saveToNvs(now);
 

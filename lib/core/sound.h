@@ -27,6 +27,9 @@ enum class Cue : uint8_t {
     Jackpot,
     Bailout,
     BetChange,
+    // Passage d'une case sous la bille. Très court : il en part
+    // plusieurs par seconde au début du lancer.
+    Tick,
 };
 
 struct Tone {

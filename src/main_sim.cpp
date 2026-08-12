@@ -187,10 +187,14 @@ int runCapture() {
         core::feedNameChar(app, 'E');
         ui::drawApp(canvas, app, 400);
         if (!saveShot(canvas, "name_entry.bmp")) return 1;
-        // Le jeu en habillage classique.
+        // La machine à sous, habillage geek puis habillage classique —
+        // le design system montre les deux, c'est tout l'objet du réglage.
         core::addOrSwitchPlayer(app.roster, "PIXEL");
-        app.settings.slotSkin = 1;
+        app.settings.slotSkin = 0;
         app.screen = core::AppScreen::Slot;
+        ui::drawApp(canvas, app, 400);
+        if (!saveShot(canvas, "slot.bmp")) return 1;
+        app.settings.slotSkin = 1;
         ui::drawApp(canvas, app, 400);
         if (!saveShot(canvas, "slot_classic.bmp")) return 1;
         // Les deux nouveaux jeux.
@@ -432,11 +436,9 @@ int simRun(bool* running) {
         }
 
         core::tickApp(app, now, core::xorShift32);
-        // Pas de haut-parleur au simulateur : les files sont vidées pour ne
-        // pas déborder, le son se juge sur l'appareil.
-        while (core::takeCue(app.game) != core::Cue::None) {}
-        while (core::takeVideoCue(app.video) != core::Cue::None) {}
-        while (core::takeBjCue(app.bj) != core::Cue::None) {}
+        // Pas de haut-parleur au simulateur : on vide quand même, pour ne
+        // pas déborder. Le son se juge sur l'appareil.
+        while (core::takeAppCue(app) != core::Cue::None) {}
         if (app.dirty && app.game.phase != core::Phase::Spinning &&
             app.video.phase != core::Phase::Spinning) saveApp(app);
 

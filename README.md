@@ -69,6 +69,14 @@ claude.ai/design et se régénère depuis ce dépôt :
 python3 design/tools/gen.py
 ```
 
+Les cartes d'écran embarquent les **captures du simulateur** — même code
+de rendu que le firmware, donc aucune dérive possible entre ce que montre
+le design system et ce que montre l'appareil :
+
+```bash
+.pio/build/sim/program --screens captures/screens
+```
+
 Une source de vérité unique (`design/tokens.json`, `design/tools/art_*.py`)
 produit à la fois les cartes du design system et les en-têtes C++
 `lib/ui/palette.h`, `symbols.h`, `font5x7.h`. **Ces trois fichiers sont

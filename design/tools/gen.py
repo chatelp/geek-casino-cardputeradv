@@ -15,7 +15,9 @@ Rien de ce qui est généré ne doit être édité à la main.
 
 import json
 import os
+import struct
 import sys
+import zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DESIGN = os.path.dirname(HERE)
@@ -30,6 +32,56 @@ TOK = json.load(open(os.path.join(DESIGN, "tokens.json")))
 PAL = TOK["palette"]
 KEYS = TOK["artKeys"]
 SCREEN_W, SCREEN_H = TOK["screen"]["w"], TOK["screen"]["h"]
+
+
+# ------------------------------------------------------- captures réelles
+# Le design system a dérivé : ses maquettes étaient redessinées en Python
+# et ne montraient plus ce que l'appareil affiche. On embarque désormais
+# les CAPTURES du simulateur — même code de rendu que le firmware, donc
+# aucune dérive possible.
+SHOTS = os.path.join(ROOT, "captures", "screens")
+
+
+def bmp_to_png_data_uri(path):
+    """BMP 24 bits → PNG, en data URI. Écrit en pur Python pour ne
+    dépendre d'aucun outil externe : la génération doit marcher partout."""
+    with open(path, "rb") as f:
+        raw = f.read()
+    off = struct.unpack_from("<I", raw, 10)[0]
+    w, h = struct.unpack_from("<ii", raw, 18)
+    rowb = ((w * 3 + 3) // 4) * 4
+    rows = []
+    for y in range(h - 1, -1, -1):          # le BMP stocke de bas en haut
+        base = off + y * rowb
+        line = bytearray(b"\x00")           # filtre PNG « None »
+        for x in range(w):
+            b, g, r = raw[base + x * 3: base + x * 3 + 3]
+            line += bytes((r, g, b))
+        rows.append(bytes(line))
+    idat = zlib.compress(b"".join(rows), 9)
+
+    def chunk(tag, data):
+        return (struct.pack(">I", len(data)) + tag + data +
+                struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    png = (b"\x89PNG\r\n\x1a\n" +
+           chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) +
+           chunk(b"IDAT", idat) + chunk(b"IEND", b""))
+    import base64
+    return "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def shot(name, caption, scale=3):
+    """Une capture de l'appareil, agrandie sans lissage."""
+    path = os.path.join(SHOTS, name + ".bmp")
+    if not os.path.exists(path):
+        return ('<div class="cap">capture manquante : %s — lancer '
+                '<code>.pio/build/sim/program --screens captures/screens</code>'
+                '</div>' % name)
+    return ('<div><div class="dev"><img src="%s" width="%d" '
+            'style="image-rendering:pixelated;display:block"></div>'
+            '<div class="cap">%s</div></div>'
+            % (bmp_to_png_data_uri(path), SCREEN_W * scale, caption))
 
 
 # --------------------------------------------------------------- couleurs
@@ -528,6 +580,8 @@ svg{display:block;image-rendering:pixelated}
 .grid{display:grid;gap:14px}
 .g4{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
 .g3{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.gdev{grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:22px}
+.gdev img{max-width:100%;height:auto}
 .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .tile .sw{height:62px}
 .tile .meta{padding:9px 11px}
@@ -572,9 +626,10 @@ def device(svg, caption, cls=""):
 
 # ------------------------------------------------------------------ cartes
 def card_palette():
-    order = ["ink900", "ink800", "ink700", "ink600", "steel500", "steel300", "white",
-             "cyan", "cyanDk", "magenta", "magentaDk", "yellow", "amber",
-             "green", "greenDk", "orange", "violet", "violetDk", "red", "tan"]
+    # L'ordre vient des tokens, pas d'une liste écrite ici : les trois verts
+    # de circuit imprimé sont restés invisibles pendant tout le blackjack
+    # parce qu'une liste figée ne connaissait pas leur nom.
+    order = list(PAL.keys())
     tiles = []
     for k in order:
         e = PAL[k]
@@ -589,15 +644,16 @@ def card_palette():
         '<div class="warn"><b>Les pastilles montrent la couleur quantifiée RGB565</b>, '
         "pas la valeur d'origine — c'est ce que l'écran affichera réellement. "
         "Là où les deux diffèrent, la flèche indique la dérive.</div>"
-        '<h2>Nuit d\'arcade — 20 teintes</h2><div class="grid g4">%s</div>'
+        '<h2>Nuit d\'arcade — ' + str(len(order)) + ' teintes</h2>'
+        '<div class="grid g4">' + "".join(tiles) + '</div>'
         '<h2>Règle d\'emploi</h2>'
         "<p>Le fond reste dans la famille <code>ink</code> : les néons ne servent "
         "qu'aux symboles, aux cadres et aux effets. Un écran où tout brille n'a plus "
         "de jackpot possible. Les couleurs traversent le code en "
         "<code>constexpr uint16_t</code> nommées — jamais de littéral inline, "
-        "un <code>uint32</code> nu serait interprété RGB888.</p>" % "".join(tiles))
+        "un <code>uint32</code> nu serait interprété RGB888.</p>")
     return page("foundations/palette.html", "Foundations", "Palette",
-                "20 teintes néon sur fond d'encre, quantifiées RGB565", 720, body,
+                "Toute la palette, quantifiée RGB565", 720, body,
                 "La palette « nuit d'arcade » : fond très sombre, néons saturés réservés "
                 "aux symboles et aux effets, pour que chaque gain allume la salle.")
 
@@ -896,6 +952,68 @@ def _mini(cols, rows, scale, lines, label, lever=False):
     return p.svg(SCREEN_W, SCREEN_H), gw, gh, free
 
 
+def card_device():
+    """Toutes les captures réelles, groupées. Cette carte remplace les
+    maquettes redessinées : elle ne peut pas mentir sur ce que l'appareil
+    affiche, puisqu'elle EST ce que l'appareil affiche."""
+    groups = [
+        ("Allumage", [
+            ("boot_noise", "Bruit multicolore : la mémoire vidéo « se remplit »."),
+            ("boot_bars", "Barres de couleur et déchirures de balayage."),
+            ("boot_test", "Faux test mémoire, en phosphore vert."),
+            ("boot_logo", "Le nom émerge du bruit résiduel."),
+        ]),
+        ("Accueil et navigation", [
+            ("lobby", "Cinq jeux, solde commun, description du jeu pointé."),
+            ("name_entry", "Saisie du nom au premier lancement."),
+            ("leaderboard", "Classement — c'est la table des joueurs elle-même."),
+            ("settings", "Réglages généraux : son, démo, allumage, joueur."),
+        ]),
+        ("Machine à sous 3x1", [
+            ("slot", "Cabinet-circuit, levier à droite, hublots hauts."),
+            ("slot_classic", "Même jeu, glyphes classiques (réglage GLYPHS)."),
+            ("celeb_count", "Célébration : le gain se décompte."),
+            ("help", "Table de gains, les deux habillages côte à côte."),
+        ]),
+        ("Machine vidéo 5x3", [
+            ("video", "Zéro chrome : HUD en surimpression, chevrons de ligne."),
+            ("video_lines", "Les cinq lignes DESSINÉES — un chevron ne s'explique pas."),
+            ("video_help", "Table de gains par longueur d'alignement."),
+        ]),
+        ("Blackjack", [
+            ("bj_table", "La table EST une carte : vias, pistes à 45°, pastilles."),
+            ("blackjack", "Main en cours, conseil de stratégie en point vert."),
+            ("bj_help", "Règles et cartes d'exemple."),
+        ]),
+        ("Video poker", [
+            ("poker", "Cinq cartes, deux gardées, case DRAW."),
+            ("poker_help", "Barème 9/6 et bonus de mise maximale."),
+        ]),
+        ("Roulette", [
+            ("roulette", "La roue en bande, montée sur encodeur rotatif."),
+            ("roulette_spin", "Pari sur un plein, bille lancée."),
+            ("roulette_help", "Dix paris — tous à 97,3 %."),
+        ]),
+        ("Mode démo", [
+            ("demo_poker", "Gris intégral, cartes comprises."),
+            ("demo_roulette", "Même traitement : gratuit, muet, gris."),
+        ]),
+    ]
+    body = ('<div class="warn"><b>Ces images sont des captures réelles</b> du '
+            "moteur de rendu, pas des maquettes redessinées. Le simulateur "
+            "et le firmware partagent le même code d'affichage : ce que "
+            "montre cette page est, au pixel près, ce que montre "
+            "l'appareil.</div>")
+    for title, items in groups:
+        body += "<h2>%s</h2><div class=\"grid gdev\">%s</div>" % (
+            title, "".join(shot(n, c, 2) for n, c in items))
+    return page("screens/device.html", "Screens", "Écrans de l'appareil",
+                "Captures réelles des cinq jeux, de l'allumage et de la démo",
+                1040, body,
+                "Ce que l'appareil affiche vraiment — capturé par le "
+                "simulateur, qui partage son code de rendu avec le firmware.")
+
+
 def card_formats():
     opts = [
         (3, 2, 3, 2, False, "3x2 - 2 LIGNES",
@@ -966,17 +1084,22 @@ def card_screens():
 
 def card_lobby():
     body = (
-        '<h2>Écran d\'accueil</h2>%s'
-        '<h2>Pourquoi un accueil dès maintenant</h2>'
-        "<p>La machine à sous est le premier module, pas le seul prévu. L'accueil "
-        "existe donc dès la première version, même avec une seule entrée jouable : "
-        "il fixe l'interface commune que tout jeu devra présenter, et évite d'avoir "
-        "à démonter l'architecture au deuxième jeu.</p>"
-        "<p>Les entrées grisées sont des intentions, pas des promesses de version.</p>"
-        % device(screen_lobby(), "Une entrée jouable, deux à venir. Le solde est "
-                                 "commun à tous les jeux."))
+        '<h2>Écran d\'accueil</h2>'
+        '<div class="grid gdev">' +
+        shot("lobby", "Les cinq jeux. Le solde est commun ; la mise, elle, "
+                      "appartient au couple (joueur, jeu).", 2) +
+        shot("leaderboard", "Le classement n'est pas un écran de plus : c'est la "
+                            "table des joueurs, affichée telle quelle.", 2) +
+        '</div>'
+        '<h2>Pourquoi un accueil dès la première version</h2>'
+        "<p>La machine à sous était le premier module, pas le seul prévu. "
+        "L'accueil existait donc dès la première version, avec une seule entrée "
+        "jouable et deux entrées grisées : il fixait l'interface commune que "
+        "tout jeu devrait présenter. Les cinq entrées d'aujourd'hui sont "
+        "arrivées sans qu'on ait à démonter l'architecture — c'est très "
+        "exactement ce que cet écran devait acheter.</p>")
     return page("screens/lobby.html", "Screens", "Accueil du casino",
-                "Sélection de jeu, solde commun, extensions à venir", 720, body,
+                "Cinq jeux, solde commun, classement persistant", 1040, body,
                 "L'écran d'accueil : ce qui fait de l'objet un casino plutôt qu'une "
                 "seule machine.")
 
@@ -1309,7 +1432,7 @@ def main():
     os.makedirs(BUILD, exist_ok=True)
     cards = [card_palette(), card_typography(), card_geometry(), card_motion(),
              card_symbols(), card_equivalence(), card_cabinet(), card_screens(),
-             card_lobby(), card_formats()]
+             card_lobby(), card_formats(), card_device()]
     json.dump(cards, open(os.path.join(BUILD, "cards.json"), "w"), indent=2,
               ensure_ascii=False)
     export_palette()

@@ -134,6 +134,13 @@ enum GlobalRow : uint8_t {
 // directement à l'écran prévu.
 void beginBoot(App& a, uint32_t now);
 
+// Récupère le prochain son à jouer, TOUS jeux confondus. Les mains
+// appellent cette fonction et rien d'autre : quand poker et roulette ont
+// été ajoutés, leurs files n'ont pas été drainées et les deux jeux sont
+// restés muets sans que rien ne plante. Un point unique supprime la
+// classe de bug entière.
+Cue takeAppCue(App& a);
+
 // Le jeu à l'écran est-il en train de se jouer tout seul ?
 bool appInDemo(const App& a);
 // Délai d'armement en millisecondes, d'après les réglages.

@@ -28,6 +28,9 @@ constexpr Tone kBailout[] = {{1000, 90}, {1300, 90}, {1700, 140}};
 
 constexpr Tone kBetChange[] = {{2000, 30}};
 
+// Le cliquetis de la bille : le plus court son du jeu.
+constexpr Tone kTick[] = {{2400, 14}};
+
 }  // namespace
 
 Cadence cadenceOf(Cue c) {
@@ -42,6 +45,7 @@ Cadence cadenceOf(Cue c) {
         case Cue::Jackpot: return {kJackpot, 8};
         case Cue::Bailout: return {kBailout, 3};
         case Cue::BetChange: return {kBetChange, 1};
+        case Cue::Tick: return {kTick, 1};
         case Cue::None: break;
     }
     return {nullptr, 0};

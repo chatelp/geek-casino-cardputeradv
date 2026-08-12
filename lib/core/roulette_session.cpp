@@ -60,6 +60,8 @@ bool rltSpin(RouletteSession& s, uint32_t now, RngFn rng, bool byPlayer) {
     // se poser, sinon le résultat semble décidé d'avance.
     s.motion = armReelMs(now, s.restIndex, idx, kPockets, 5, kRltSpinMs);
     s.restIndex = idx;
+    s.lastTickPocket = -1;
+    s.lastTickMs = now;
 
     s.phase = RltPhase::Spinning;
     s.phaseT0 = now;
@@ -73,7 +75,16 @@ bool rltSpin(RouletteSession& s, uint32_t now, RngFn rng, bool byPlayer) {
 
 void rltUpdate(RouletteSession& s, uint32_t now) {
     switch (s.phase) {
-        case RltPhase::Spinning:
+        case RltPhase::Spinning: {
+            // Cliquetis : une fois par case franchie, mais jamais plus
+            // souvent que toutes les 70 ms — au lancement la bille passe
+            // une case toutes les 8 ms, on n'entendrait qu'un buzz.
+            const int32_t pocket = static_cast<int32_t>(reelPosition(s.motion, now));
+            if (pocket != s.lastTickPocket && now - s.lastTickMs >= 70) {
+                s.lastTickPocket = pocket;
+                s.lastTickMs = now;
+                pushRltCue(s, Cue::Tick);
+            }
             if (!reelSettled(s.motion, now)) break;
             s.won = betWins(s.kind, s.straight, s.winNumber);
             if (s.attract) {
@@ -98,6 +109,7 @@ void rltUpdate(RouletteSession& s, uint32_t now) {
             s.phase = RltPhase::Result;
             s.phaseT0 = now;
             break;
+        }
         case RltPhase::Result:
             if (now - s.phaseT0 >= kRltResultMs) {
                 s.phase = RltPhase::Idle;

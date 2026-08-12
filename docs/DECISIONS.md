@@ -2,6 +2,45 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-030 — 2026-08-12 — Un seul point de vidange des sons ; le design system montre des captures, plus des maquettes
+
+**Poker et roulette étaient muets.** Les deux jeux poussaient bien leurs
+signaux sonores, mais **personne ne lisait leurs files** : chaque main
+drainait `takeCue`, `takeVideoCue`, `takeBjCue` — et s'était arrêté là
+quand les deux derniers jeux sont arrivés. Rien ne plantait, rien
+n'échouait aux tests : le son manquait, simplement. C'est la forme la
+plus coûteuse de bug, celle qui ne fait aucun bruit — au sens propre ici.
+
+Correctif : **un seul point de vidange**, `takeAppCue(App&)`, que les deux
+mains appellent. Ajouter un jeu sans l'y brancher devient impossible à
+oublier, puisqu'il n'y a plus qu'un endroit où le brancher. Un test
+parcourt **les cinq jeux** et exige d'entendre quelque chose dans chacun ;
+il aurait attrapé la régression le jour où elle est née.
+
+**La bille cliquette** (`Cue::Tick`, 2400 Hz, 14 ms — le son le plus court
+du jeu), une fois par case franchie, mais **pas plus d'une fois toutes les
+70 ms** : au lancement la bille passe une case toutes les 8 ms, sans ce
+plafond on n'entendrait qu'un buzz. Le ralentissement s'entend, et c'est
+tout l'intérêt d'une roulette.
+
+**Le design system montrait des maquettes redessinées.** Les cartes
+d'écran étaient repeintes en Python, à côté du vrai moteur de rendu :
+elles ont dérivé sans prévenir — l'accueil y annonçait encore « une
+entrée jouable, deux à venir » alors que cinq jeux tournent. Une seconde
+implémentation de l'affichage ne pouvait que mentir tôt ou tard.
+
+Le design system **embarque désormais les captures du simulateur**
+(BMP → PNG en Python pur, sans outil externe, en data URI). Le simulateur
+partage son code de rendu avec le firmware : la carte « Écrans de
+l'appareil » ne peut donc plus diverger de l'appareil. Vingt-cinq écrans
+y sont groupés — allumage, accueil, les cinq jeux, aides, mode démo.
+
+**La palette se lit depuis les tokens.** Elle était énumérée dans une
+liste écrite à la main : les trois verts de circuit imprimé sont restés
+invisibles pendant tout le développement du blackjack. Même classe de
+faute que la double table de gains (D-017) — une source de vérité
+recopiée n'est plus une source de vérité.
+
 ## D-029 — 2026-08-12 — Sauvegarde unifiée, boot d'arcade, célébrations
 
 **Sauvegarde consolidée.** Pierre ayant accepté de perdre ses

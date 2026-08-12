@@ -102,8 +102,15 @@ lib/ui/font5x7.h          GÉNÉRÉ — fonte bitmap
 ```
 
 ```bash
-python3 design/tools/gen.py    # après toute retouche d'art ou de palette
+.pio/build/sim/program --screens captures/screens   # rafraîchit les captures
+python3 design/tools/gen.py                          # puis les cartes
 ```
+
+Les cartes d'écran **embarquent les captures du simulateur**, jamais des
+maquettes redessinées : une seconde implémentation de l'affichage dérive
+toujours (l'accueil a annoncé « deux jeux à venir » pendant que cinq
+tournaient). Lancer `--screens` **avant** `gen.py`, sinon les cartes
+affichent « capture manquante » plutôt que du faux.
 
 **Ne jamais éditer `lib/ui/palette.h`, `symbols.h`, `font5x7.h`** : ils
 sont écrasés. Corriger la source, régénérer. `gen.py` valide l'art
@@ -166,7 +173,9 @@ pio run -e cardputer-adv -t upload                 # flash
 - **Fontes** : DejaVu = ASCII pur, aucun accent. Latin accentué → `efontJA`
   (bitmap, ~2 Mo). Minimum lisible sur l'écran physique : **12 px**.
 - **Son** : le HP ne restitue rien sous ~400 Hz ; composer entre **800 et
-  2600 Hz**. Pas de `tone()` : sinusoïdes PCM courtes à décroissance
+  2600 Hz**. Un jeu émet des `Cue` ; **`core::takeAppCue(App&)` est le
+  seul point de vidange** — poker et roulette sont restés muets parce que
+  leurs files n'étaient drainées nulle part, sans que rien ne plante. Pas de `tone()` : sinusoïdes PCM courtes à décroissance
   exponentielle via `Speaker.playRaw(..., 22050, ...)`. Volume réglable,
   son désactivable.
 - **Init** : aucune API M5 dans un constructeur global (M5 pas encore
