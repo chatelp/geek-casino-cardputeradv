@@ -2,6 +2,33 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-034 — 2026-08-12 — Le video poker rend sa hauteur aux cartes
+
+Constat de Pierre : l'espace vertical y était mal utilisé. Mesure :
+17 pixels morts sous l'invite, une bande de table vide sous la rangée —
+et les cartes au format du **blackjack** (28x40), qui doit en loger
+jusqu'à cinq par main sur deux mains. Au video poker, cinq cartes
+occupent l'écran et rien d'autre : elles n'avaient aucune raison d'être
+aussi petites.
+
+Elles passent à **38x54** (83 % de surface en plus), le rang à l'échelle
+3 et l'enseigne à l'échelle 2. `drawCard()` prend désormais un **gabarit**
+(`CardSize`) : un seul rendu, deux tailles — c'est la taille qui change,
+pas le dessin, donc les deux jeux ne peuvent pas diverger.
+
+**La bande du bouton DRAW se remplit une fois la main conclue.** Le bouton
+disparaît en phase `Result` et laissait quarante pixels de noir, au moment
+précis où le joueur veut savoir ce qu'il a. Le panneau de célébration a
+montré le montant, mais il s'efface ; le **nom de la main** et le gain y
+restent désormais affichés.
+
+**Erreur commise et corrigée en chemin** : en remontant la bande de
+message, « SPACE FOR A NEW HAND » est passée **sous** le bord de l'écran.
+Rien ne l'a signalé — un texte hors cadre ne casse rien, il disparaît.
+La bande a maintenant une hauteur nommée pour ce qu'elle doit contenir
+(deux lignes, 22 px) et un `kMsgLine2` explicite plutôt qu'un décalage
+recopié à trois endroits.
+
 ## D-033 — 2026-08-12 — L'analyseur de spectre remplacé par une trace d'oscilloscope
 
 Le bandeau de D-032 ne marchait pas sur l'appareil : Pierre a constaté

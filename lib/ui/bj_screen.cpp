@@ -44,27 +44,30 @@ uint16_t suitColor(uint8_t suit) {
 }  // namespace
 
 void drawCard(lgfx::LGFX_Sprite& g, core::Card c, int x, int y, bool faceDown,
-              bool demo) {
+              bool demo, const CardSize& sz) {
     if (faceDown) {
         // Le dos est ce qu'on voit le plus souvent : c'est lui qui porte
         // l'identité. Circuit à vias, invader en médaillon — dessiné dans
-        // le design system, pas bricolé ici.
-        if (demo) drawCardBackGray(g, x, y, 2);
-        else drawCardBack(g, x, y, 2);
+        // le design system, pas bricolé ici. L'art fait 14x20, donc son
+        // échelle vaut la moitié de la largeur du gabarit.
+        const int scale = sz.w / 14;
+        if (demo) drawCardBackGray(g, x, y, scale);
+        else drawCardBack(g, x, y, scale);
         return;
     }
 
-    g.fillRect(x, y, kCardW, kCardH, demo ? kGrayMid : P::steel300);
-    drawFrame(g, x, y, kCardW, kCardH, demo ? kGrayLight : P::white, 1);
+    g.fillRect(x, y, sz.w, sz.h, demo ? kGrayMid : P::steel300);
+    drawFrame(g, x, y, sz.w, sz.h, demo ? kGrayLight : P::white, 1);
     const uint16_t col = demo ? P::ink900 : suitColor(c.suit);
 
     const char* lbl = rankLabel(c.rank);
-    if (lbl) drawText(g, lbl, x + 3, y + 3, col, 2);
-    else drawNumber(g, c.rank, x + 3, y + 3, col, 2);
+    if (lbl) drawText(g, lbl, x + 3, y + 3, col, sz.rankScale);
+    else drawNumber(g, c.rank, x + 3, y + 3, col, sz.rankScale);
 
     // L'enseigne occupe le bas de la carte : le rang se lit en haut, comme
     // sur une vraie carte tenue en éventail.
-    blitSuit(g, c.suit, x + kCardW - 11, y + kCardH - 11, 1,
+    const int sq = 8 * sz.suitScale;
+    blitSuit(g, c.suit, x + sz.w - sq - 3, y + sz.h - sq - 3, sz.suitScale,
              demo ? P::ink900 : 0);
 }
 

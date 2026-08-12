@@ -3,14 +3,13 @@
 #include "bj_screen.h"  // drawCard, partagé — un seul rendu de carte
 #include "celebration.h"
 #include "layout.h"
+#include "poker.h"
 #include "painter.h"
 #include "palette.h"
 
 namespace ui {
 
-using namespace vplayout;
-using bjlayout::kCardH;
-using bjlayout::kCardW;
+using namespace vplayout;   // y compris kCardW / kCardH, propres au poker
 using layout::kScreenH;
 using layout::kScreenW;
 namespace P = pal;
@@ -33,7 +32,11 @@ bool blink(uint32_t now, uint32_t periodMs) {
 // Même carte-circuit que le blackjack : le décor porte le geek, les
 // figures restent lisibles (règle de projet).
 void drawTable(lgfx::LGFX_Sprite& g) {
-    constexpr int kTx = 4, kTy = 20, kTw = kScreenW - 8, kTh = 62;
+    // La table enveloppe la rangée ET les badges HELD : un badge qui tombe
+    // sur le noir, hors du circuit, casse l'illusion de la carte-support.
+    // Bas de table = kHeldY + hauteur du badge + une marge.
+    constexpr int kTx = 4, kTy = 20, kTw = kScreenW - 8;
+    constexpr int kTh = kHeldY + 9 + 3 - kTy;
     g.fillRect(kTx, kTy, kTw, kTh, P::pcb);
     drawFrame(g, kTx, kTy, kTw, kTh, P::pcbEdge, 1);
 
@@ -47,8 +50,8 @@ void drawTable(lgfx::LGFX_Sprite& g) {
     // se lit comme une barrette de composants.
     for (int i = 0; i < core::kPokerHandSize; ++i) {
         const int x = cardX(i);
-        g.fillRect(x + 4, kTy + kTh - 6, kCardW - 8, 1, P::pcbEdge);
-        g.fillRect(x + kCardW / 2 - 1, kTy + kTh - 9, 2, 3, P::tan);
+        g.fillRect(x + 4, kTy + kTh - 4, kCardW - 8, 1, P::pcbEdge);
+        g.fillRect(x + kCardW / 2 - 1, kTy + kTh - 7, 2, 3, P::tan);
     }
     trace45(g, 8, kTy + 8, 26, kTy + 26, P::pcbEdge, 1);
     trace45(g, kScreenW - 9, kTy + 8, kScreenW - 27, kTy + 26, P::pcbEdge, 1);
@@ -81,7 +84,7 @@ void drawCards(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
             drawFrame(g, x, kCardsY, kCardW, kCardH, P::pcbEdge, 1);
             continue;
         }
-        drawCard(g, s.hand.c[i], x, kCardsY, false, g_demo);
+        drawCard(g, s.hand.c[i], x, kCardsY, false, g_demo, kVpCard);
 
         if (s.held[i]) {
             // « HELD » sous la carte, plus un cadre : le joueur doit voir
@@ -118,33 +121,42 @@ void drawActions(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
     }
     // Pas d'invite en démo : « DEMO » occupe déjà cette ligne.
     if (!g_demo) {
-        drawText(g, "</> PICK   ENTER HOLD/DRAW", kScreenW / 2, kMsgY + 6,
+        drawText(g, "</> PICK   ENTER HOLD/DRAW", kScreenW / 2, kMsgY + 7,
                  P::steel500, 1, Align::Center);
     }
 }
 
 void drawResult(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
     if (g_demo) {
-        drawText(g, "DEMO", kScreenW / 2, kMsgY + 4, kGrayLight, 2, Align::Center);
+        drawText(g, "DEMO", kScreenW / 2, kMsgY, kGrayLight, 2, Align::Center);
         return;
     }
     if (s.phase == core::VpPhase::Idle) {
-        drawText(g, "PRESS SPACE TO DEAL", kScreenW / 2, kMsgY + 4, P::cyan, 2,
+        drawText(g, "PRESS SPACE TO DEAL", kScreenW / 2, kMsgY, P::cyan, 2,
                  Align::Center);
         return;
     }
     if (s.phase != core::VpPhase::Result) return;
 
     if (s.result == core::PokerRank::None) {
-        drawText(g, "NO WIN", kScreenW / 2, kMsgY + 4, P::steel500, 2,
-                 Align::Center);
-        drawText(g, "SPACE FOR A NEW HAND", kScreenW / 2, kMsgY + 20,
-                 P::steel500, 1, Align::Center);
+        drawText(g, "NO WIN", kScreenW / 2, kMsgY, P::steel500, 2, Align::Center);
+        drawText(g, "SPACE FOR A NEW HAND", kScreenW / 2, kMsgLine2, P::steel500,
+                 1, Align::Center);
         return;
     }
-    // Le montant vit dans le panneau de célébration : ici on ne garde que
-    // l'invite pour la main suivante.
-    drawText(g, "SPACE FOR A NEW HAND", kScreenW / 2, kMsgY + 20, P::steel500, 1,
+
+    // La bande qu'occupait le bouton DRAW reste vide une fois la main
+    // conclue : quarante pixels de noir, alors que c'est le moment où le
+    // joueur veut savoir CE QU'IL A. Le panneau de célébration a montré le
+    // montant, mais il s'est effacé — le nom de la main, lui, doit rester.
+    drawText(g, core::pokerRankName(s.result), kScreenW / 2, kActionY,
+             P::yellow, 2, Align::Center);
+    const int aw = numberWidth(static_cast<int32_t>(s.payout), 2) + 12;
+    drawText(g, "+", (kScreenW - aw) / 2, kActionY + 20, P::green, 2);
+    drawNumber(g, static_cast<int32_t>(s.payout), (kScreenW - aw) / 2 + 12,
+               kActionY + 20, P::green, 2);
+
+    drawText(g, "SPACE FOR A NEW HAND", kScreenW / 2, kMsgLine2, P::steel500, 1,
              Align::Center);
 }
 

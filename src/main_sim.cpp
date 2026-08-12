@@ -313,6 +313,20 @@ int runCapture() {
         app.poker.cursor = 2;
         ui::drawApp(canvas, app, pt);
         if (!saveShot(canvas, "poker.bmp")) return 1;
+        {   // Après tirage : le cas à DEUX lignes de message, celui qui
+            // débordait de l'écran quand les cartes ont grandi.
+            uint32_t pt2 = 9000;
+            // Curseur sur DRAW : vpConfirm() bascule un HOLD tant qu'il est
+            // sur une carte, et la main ne se conclurait jamais.
+            app.poker.cursor = core::kVpDrawSlot;
+            core::vpConfirm(app.poker, pt2, core::xorShift32);
+            for (int i = 0; i < 120 && app.poker.phase != core::VpPhase::Result; ++i) {
+                pt2 += core::kFrameMs;
+                core::vpUpdate(app.poker, pt2, core::xorShift32);
+            }
+            ui::drawApp(canvas, app, pt2);
+            if (!saveShot(canvas, "poker_result.bmp")) return 1;
+        }
         app.screen = core::AppScreen::PokerHelp;
         ui::drawApp(canvas, app, pt);
         if (!saveShot(canvas, "poker_help.bmp")) return 1;

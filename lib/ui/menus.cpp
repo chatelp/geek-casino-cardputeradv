@@ -311,8 +311,8 @@ void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
             g.fillRect(10, 30 + i * 12, 3, 3, i == 3 ? P::green : P::cyan);
             drawText(g, kRules[i], 18, 29 + i * 12, P::steel300, 1);
         }
-        drawCard(g, core::Card{1, SUIT_SPADE}, 168, 34, false);
-        drawCard(g, core::Card{13, SUIT_HEART}, 196, 34, false);
+        drawCard(g, core::Card{1, SUIT_SPADE}, 168, 34, false, false);
+        drawCard(g, core::Card{13, SUIT_HEART}, 196, 34, false, false);
         drawText(g, "3:2", 196, 80, P::green, 2, Align::Center);
     } else {
         drawHeader(g, "BJ ACTIONS", P::cyan, true);

@@ -990,7 +990,10 @@ def card_device():
             ("bj_help", "Règles et cartes d'exemple."),
         ]),
         ("Video poker", [
-            ("poker", "Cinq cartes, deux gardées, case DRAW."),
+            ("poker", "Cartes 38x54 : au poker elles SONT le jeu, elles ont "
+                      "donc toute la place."),
+            ("poker_result", "Main conclue : la bande du bouton DRAW accueille "
+                             "le nom de la main et le gain."),
             ("poker_help", "Barème 9/6 et bonus de mise maximale."),
         ]),
         ("Roulette", [
