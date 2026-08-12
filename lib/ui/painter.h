@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "font5x7.h"
+#include "spinband.h"
 #include "hal_display.h"
 #include "symbols.h"
 
@@ -80,5 +81,12 @@ void drawBetArrows(lgfx::LGFX_Sprite& g, int leftX, int rightX, int y,
 // qui est à l'écran ne peut y échapper, y compris ce qu'on dessinera plus
 // tard sans y penser.
 void desaturate(lgfx::LGFX_Sprite& g);
+
+// L'analyseur de spectre du bas d'écran, pendant un tour. Les hauteurs
+// viennent de core::bandLevel() — ici on ne fait que peindre. Segmenté
+// comme une vraie rangée de diodes : une barre pleine se lit comme une
+// jauge de chargement, une barre en segments se lit comme un niveau.
+void drawSpinBand(lgfx::LGFX_Sprite& g, int x, int y, int w, int h,
+                  const core::BandDrive& d, uint32_t now);
 
 }  // namespace ui

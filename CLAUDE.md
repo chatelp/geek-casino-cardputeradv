@@ -137,6 +137,9 @@ Règles issues du design system :
 lib/core/   Logique pure C++17 — AUCUN include Arduino/M5/lgfx.
             Testée par test-native. Rouleaux, table de gains, économie,
             ET le mouvement : le rythme est de la logique, pas du dessin.
+            `spinband` en est l'exemple limite — un analyseur de spectre
+            écrit SANS état, entièrement déduit de l'instant et des
+            rouleaux, donc testable image par image.
             Le temps entre par un paramètre `now`, jamais lu d'une horloge
             interne — c'est ce qui rend les transitions testables et les
             captures reproductibles.

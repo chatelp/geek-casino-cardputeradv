@@ -2,6 +2,51 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-032 — 2026-08-12 — Un analyseur de spectre au bas des machines à sous ; les chiffres du démarrage deviennent vrais
+
+**Le bandeau du bas ne servait qu'à écrire « SPINNING ».** Vingt pixels de
+haut sur toute la largeur, pendant tout le tour, pour un mot qui ne dit
+rien que les rouleaux ne disent déjà. Il devient un **analyseur de
+spectre**, façade de juke-box : vingt-quatre barres segmentées, cyan en
+bas, ambre au milieu, magenta aux pointes, avec des témoins de crête qui
+planent puis retombent.
+
+Il **raconte le tour** au lieu de le commenter : l'entrain descend à
+chaque rouleau verrouillé (100, 78, 62 pour trois rouleaux), et chaque
+verrouillage porte un **coup** qui envoie toutes les barres au plafond
+avant de retomber en 260 ms. Sur la machine vidéo, cinq rouleaux font
+cinq à-coups. Pendant la célébration, la hauteur suit le palier — même
+escalier que le son et l'animation (D-008) : un petit gain ne doit pas
+faire le même bruit visuel qu'un jackpot.
+
+**Tout est pur** (`lib/core/spinband.h`) : aucun état, aucune horloge
+interne. La hauteur d'une barre est une fonction de (barre, instant,
+entrain), et l'entrain se **déduit des rouleaux eux-mêmes** — chacun
+connaît son instant d'arrêt (`t0 + dur`), donc le nombre de rouleaux en
+vol et la fraîcheur du dernier verrouillage se calculent sans rien
+mémoriser. Même le témoin de crête, qui semble demander une mémoire, est
+le maximum des six derniers paliers : puisque la fonction est pure, on
+peut simplement les redemander. Six tests, dont un qui vérifie qu'un
+palier ne bouge pas entre deux images voisines — sinon le bandeau
+grésillerait au lieu d'onduler.
+
+Le `kMsgY` du format vidéo passe de 121 à **120** : la dernière rangée de
+symboles finit à 119, et ce pixel récupéré donne cinq crans au lieu de
+quatre, soit la même lecture qu'au 3x1.
+
+**Les chiffres de l'écran de démarrage sont maintenant vérifiés.** Le test
+est faux — c'est le principe — mais les valeurs annoncées ne le sont plus :
+240 MHz, 8 Mo de flash sans PSRAM, BMI270, TCA8418 en I²C à 0x34, et
+64800 octets de mémoire vidéo (240 × 135 × 2, exactement notre sprite).
+Tout est relu dans la définition de carte `m5stack-stamps3` et dans les
+pilotes qu'instancient M5GFX et M5Cardputer.
+
+Une seule mention ne tenait pas : « ST7789**V2** ». M5GFX instancie un
+`Panel_ST7789` et ne connaît aucune révision — la mention est retirée. Un
+faux écran de démarrage qui annonce du matériel inexistant n'est que du
+décor ; celui qui annonce le vrai est une carte d'identité, et c'est
+nettement plus geek.
+
 ## D-031 — 2026-08-12 — La touche retour marche toujours ; le gris de la démo s'applique à l'écran fini
 
 **On ne pouvait pas sortir d'une main.** Poker, blackjack et roulette

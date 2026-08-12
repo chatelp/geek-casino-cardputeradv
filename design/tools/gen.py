@@ -971,12 +971,16 @@ def card_device():
         ]),
         ("Machine à sous 3x1", [
             ("slot", "Cabinet-circuit, levier à droite, hublots hauts."),
+            ("slot_spin", "En plein tour : le bandeau du bas est un analyseur "
+                          "de spectre, pas un mot."),
             ("slot_classic", "Même jeu, glyphes classiques (réglage GLYPHS)."),
             ("celeb_count", "Célébration : le gain se décompte."),
             ("help", "Table de gains, les deux habillages côte à côte."),
         ]),
         ("Machine vidéo 5x3", [
             ("video", "Zéro chrome : HUD en surimpression, chevrons de ligne."),
+            ("video_spin", "Cinq rouleaux, donc cinq à-coups : le spectre "
+                           "s'apaise à chaque verrouillage."),
             ("video_lines", "Les cinq lignes DESSINÉES — un chevron ne s'explique pas."),
             ("video_help", "Table de gains par longueur d'alignement."),
         ]),

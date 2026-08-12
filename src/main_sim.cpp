@@ -194,6 +194,22 @@ int runCapture() {
         app.screen = core::AppScreen::Slot;
         ui::drawApp(canvas, app, 400);
         if (!saveShot(canvas, "slot.bmp")) return 1;
+        // En plein tour, un rouleau déjà verrouillé : c'est l'état où le
+        // bandeau du bas raconte quelque chose.
+        {
+            uint32_t st = 500;
+            core::startSpin(app.game, st, core::xorShift32);
+            for (int i = 0; i < 24; ++i) {
+                st += core::kFrameMs;
+                core::updateGame(app.game, st, core::xorShift32);
+            }
+            ui::drawApp(canvas, app, st);
+            if (!saveShot(canvas, "slot_spin.bmp")) return 1;
+            while (app.game.phase == core::Phase::Spinning) {
+                st += core::kFrameMs;
+                core::updateGame(app.game, st, core::xorShift32);
+            }
+        }
         app.settings.slotSkin = 1;
         ui::drawApp(canvas, app, 400);
         if (!saveShot(canvas, "slot_classic.bmp")) return 1;
@@ -209,6 +225,16 @@ int runCapture() {
         }
         ui::drawApp(canvas, app, vt);
         if (!saveShot(canvas, "video.bmp")) return 1;
+        {   // Le même bandeau, mais sur cinq rouleaux.
+            uint32_t sv = vt + 1000;
+            core::startVideoSpin(app.video, sv, core::xorShift32);
+            for (int i = 0; i < 30; ++i) {
+                sv += core::kFrameMs;
+                core::updateVideoGame(app.video, sv, core::xorShift32);
+            }
+            ui::drawApp(canvas, app, sv);
+            if (!saveShot(canvas, "video_spin.bmp")) return 1;
+        }
         app.screen = core::AppScreen::VideoHelp;
         ui::drawApp(canvas, app, vt);
         if (!saveShot(canvas, "video_help.bmp")) return 1;

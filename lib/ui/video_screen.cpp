@@ -143,10 +143,15 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::VideoGame& game, uint32_t now
             drawText(g, "SHAKE TO SPIN", kScreenW / 2, ty, P::cyan, 2, Align::Center);
             break;
         case core::Phase::Spinning:
-            drawText(g, "SPINNING", kScreenW / 2, ty, P::magenta, 2, Align::Center);
+            // Même bandeau qu'au 3x1, mais sur cinq rouleaux : le spectre
+            // s'apaise cinq fois au lieu de trois, et la cascade se voit.
+            drawSpinBand(g, 0, kMsgY, kScreenW, kScreenH - kMsgY,
+                         core::bandDriveOfReels(game.motion, core::kVideoReels, now),
+                         now);
             break;
         case core::Phase::Celebrate:
-            // Le gain vit dans le panneau : ici on laisse voir la grille.
+            drawSpinBand(g, 0, kMsgY, kScreenW, kScreenH - kMsgY,
+                         core::bandDriveOfWin(static_cast<uint8_t>(game.tier)), now);
             break;
         case core::Phase::Bailout:
             drawText(g, "THE HOUSE REFILLS +500", kScreenW / 2, ty + 3, P::green, 1,

@@ -64,13 +64,24 @@ void drawBars(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
 // le passage que tout le monde reconnaît.
 void drawSelftest(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
     g.fillScreen(P::ink900);
+    // Le test est faux, les CHIFFRES sont vrais : ils sont tous vérifiés
+    // contre le matériel réel (définition de carte m5stack-stamps3, pilotes
+    // instanciés par M5GFX et M5Cardputer). Un faux écran de démarrage qui
+    // annonce du matériel inexistant, c'est du décor ; un qui annonce le
+    // vrai, c'est une carte d'identité — et c'est bien plus geek.
+    //
+    // « ST7789V2 » figurait ici sans preuve : M5GFX instancie un
+    // Panel_ST7789 et ne connaît pas de révision. On n'affiche que ce qu'on
+    // peut montrer.
     static const char* kLines[] = {
         "GEEK CASINO BOOT ROM V1.0",
-        "CPU  ESP32-S3  240 MHZ",
-        "VRAM 64800 BYTES",
-        "LCD  ST7789V2 240X135",
-        "IMU  BMI270",
-        "SND  1W  800-2600 HZ",
+        "CPU   ESP32-S3  240 MHZ",
+        "FLASH 8 MB   PSRAM NONE",
+        "VRAM  64800 BYTES",
+        "LCD   ST7789  240X135",
+        "KBD   TCA8418 I2C 0X34",
+        "IMU   BMI270",
+        "SND   1W  800-2600 HZ",
     };
     constexpr int kn = sizeof(kLines) / sizeof(kLines[0]);
     const int shown = 1 + static_cast<int>(p * kn * 1.4f);

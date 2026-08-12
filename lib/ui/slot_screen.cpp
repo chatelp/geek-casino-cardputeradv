@@ -285,11 +285,20 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::Game& game, uint32_t now) {
             drawText(g, "SHAKE TO SPIN", kScreenW / 2, ty, P::cyan, 2, Align::Center);
             break;
         case core::Phase::Spinning:
-            drawText(g, "SPINNING", kScreenW / 2, ty, P::magenta, 2, Align::Center);
+            // Vingt pixels de haut sur toute la largeur ne servaient qu'à
+            // écrire « SPINNING ». Le spectre, lui, raconte le tour : il
+            // s'apaise à chaque rouleau qui se verrouille, et le dernier
+            // rouleau le fait cogner.
+            drawSpinBand(g, 0, kMsgY + 2, kScreenW, kScreenH - kMsgY - 2,
+                         core::bandDriveOfReels(game.motion, core::kMvpReels, now),
+                         now);
             break;
         case core::Phase::Celebrate:
-            // Le gain s'affiche dans le panneau de célébration, pas ici :
-            // le bandeau ne peut ni durer ni s'animer.
+            // Le montant vit dans le panneau de célébration ; ici le
+            // spectre continue, à la hauteur du palier — un petit gain ne
+            // doit pas faire le même bruit visuel qu'un jackpot (D-008).
+            drawSpinBand(g, 0, kMsgY + 2, kScreenW, kScreenH - kMsgY - 2,
+                         core::bandDriveOfWin(static_cast<uint8_t>(game.tier)), now);
             break;
         case core::Phase::Bailout:
             drawText(g, "THE HOUSE REFILLS", kScreenW / 2, kMsgY + 3, P::green, 1,
