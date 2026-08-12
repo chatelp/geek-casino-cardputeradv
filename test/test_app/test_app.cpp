@@ -250,6 +250,26 @@ static void test_spin_updates_the_leaderboard_entry() {
     TEST_ASSERT_TRUE(a.dirty);  // une sauvegarde est due
 }
 
+static void test_about_names_the_tool_and_returns() {
+    // La transparence est un engagement, pas un easter egg : l'écran About
+    // s'ouvre depuis l'accueil et en revient. Son contenu est du dessin,
+    // mais son existence et son accès sont de la logique — donc testés.
+    core::seedXorShift(42);
+    core::App a = core::newApp(0, core::xorShift32);
+    core::addOrSwitchPlayer(a.roster, "PIXEL");
+    core::enterFromSave(a);
+    TEST_ASSERT_EQUAL(static_cast<int>(core::AppScreen::Lobby),
+                      static_cast<int>(a.screen));
+
+    core::handleKey(a, core::AppKey::About, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(static_cast<int>(core::AppScreen::About),
+                      static_cast<int>(a.screen));
+
+    core::handleKey(a, core::AppKey::Back, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(static_cast<int>(core::AppScreen::Lobby),
+                      static_cast<int>(a.screen));
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_first_launch_asks_for_a_name);
@@ -262,5 +282,6 @@ int main() {
     RUN_TEST(test_same_name_switches_instead_of_duplicating);
     RUN_TEST(test_reset_needs_two_presses_and_wipes_everything);
     RUN_TEST(test_spin_updates_the_leaderboard_entry);
+    RUN_TEST(test_about_names_the_tool_and_returns);
     return UNITY_END();
 }

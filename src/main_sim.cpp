@@ -177,6 +177,7 @@ int runCapture() {
             {core::AppScreen::GlobalSettings, "settings.bmp"},
             {core::AppScreen::SlotSettings, "slot_settings.bmp"},
             {core::AppScreen::Leaderboard, "leaderboard.bmp"},
+            {core::AppScreen::About, "about.bmp"},
         };
         for (const auto& d : defs) {
             app.screen = d.sc;
@@ -470,10 +471,13 @@ int simRun(bool* running) {
                 core::handleKey(app, core::AppKey::Settings, now, core::xorShift32);
             if (edge.pressed(st, SDL_SCANCODE_L))
                 core::handleKey(app, core::AppKey::Board, now, core::xorShift32);
+            if (edge.pressed(st, SDL_SCANCODE_A))
+                core::handleKey(app, core::AppKey::About, now, core::xorShift32);
         } else {
             edge.pressed(st, SDL_SCANCODE_H);  // consomme les fronts pour ne
             edge.pressed(st, SDL_SCANCODE_S);  // pas déclencher en sortant
             edge.pressed(st, SDL_SCANCODE_L);
+            edge.pressed(st, SDL_SCANCODE_A);
         }
 
         if (app.quitRequested) {

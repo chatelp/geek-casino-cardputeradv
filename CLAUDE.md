@@ -29,6 +29,12 @@ dépôt.
 ## Rôles
 
 Pierre est product owner, directeur visuel, testeur et décideur final.
+Claude Code est l'agent de développement principal — architecte,
+implémenteur, opérateur du simulateur, mainteneur de la documentation.
+**La transparence sur ce point fait partie du produit** (doctrine reprise
+de Daoa Mini) : le dépôt public le dit ici, l'appareil le dit dans son
+écran About (touche A à l'accueil), avec la distinction qui compte —
+construit AVEC une IA, mais rien d'IA ne tourne SUR l'appareil.
 Travail en petites étapes validées visuellement : simulateur d'abord,
 appareil ensuite. Toute hypothèse douteuse se tranche par une mesure ou
 un test, pas par une affirmation.

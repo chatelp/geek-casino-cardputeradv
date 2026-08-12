@@ -454,11 +454,12 @@ constexpr uint16_t kSymbolDominant[kSymbolCount] = {
 constexpr int kIconPx = 12;
 enum Icon : uint8_t {
     ICON_BALL     = 0,  // Pommeau du levier
-    ICON_COIN     = 1,  // Jeton
-    ICON_LEVER    = 2,  // Levier
-    ICON_SPEAKER  = 3,  // Son
+    ICON_CLAUDE   = 1,  // Claude, pixelise
+    ICON_COIN     = 2,  // Jeton
+    ICON_LEVER    = 3,  // Levier
+    ICON_SPEAKER  = 4,  // Son
 };
-constexpr int kIconCount = 4;
+constexpr int kIconCount = 5;
 
 constexpr uint8_t kIcons[kIconCount][kIconPx * kIconPx] = {
     {  // BALL
@@ -474,6 +475,20 @@ constexpr uint8_t kIcons[kIconCount][kIconPx * kIconPx] = {
         0,13,17,17,17,17,17,17,17,17,13,0,
         0,0,13,13,17,17,17,17,13,13,0,0,
         0,0,0,0,13,13,13,13,0,0,0,0,
+    },
+    {  // CLAUDE
+        0,0,0,0,0,15,15,0,0,0,0,0,
+        0,15,0,0,0,15,15,0,0,0,15,0,
+        0,0,15,0,0,15,15,0,0,15,0,0,
+        0,0,0,15,0,15,15,0,15,0,0,0,
+        0,0,0,0,15,15,15,15,0,0,0,0,
+        15,15,15,15,15,15,15,15,15,15,15,15,
+        15,15,15,15,15,15,15,15,15,15,15,15,
+        0,0,0,0,15,15,15,15,0,0,0,0,
+        0,0,0,15,0,15,15,0,15,0,0,0,
+        0,0,15,0,0,15,15,0,0,15,0,0,
+        0,15,0,0,0,15,15,0,0,0,15,0,
+        0,0,0,0,0,15,15,0,0,0,0,0,
     },
     {  // COIN
         0,0,0,0,13,13,13,13,0,0,0,0,

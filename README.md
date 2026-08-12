@@ -99,6 +99,17 @@ Les décisions de conception sont journalisées dans
 [docs/DECISIONS.md](docs/DECISIONS.md), les contraintes et pièges
 matériels mesurés dans [CLAUDE.md](CLAUDE.md).
 
+## Transparence
+
+Ce projet est **construit avec [Claude Code](https://claude.com/claude-code)**,
+l'agent de développement principal — Pierre CHATEL est product owner,
+directeur visuel, testeur et décideur final. L'appareil le dit lui-même :
+écran About, touche **A** à l'accueil.
+
+La distinction qui compte : construit *avec* une IA, mais **rien d'IA ne
+tourne sur l'appareil** — pas de réseau, pas de compte, et l'aléa vient du
+générateur matériel de l'ESP32.
+
 ## Licence
 
 [MIT](LICENSE) — prenez, apprenez, construisez dessus.

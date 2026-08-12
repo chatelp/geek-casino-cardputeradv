@@ -42,13 +42,15 @@ enum class AppScreen : uint8_t {
     RouletteHelp,
     GlobalSettings,  // S à l'accueil — son, volume, joueur, reset
     Leaderboard,     // L à l'accueil
+    About,           // A à l'accueil — auteur, licence, et la transparence
+                     // sur l'outil : construit avec Claude Code
 };
 
 // Touches abstraites vues par l'app (l'ASCII de la saisie du nom passe par
 // feedNameChar, pas par ici).
 enum class AppKey : uint8_t {
     None, Up, Down, Left, Right, Confirm,  // Enter ou Espace
-    Help, Settings, Board, Back,
+    Help, Settings, Board, Back, About,
 };
 
 struct NameEntry {

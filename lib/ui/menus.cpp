@@ -71,6 +71,39 @@ void drawHint(lgfx::LGFX_Sprite& g, const char* hint) {
     drawText(g, hint, kScreenW / 2, kScreenH - 10, P::steel300, 1, Align::Center);
 }
 
+// ------------------------------------------------------------------ à propos
+// La transparence sur l'outil fait partie du produit (doctrine reprise de
+// Daoa Mini) : le dépôt public dit qui a écrit le code, l'appareil le dit
+// aussi. La distinction compte et l'écran la fait : construit AVEC une IA,
+// mais rien d'IA ne TOURNE ici — l'aléa vient du TRNG matériel.
+void drawAbout(lgfx::LGFX_Sprite& g, uint32_t now) {
+    g.fillScreen(P::ink900);
+    drawHeader(g, "ABOUT", P::cyan);
+
+    drawText(g, "SILICON CASINO", kScreenW / 2, 30, P::magenta, 2, Align::Center);
+    drawText(g, "A GAME BY PIERRE CHATEL", kScreenW / 2, 48, P::white, 1,
+             Align::Center);
+
+    // Le crédit outil, logo en tête de ligne. Le soleil pixelisé bat
+    // doucement : c'est un remerciement, pas une mention légale.
+    const int lw = textWidth("BUILT WITH CLAUDE CODE", 1);
+    const int bx = (kScreenW - lw - 16) / 2;
+    const int pulse = ((now / 600u) & 1u) ? 1 : 0;
+    drawIcon(g, ICON_CLAUDE, bx, 62 - pulse);
+    drawText(g, "BUILT WITH CLAUDE CODE", bx + 16, 64, P::orange, 1);
+
+    // La distinction héritée de Daoa Mini : l'outil a écrit le code, mais
+    // le jeu n'embarque rien — ni IA, ni réseau, ni argent réel.
+    drawText(g, "NO AI RUNS ON THIS DEVICE", kScreenW / 2, 80, P::steel300, 1,
+             Align::Center);
+    drawText(g, "NO NETWORK - VIRTUAL CHIPS ONLY", kScreenW / 2, 92,
+             P::steel300, 1, Align::Center);
+
+    drawText(g, "MIT - GITHUB.COM/CHATELP", kScreenW / 2, 108, P::steel500, 1,
+             Align::Center);
+    drawHint(g, "ESC BACK");
+}
+
 // ------------------------------------------------------------------ accueil
 void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
@@ -121,7 +154,7 @@ void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     drawText(g, entries[app.lobbyIndex].sub, kScreenW / 2, 113, P::cyan, 1,
              Align::Center);
 
-    drawHint(g, "H HELP  S SETTINGS  L BOARD");
+    drawHint(g, "H HELP  S SETTINGS  L BOARD  A ABOUT");
 }
 
 // -------------------------------------------------------------- saisie du nom
@@ -596,6 +629,7 @@ void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         case core::AppScreen::BjSettings: drawBjSettings(g, app); break;
         case core::AppScreen::GlobalSettings: drawGlobalSettings(g, app); break;
         case core::AppScreen::Leaderboard: drawLeaderboard(g, app); break;
+        case core::AppScreen::About: drawAbout(g, now); break;
     }
     // Le gris de la démo s'applique ICI, sur l'écran fini : c'est le seul
     // endroit où rien ne peut lui échapper. Grisé trait par trait, il

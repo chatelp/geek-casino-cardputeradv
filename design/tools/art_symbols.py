@@ -435,6 +435,26 @@ CARD_BACK = [
 
 # Petits pictogrammes d'interface, 12x12 — pas des symboles de rouleau.
 ICONS = {
+    # Le soleil Claude, pixelise : huit rayons autour d'un coeur plein.
+    # Il ne sert qu'a l'ecran About — la transparence sur l'outil fait
+    # partie du produit, comme sur Daoa Mini.
+    "CLAUDE": {
+        "label": "Claude, pixelise", "size": 12,
+        "art": [
+            ".....oo.....",
+            ".o...oo...o.",
+            "..o..oo..o..",
+            "...o.oo.o...",
+            "....oooo....",
+            "oooooooooooo",
+            "oooooooooooo",
+            "....oooo....",
+            "...o.oo.o...",
+            "..o..oo..o..",
+            ".o...oo...o.",
+            ".....oo.....",
+        ],
+    },
     "COIN": {
         "label": "Jeton", "size": 12,
         "art": [

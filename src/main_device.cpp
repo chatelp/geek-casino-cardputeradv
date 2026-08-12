@@ -115,6 +115,7 @@ static void handleKeyboard(uint32_t now) {
             case 'h': core::handleKey(app, core::AppKey::Help, now, trng); break;
             case 's': core::handleKey(app, core::AppKey::Settings, now, trng); break;
             case 'l': core::handleKey(app, core::AppKey::Board, now, trng); break;
+            case 'a': core::handleKey(app, core::AppKey::About, now, trng); break;
             case '`': core::handleKey(app, core::AppKey::Back, now, trng); break;
             default: break;
         }

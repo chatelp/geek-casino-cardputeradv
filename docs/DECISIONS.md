@@ -2,6 +2,26 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-037 — 2026-08-12 — Écran About : la transparence sur l'outil fait partie du produit
+
+Doctrine reprise de Daoa Mini, où `CLAUDE.md` nomme l'agent de
+développement dès sa première ligne : **le dépôt dit qui a écrit le code,
+et l'appareil le dit aussi**. Touche **A** à l'accueil.
+
+L'écran nomme Pierre CHATEL (auteur, décideur), crédite **Claude Code**
+avec le soleil pixelisé en tête de ligne (12x12, dessiné dans
+`art_symbols.py` comme tout l'art — jamais dans un fichier généré), et
+fait la distinction héritée de Daoa qui donne son sens à la mention :
+construit **avec** une IA, mais rien d'IA ne **tourne** sur l'appareil —
+pas de réseau, jetons virtuels, aléa du TRNG matériel. C'est la même
+rigueur que le « no AI » du README de Daoa Mini, qui décrivait le produit
+sans cacher le processus.
+
+Le contenu de l'écran est du dessin, mais son existence et son accès sont
+de la logique : un test ouvre l'écran depuis l'accueil et en revient.
+`CLAUDE.md` et le README portent désormais la même doctrine en toutes
+lettres.
+
 ## D-036 — 2026-08-12 — Le nom public : « Silicon Casino »
 
 La contrainte dominante, posée par Pierre : **être trouvé dans une

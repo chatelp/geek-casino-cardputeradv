@@ -968,6 +968,7 @@ def card_device():
             ("name_entry", "Saisie du nom au premier lancement."),
             ("leaderboard", "Classement — c'est la table des joueurs elle-même."),
             ("settings", "Réglages généraux : son, démo, allumage, joueur."),
+            ("about", "Qui l'a fait, avec quoi — et ce qui ne tourne PAS ici."),
         ]),
         ("Machine à sous 3x1", [
             ("slot", "Cabinet-circuit, levier à droite, hublots hauts."),

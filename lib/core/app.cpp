@@ -215,6 +215,9 @@ void keyLobby(App& a, AppKey k, uint32_t now, RngFn rng) {
         case AppKey::Board:
             a.screen = AppScreen::Leaderboard;
             break;
+        case AppKey::About:
+            a.screen = AppScreen::About;
+            break;
         case AppKey::Help:
             a.helpReturn = AppScreen::Lobby;
             a.helpPage = 0;
@@ -580,6 +583,11 @@ void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
         case AppScreen::GlobalSettings: keyGlobalSettings(a, k); break;
         case AppScreen::Leaderboard:
             if (k == AppKey::Board || k == AppKey::Back || k == AppKey::Confirm) {
+                a.screen = AppScreen::Lobby;
+            }
+            break;
+        case AppScreen::About:
+            if (k == AppKey::About || k == AppKey::Back || k == AppKey::Confirm) {
                 a.screen = AppScreen::Lobby;
             }
             break;
