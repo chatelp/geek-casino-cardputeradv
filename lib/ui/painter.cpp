@@ -103,6 +103,14 @@ void drawIcon(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale,
     blitIndexed(g, kIcons[icon], kIconPx, x, y, scale, tint, kSymbolPalette);
 }
 
+void drawChevronV(lgfx::LGFX_Sprite& g, int x, int y, bool down, uint16_t color) {
+    for (int k = 0; k < 3; ++k) {
+        const int row = down ? y + k : y + 2 - k;
+        g.fillRect(x + k, row, 1, 1, color);
+        g.fillRect(x + 4 - k, row, 1, 1, color);
+    }
+}
+
 void trace45(lgfx::LGFX_Sprite& g, int x0, int y0, int x1, int y1,
              uint16_t color, int w) {
     const int dx = x1 - x0, dy = y1 - y0;

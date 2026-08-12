@@ -19,10 +19,22 @@ bool blink(uint32_t now, uint32_t periodMs) {
     return ((now / (periodMs / 2)) & 1u) != 0;
 }
 
-void drawHeader(lgfx::LGFX_Sprite& g, const char* title, uint16_t color) {
+// Largeur des pastilles de pagination + marge. L'en-tête doit la
+// connaître, sinon un titre un peu long passe dessous.
+constexpr int kPagerReserve = 34;
+
+void drawHeader(lgfx::LGFX_Sprite& g, const char* title, uint16_t color,
+                bool pager = false) {
     g.fillRect(0, 0, kScreenW, 24, P::ink800);
     g.fillRect(0, 23, kScreenW, 1, color);
+
+    // Découpe stricte à la place disponible : un titre trop long est coupé
+    // net plutôt que d'aller mordre sur les pastilles. Le repère de page
+    // reste lisible quoi qu'il arrive au texte.
+    const int avail = kScreenW - 8 - (pager ? kPagerReserve : 4);
+    g.setClipRect(8, 0, avail, 24);
     drawText(g, title, 8, 5, color, 2);
+    g.clearClipRect();
 }
 
 // Pagination : des points pleins/vides, plus une flèche tant qu'il reste
@@ -36,13 +48,18 @@ void drawPager(lgfx::LGFX_Sprite& g, uint8_t page, uint8_t count, uint32_t now) 
         if (i == page) g.fillRect(x, 9, 4, 4, P::cyan);
         else drawFrame(g, x, 9, 4, 4, P::steel500, 1);
     }
-    if (page + 1 < count && blink(now, 900)) {
-        // Chevron vers le bas, à droite du bandeau d'aide.
-        for (int k = 0; k < 3; ++k) {
-            g.fillRect(kScreenW - 12 + k, kScreenH - 11 + k, 1 + 2 * (2 - k), 1,
-                       P::cyan);
-        }
-    }
+}
+
+// Bandeau d'aide avec chevrons de défilement aux extrémités. Le chevron
+// clignote tant qu'il reste une page : c'est lui qui invite, pas un mot.
+void drawHintPaged(lgfx::LGFX_Sprite& g, const char* hint, bool up, bool down,
+                   uint32_t now) {
+    g.fillRect(0, kScreenH - 13, kScreenW, 13, P::ink800);
+    g.fillRect(0, kScreenH - 13, kScreenW, 1, P::ink600);
+    drawText(g, hint, kScreenW / 2, kScreenH - 10, P::steel300, 1, Align::Center);
+    // Toujours visibles : un repère qui clignote se rate.
+    if (up) drawChevronV(g, 8, kScreenH - 9, false, P::cyan);
+    if (down) drawChevronV(g, kScreenW - 13, kScreenH - 9, true, P::cyan);
 }
 
 void drawHint(lgfx::LGFX_Sprite& g, const char* hint) {
@@ -142,7 +159,7 @@ void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
     const uint8_t pages = core::helpPageCount(core::AppScreen::SlotHelp);
 
     if (app.helpPage == 0) {
-        drawHeader(g, "SLOTS - PAYTABLE", P::cyan);
+        drawHeader(g, "SLOTS PAYTABLE", P::cyan, true);
         // Les deux habillages côte à côte SONT la correspondance.
         const core::Paytable& pt = *app.game.machine.pay;
         for (int i = 0; i < core::kSymbolCount; ++i) {
@@ -158,7 +175,7 @@ void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         drawText(g, "ANY PAIR LEFT x2", kScreenW / 2, 106, P::steel300, 1,
                  Align::Center);
     } else {
-        drawHeader(g, "SLOTS - HOW TO PLAY", P::cyan);
+        drawHeader(g, "SLOTS RULES", P::cyan, true);
         static const char* kRules[] = {
             "3 REELS, 1 PAYLINE - THE MIDDLE ROW",
             "COMBOS READ FROM THE LEFT ONLY",
@@ -175,8 +192,8 @@ void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         }
     }
     drawPager(g, app.helpPage, pages, now);
-    drawHint(g, app.helpPage + 1 < pages ? "V MORE   H OR ESC BACK"
-                                         : "^ BACK   H OR ESC CLOSE");
+    drawHintPaged(g, "H OR ESC BACK", app.helpPage > 0,
+                  app.helpPage + 1 < pages, now);
 }
 
 // Schéma d'une ligne de paiement : la grille 5x3 en miniature, avec la
@@ -209,7 +226,7 @@ void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
     const uint8_t pages = core::helpPageCount(core::AppScreen::VideoHelp);
 
     if (app.helpPage == 0) {
-        drawHeader(g, "VIDEO SLOT - PAYTABLE", P::cyan);
+        drawHeader(g, "VIDEO PAYTABLE", P::cyan, true);
         const core::Paytable& pt = *app.video.pay;
         constexpr int kGroupX[2] = {2, 122};
         constexpr int kNumX[3] = {52, 84, 116};
@@ -233,7 +250,7 @@ void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         drawText(g, "PAYS FOR 3, 4 OR 5 FROM THE LEFT", kScreenW / 2, 104,
                  P::steel300, 1, Align::Center);
     } else if (app.helpPage == 1) {
-        drawHeader(g, "VIDEO SLOT - 5 LINES", P::magenta);
+        drawHeader(g, "VIDEO 5 LINES", P::magenta, true);
         // Cinq schémas : trois en haut, deux en bas, tous à la même échelle.
         const core::Payline* lines = core::videoPaylines();
         static const char* kNames[core::kVideoLines] = {
@@ -252,7 +269,7 @@ void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         drawText(g, "EVERY LINE IS ALWAYS PLAYED", kScreenW / 2, 108,
                  P::cyan, 1, Align::Center);
     } else {
-        drawHeader(g, "VIDEO SLOT - HOW TO PLAY", P::cyan);
+        drawHeader(g, "VIDEO RULES", P::cyan, true);
         static const char* kRules[] = {
             "5 REELS, 3 ROWS, 5 PAYLINES",
             "YOUR BET IS PLACED ON EACH LINE",
@@ -269,8 +286,8 @@ void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         }
     }
     drawPager(g, app.helpPage, pages, now);
-    drawHint(g, app.helpPage + 1 < pages ? "V MORE   H OR ESC BACK"
-                                         : "^ BACK   H OR ESC CLOSE");
+    drawHintPaged(g, "H OR ESC BACK", app.helpPage > 0,
+                  app.helpPage + 1 < pages, now);
 }
 
 void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
@@ -278,7 +295,7 @@ void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
     const uint8_t pages = core::helpPageCount(core::AppScreen::BjHelp);
 
     if (app.helpPage == 0) {
-        drawHeader(g, "BLACKJACK - RULES", P::cyan);
+        drawHeader(g, "BLACKJACK", P::cyan, true);
         static const char* kRules[] = {
             "BEAT THE DEALER TO 21",
             "ACE IS 1 OR 11",
@@ -296,7 +313,7 @@ void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         drawCard(g, core::Card{13, SUIT_HEART}, 196, 34, false);
         drawText(g, "3:2", 196, 80, P::green, 2, Align::Center);
     } else {
-        drawHeader(g, "BLACKJACK - ACTIONS", P::cyan);
+        drawHeader(g, "BJ ACTIONS", P::cyan, true);
         struct Act { const char* name; const char* what; };
         static const Act kActs[] = {
             {"HIT", "TAKE ONE MORE CARD"},
@@ -316,8 +333,8 @@ void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         drawText(g, "BASIC-STRATEGY MOVE", 18, 113, P::steel300, 1);
     }
     drawPager(g, app.helpPage, pages, now);
-    drawHint(g, app.helpPage + 1 < pages ? "V MORE   H OR ESC BACK"
-                                         : "^ BACK   H OR ESC CLOSE");
+    drawHintPaged(g, "H OR ESC BACK", app.helpPage > 0,
+                  app.helpPage + 1 < pages, now);
 }
 
 // ------------------------------------------------------------------- réglages

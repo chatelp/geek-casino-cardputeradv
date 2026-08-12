@@ -38,6 +38,10 @@ void drawSymbolGray(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
                     bool classic = false);
 void drawIconGray(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale = 1);
 
+// Chevron vertical. La fonte 5x7 n'a pas de flèche, et écrire « V » pour
+// dire « bas » se lit comme la lettre V : il faut le dessiner.
+void drawChevronV(lgfx::LGFX_Sprite& g, int x, int y, bool down, uint16_t color);
+
 // Piste de circuit entre deux points. Une piste ne tourne JAMAIS à 90°
 // sur une vraie carte : elle casse l'angle à 45°. C'est le détail qui
 // distingue un dessin de circuit d'un simple quadrillage.

@@ -2,6 +2,22 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-025 — 2026-08-11 — Deux repères d'interface corrigés
+
+- **« V MORE » se lisait « appuyez sur V ».** J'avais écrit V et ^ faute
+  de flèches dans la fonte 5×7 ; Pierre a naturellement cherché la touche
+  V. Le défilement fonctionnait (il était testé) — c'était l'indication
+  qui mentait. Remplacé par de **vrais chevrons dessinés** aux extrémités
+  du bandeau, **permanents** : un repère qui clignote se rate.
+- **Les titres d'aide débordaient sous les pastilles de pagination.**
+  Corrigé durablement plutôt qu'en raccourcissant au cas par cas :
+  `drawHeader` connaît la place réservée et **découpe** le titre. Un titre
+  trop long est coupé net ; le repère de page reste lisible quoi qu'il
+  arrive au texte.
+
+Prochains jeux validés par Pierre : **roulette européenne** et **video
+poker**.
+
 ## D-024 — 2026-08-11 — Cartes fantômes : mémoire non initialisée
 
 Pierre : « c'est quoi l'écran bizarre au lancement du blackjack avec
