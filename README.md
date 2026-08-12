@@ -27,7 +27,6 @@ multi-joueurs avec classement persistant en NVS.
 - [x] Accueil, aide (H), réglages globaux et par jeu (S), classement (L)
 - [x] Deux habillages de rouleaux : geek et classique — mêmes gains
 - [x] Blackjack — règles complètes testées, **RTP 95,81 %**
-- [ ] Blackjack : écran de jeu et intégration à l'accueil
 - [x] Format vidéo 5x3, 5 lignes — **RTP par ligne 94,95 %**
 - [x] Écrans des quatre jeux, aides paginées et réglages dédiés
 - [x] Video poker Jacks or Better 9/6 — classement vérifié sur les
