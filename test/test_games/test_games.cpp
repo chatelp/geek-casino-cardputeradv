@@ -3,6 +3,7 @@
 #include <unity.h>
 
 #include "app.h"
+#include "poker.h"
 
 void setUp() {}
 void tearDown() {}
@@ -203,6 +204,81 @@ static void test_bet_memory_survives_a_save_round_trip() {
     TEST_ASSERT_FALSE(core::betsValid(bad));
 }
 
+static void test_poker_hand_runs_deal_hold_draw() {
+    core::seedXorShift(60);
+    core::VpSession s = core::newVpSession(0);
+    s.econ.credits = 1000;
+    const int32_t before = s.econ.credits;
+    TEST_ASSERT_TRUE(core::vpDeal(s, 0, core::xorShift32));
+    TEST_ASSERT_EQUAL_INT32(before - core::bet(s.econ), s.econ.credits);
+    TEST_ASSERT_EQUAL(core::VpPhase::Holding, s.phase);
+
+    // Les cinq cartes arrivent une à une : pas d'action avant la fin.
+    uint32_t now = 0;
+    s.cursor = core::kVpDrawSlot;
+    core::vpConfirm(s, now, core::xorShift32);
+    TEST_ASSERT_EQUAL_MESSAGE(core::VpPhase::Holding, s.phase,
+                              "on a pu tirer avant la fin de la donne");
+    for (int i = 0; i < 40; ++i) {
+        now += core::kFrameMs;
+        core::vpUpdate(s, now, core::xorShift32);
+    }
+    TEST_ASSERT_EQUAL_UINT8(core::kPokerHandSize, core::vpVisible(s));
+
+    // On garde les deux premières, on note leur identité, on tire.
+    s.cursor = 0; core::vpConfirm(s, now, core::xorShift32);
+    s.cursor = 1; core::vpConfirm(s, now, core::xorShift32);
+    TEST_ASSERT_TRUE(s.held[0] && s.held[1] && !s.held[2]);
+    const core::Card k0 = s.hand.c[0], k1 = s.hand.c[1];
+    const core::Card old2 = s.hand.c[2];
+
+    s.cursor = core::kVpDrawSlot;
+    core::vpConfirm(s, now, core::xorShift32);
+    TEST_ASSERT_EQUAL(core::VpPhase::Result, s.phase);
+    // Les cartes gardées n'ont pas bougé.
+    TEST_ASSERT_EQUAL_UINT8(k0.rank, s.hand.c[0].rank);
+    TEST_ASSERT_EQUAL_UINT8(k0.suit, s.hand.c[0].suit);
+    TEST_ASSERT_EQUAL_UINT8(k1.rank, s.hand.c[1].rank);
+    // La troisième a été remplacée par une carte du MÊME jeu, donc jamais
+    // une carte déjà en main.
+    (void)old2;
+    for (int i = 0; i < core::kPokerHandSize; ++i) {
+        for (int j = i + 1; j < core::kPokerHandSize; ++j) {
+            const bool same = s.hand.c[i].rank == s.hand.c[j].rank &&
+                              s.hand.c[i].suit == s.hand.c[j].suit;
+            TEST_ASSERT_FALSE_MESSAGE(same, "carte en double dans la main");
+        }
+    }
+    TEST_ASSERT_EQUAL_UINT32(
+        static_cast<uint32_t>(core::pokerPayout(s.result, s.maxBet)) * s.stake,
+        s.payout);
+}
+
+static void test_poker_cursor_wraps_over_the_draw_slot() {
+    core::seedXorShift(61);
+    core::VpSession s = core::newVpSession(0);
+    core::vpDeal(s, 0, core::xorShift32);
+    s.cursor = 0;
+    core::vpMoveCursor(s, -1);
+    TEST_ASSERT_EQUAL_UINT8(core::kVpDrawSlot, s.cursor);  // boucle sur DRAW
+    core::vpMoveCursor(s, 1);
+    TEST_ASSERT_EQUAL_UINT8(0, s.cursor);
+}
+
+static void test_lobby_now_offers_four_games() {
+    App a = started(62);
+    TEST_ASSERT_EQUAL_UINT8(4, core::kGameCount);
+    for (int i = 0; i < 3; ++i) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_UINT8(3, a.lobbyIndex);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::Poker, a.screen);
+    // On ne quitte pas au milieu d'une main : la mise est engagée.
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);  // distribue
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_MESSAGE(AppScreen::Poker, a.screen,
+                              "on a pu quitter avec une mise engagee");
+}
+
 static void test_blackjack_deal_is_progressive_then_playable() {
     core::seedXorShift(5);
     core::BjSession s = core::newBjSession(0);
@@ -275,6 +351,9 @@ int main() {
     RUN_TEST(test_each_game_keeps_its_own_bet);
     RUN_TEST(test_each_player_keeps_their_own_bets);
     RUN_TEST(test_bet_memory_survives_a_save_round_trip);
+    RUN_TEST(test_poker_hand_runs_deal_hold_draw);
+    RUN_TEST(test_poker_cursor_wraps_over_the_draw_slot);
+    RUN_TEST(test_lobby_now_offers_four_games);
     RUN_TEST(test_blackjack_deal_is_progressive_then_playable);
     RUN_TEST(test_blackjack_hand_always_terminates);
     RUN_TEST(test_basic_strategy_matches_the_reference_table);

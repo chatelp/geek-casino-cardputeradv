@@ -17,6 +17,7 @@
 #include "persist.h"
 #include "players.h"
 #include "video_game.h"
+#include "vp_session.h"
 
 namespace core {
 
@@ -32,6 +33,8 @@ enum class AppScreen : uint8_t {
     Blackjack,
     BjHelp,
     BjSettings,
+    Poker,
+    PokerHelp,
     GlobalSettings,  // S à l'accueil — son, volume, joueur, reset
     Leaderboard,     // L à l'accueil
 };
@@ -51,13 +54,14 @@ struct NameEntry {
 
 // Trois jeux, un solde commun. L'entrée de l'accueil pointe l'un d'eux ;
 // c'est ce qui donne son sens au mot « casino ».
-enum class GameId : uint8_t { Slots = 0, Video = 1, Blackjack = 2 };
-constexpr uint8_t kGameCount = 3;
+enum class GameId : uint8_t { Slots = 0, Video = 1, Blackjack = 2, Poker = 3 };
+constexpr uint8_t kGameCount = 4;
 
 struct App {
     Game game;
     VideoGame video;
     BjSession bj;
+    VpSession poker;
     Roster roster;
     Settings settings;
     AppScreen screen = AppScreen::NameEntry;

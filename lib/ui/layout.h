@@ -80,4 +80,20 @@ constexpr int kHandX           = 24;
 constexpr int kPlayerY         = 66;
 
 }  // namespace bjlayout
+
+// Video poker — cinq cartes en ligne, pas assez de place
+// pour l'écart du blackjack : on resserre.
+namespace vplayout {
+
+constexpr int kActionY   = 84;
+constexpr int kCardsY    = 26;
+constexpr int kHeldY     = 68;
+constexpr int kMsgY      = 106;
+constexpr int kRowW      = 172;
+constexpr int kRowX      = 34;
+constexpr int kStep      = 36;
+
+constexpr int cardX(int i) { return kRowX + i * kStep; }
+
+}  // namespace vplayout
 }  // namespace ui

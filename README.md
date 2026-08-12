@@ -13,8 +13,8 @@ rouleaux ; l'architecture prévoit d'autres jeux.
 
 ## État
 
-Trois jeux tournent sur l'appareil : machine à sous 3 rouleaux, machine
-vidéo 5x3 à 5 lignes, blackjack. Accueil, animation,
+Quatre jeux tournent sur l'appareil : machine à sous 3 rouleaux, machine
+vidéo 5x3 à 5 lignes, blackjack, video poker. Accueil, animation,
 son PCM, levier au geste (secouer l'appareil), aide, réglages,
 multi-joueurs avec classement persistant en NVS.
 
@@ -29,7 +29,10 @@ multi-joueurs avec classement persistant en NVS.
 - [x] Blackjack — règles complètes testées, **RTP 95,81 %**
 - [ ] Blackjack : écran de jeu et intégration à l'accueil
 - [x] Format vidéo 5x3, 5 lignes — **RTP par ligne 94,95 %**
-- [x] Écrans des trois jeux, aides et réglages dédiés
+- [x] Écrans des quatre jeux, aides paginées et réglages dédiés
+- [x] Video poker Jacks or Better 9/6 — classement vérifié sur les
+      2 598 960 mains possibles
+- [ ] Roulette européenne
 
 ## Construire
 

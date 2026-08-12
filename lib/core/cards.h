@@ -50,6 +50,19 @@ struct Shoe {
     bool ready = false;
 };
 
+// Jeu UNIQUE de 52 cartes. Le video poker en dépend : ses probabilités
+// et son taux de retour sont calculés sur un seul jeu, jamais sur un
+// sabot. Distribuer d'un sabot de quatre jeux changerait le jeu en
+// silence — quatre rois possibles au lieu de quatre au total.
+struct Deck {
+    uint8_t card[52];
+    uint8_t pos = 0;
+};
+
+void shuffleDeck(Deck& d, RngFn rng);
+Card dealFromDeck(Deck& d);
+uint8_t deckLeft(const Deck& d);
+
 void shuffleShoe(Shoe& s, RngFn rng);
 Card dealCard(Shoe& s, RngFn rng);
 uint16_t cardsLeft(const Shoe& s);

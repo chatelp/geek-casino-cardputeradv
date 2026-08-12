@@ -1221,7 +1221,18 @@ def export_layout():
          "kDealerY": 20, "kPlayerY": 66, "kActionsY": 110, "kHandX": 24}
     for k in sorted(b):
         out.append("constexpr int %-16s = %d;\n" % (k, b[k]))
-    out.append("\n}  // namespace bjlayout\n}  // namespace ui\n")
+    out.append("\n}  // namespace bjlayout\n\n")
+    out.append("// Video poker — cinq cartes en ligne, pas assez de place\n")
+    out.append("// pour l'écart du blackjack : on resserre.\n")
+    out.append("namespace vplayout {\n\n")
+    vp = {"kCardsY": 26, "kStep": 36, "kHeldY": 68, "kActionY": 84,
+          "kMsgY": 106}
+    vp["kRowW"] = 4 * vp["kStep"] + 28
+    vp["kRowX"] = (SCREEN_W - vp["kRowW"]) // 2
+    for k in sorted(vp):
+        out.append("constexpr int %-10s = %d;\n" % (k, vp[k]))
+    out.append("\nconstexpr int cardX(int i) { return kRowX + i * kStep; }\n")
+    out.append("\n}  // namespace vplayout\n}  // namespace ui\n")
     cpp_header("lib/ui/layout.h", "".join(out))
 
 

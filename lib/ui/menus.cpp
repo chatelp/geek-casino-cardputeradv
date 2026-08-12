@@ -7,6 +7,7 @@
 #include "slot_screen.h"
 #include "symbols.h"
 #include "video_screen.h"
+#include "vp_screen.h"
 
 namespace ui {
 
@@ -84,40 +85,38 @@ void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     }
 
     struct Entry { const char* name; const char* sub; uint8_t sym; };
-    static const Entry entries[3] = {
+    static const Entry entries[core::kGameCount] = {
         {"SLOTS", "3 REELS 1 LINE", core::SYM_INVADER},
         {"VIDEO SLOT", "5 REELS 5 LINES", core::SYM_CRT},
         {"BLACKJACK", "3:2 DEALER S17", core::SYM_D20},
+        {"VIDEO POKER", "JACKS OR BETTER 9/6", core::SYM_CHIP},
     };
-    for (int i = 0; i < 3; ++i) {
+    // Quatre entrées : les lignes se resserrent pour tenir sans le bandeau
+    // de jackpot, qui n'a plus sa place.
+    for (int i = 0; i < core::kGameCount; ++i) {
         const Entry& e = entries[i];
         const bool sel = app.lobbyIndex == i;
-        const int y = 28 + i * 27;
-        g.fillRect(6, y, kScreenW - 12, 26, sel ? P::ink700 : P::ink800);
+        const int y = 26 + i * 20;
+        g.fillRect(6, y, kScreenW - 12, 19, sel ? P::ink700 : P::ink800);
         if (sel) {
-            drawFrame(g, 6, y, kScreenW - 12, 26, P::cyan, 1);
-            g.fillRect(6, y, 3, 26, P::cyan);
+            drawFrame(g, 6, y, kScreenW - 12, 19, P::cyan, 1);
+            g.fillRect(6, y, 3, 19, P::cyan);
         }
-        drawSymbol(g, e.sym, 14, y + 5, 1);
-        drawText(g, e.name, 38, y + 2, sel ? P::white : P::steel300, 2);
-        drawText(g, e.sub, 38, y + 18, sel ? P::cyan : P::ink600, 1);
+        drawSymbol(g, e.sym, 12, y + 2, 1);
+        drawText(g, e.name, 34, y + 2, sel ? P::white : P::steel300, 2);
+        // Le sous-titre ne tient PAS sur la ligne : « VIDEO POKER » à
+        // l'échelle 2 mange déjà la place. Il vit dans le bandeau du bas,
+        // pour l'entrée sélectionnée seulement.
     }
 
     // Jackpot courant : gain des 3 invaders à la mise en cours.
     g.fillRect(0, 110, kScreenW, 12, P::ink800);
     g.fillRect(0, 110, kScreenW, 1, P::greenDk);
-    // Chaque jeu a sa mise : le jackpot annoncé doit être celui du jeu
-    // sélectionné, pas d'une mise commune qui n'existe plus.
-    const core::GameId gid = static_cast<core::GameId>(app.lobbyIndex);
-    const uint16_t b = core::betOfGame(app, gid);
-    const int32_t jack = gid == core::GameId::Video
-        ? static_cast<int32_t>(app.video.pay->pay[core::kJackpotSymbol][5] * b)
-        : static_cast<int32_t>(app.game.machine.pay->pay[core::kJackpotSymbol][3] * b);
-    const int w = 16 + 4 + textWidth("JACKPOT ", 1) + numberWidth(jack, 1);
-    const int x0 = (kScreenW - w) / 2;
-    drawSymbol(g, core::SYM_INVADER, x0, 112, 1);
-    drawText(g, "JACKPOT", x0 + 20, 113, P::green, 1);
-    drawNumber(g, jack, x0 + 20 + textWidth("JACKPOT ", 1), 113, P::white, 1);
+    // Bandeau de description : une seule ligne, celle du jeu pointé.
+    g.fillRect(0, 108, kScreenW, 13, P::ink800);
+    g.fillRect(0, 108, kScreenW, 1, P::ink600);
+    drawText(g, entries[app.lobbyIndex].sub, kScreenW / 2, 111, P::cyan, 1,
+             Align::Center);
 
     drawHint(g, "H HELP  S SETTINGS  L BOARD");
 }
@@ -337,6 +336,51 @@ void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
                   app.helpPage + 1 < pages, now);
 }
 
+void drawPokerHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
+    g.fillScreen(P::ink900);
+    const uint8_t pages = core::helpPageCount(core::AppScreen::PokerHelp);
+
+    if (app.helpPage == 0) {
+        drawHeader(g, "POKER PAYTABLE", P::cyan, true);
+        // Du meilleur au moins bon : c'est l'ordre des vraies machines, et
+        // il place la royale — la raison de jouer — en tête.
+        for (int i = core::kPokerRankCount - 1; i >= 1; --i) {
+            const int row = core::kPokerRankCount - 1 - i;
+            const int y = 27 + row * 11;
+            const core::PokerRank r = static_cast<core::PokerRank>(i);
+            const bool royal = r == core::PokerRank::RoyalFlush;
+            drawText(g, core::pokerRankName(r), 8, y,
+                     royal ? P::green : P::steel300, 1);
+            drawNumber(g, core::pokerPayout(r, false), 196, y,
+                       royal ? P::green : P::yellow, 1, Align::Right);
+            if (royal) {
+                // Le bonus de mise maximale, dit à l'endroit exact où il
+                // s'applique.
+                drawText(g, "800", kScreenW - 8, y, P::magenta, 1, Align::Right);
+            }
+        }
+        drawText(g, "AT MAX BET", kScreenW - 8, 16, P::magenta, 1, Align::Right);
+    } else {
+        drawHeader(g, "POKER RULES", P::cyan, true);
+        static const char* kRules[] = {
+            "FIVE CARDS, ONE SINGLE DECK",
+            "PICK THE ONES YOU KEEP, THEN DRAW",
+            "UNHELD CARDS ARE REPLACED ONCE",
+            "A PAIR PAYS ONLY FROM JACKS UP",
+            "ROYAL FLUSH PAYS 800 AT MAX BET",
+            "</> MOVE   ENTER HOLDS OR DRAWS",
+        };
+        constexpr int kn = sizeof(kRules) / sizeof(kRules[0]);
+        for (int i = 0; i < kn; ++i) {
+            g.fillRect(10, 32 + i * 13, 3, 3, i == 4 ? P::magenta : P::cyan);
+            drawText(g, kRules[i], 18, 31 + i * 13, P::steel300, 1);
+        }
+    }
+    drawPager(g, app.helpPage, pages, now);
+    drawHintPaged(g, "H OR ESC BACK", app.helpPage > 0,
+                  app.helpPage + 1 < pages, now);
+}
+
 // ------------------------------------------------------------------- réglages
 void drawRow(lgfx::LGFX_Sprite& g, int y, bool sel, const char* label) {
     g.fillRect(6, y, kScreenW - 12, 20, sel ? P::ink700 : P::ink800);
@@ -459,6 +503,8 @@ void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         case core::AppScreen::VideoSettings: drawSlotSettings(g, app, true); break;
         case core::AppScreen::Blackjack: drawBjScreen(g, app.bj, now); break;
         case core::AppScreen::BjHelp: drawBjHelp(g, app, now); break;
+        case core::AppScreen::Poker: drawVpScreen(g, app.poker, now); break;
+        case core::AppScreen::PokerHelp: drawPokerHelp(g, app, now); break;
         case core::AppScreen::BjSettings: drawBjSettings(g, app); break;
         case core::AppScreen::GlobalSettings: drawGlobalSettings(g, app); break;
         case core::AppScreen::Leaderboard: drawLeaderboard(g, app); break;

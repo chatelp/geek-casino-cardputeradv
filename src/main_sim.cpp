@@ -258,6 +258,25 @@ int runCapture() {
             if (!saveShot(canvas, nm)) return 1;
         }
 
+        // Video poker : main distribuée, deux cartes gardées.
+        app.screen = core::AppScreen::Poker;
+        uint32_t pt = 500;
+        core::vpDeal(app.poker, pt, core::xorShift32);
+        for (int i = 0; i < 40; ++i) { pt += core::kFrameMs; core::vpUpdate(app.poker, pt, core::xorShift32); }
+        app.poker.held[0] = true;
+        app.poker.held[2] = true;
+        app.poker.cursor = 2;
+        ui::drawApp(canvas, app, pt);
+        if (!saveShot(canvas, "poker.bmp")) return 1;
+        app.screen = core::AppScreen::PokerHelp;
+        ui::drawApp(canvas, app, pt);
+        if (!saveShot(canvas, "poker_help.bmp")) return 1;
+        const_cast<core::App&>(app).helpPage = 1;
+        ui::drawApp(canvas, app, pt);
+        if (!saveShot(canvas, "poker_rules.bmp")) return 1;
+        const_cast<core::App&>(app).helpPage = 0;
+        app.screen = core::AppScreen::Poker;
+
         // Le mode démo : monochrome gris, un tour gratuit en cours.
         app.screen = core::AppScreen::Slot;
         app.settings.slotSkin = 0;

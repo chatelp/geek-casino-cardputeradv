@@ -38,6 +38,27 @@ bool isBlackjack(const Hand& h) {
 
 bool isBust(const Hand& h) { return handValue(h).total > 21; }
 
+void shuffleDeck(Deck& d, RngFn rng) {
+    for (uint8_t i = 0; i < 52; ++i) d.card[i] = i;
+    for (uint8_t i = 51; i > 0; --i) {
+        const uint8_t j = static_cast<uint8_t>(drawBelow(rng, i + 1));
+        const uint8_t t = d.card[i];
+        d.card[i] = d.card[j];
+        d.card[j] = t;
+    }
+    d.pos = 0;
+}
+
+Card dealFromDeck(Deck& d) {
+    if (d.pos >= 52) d.pos = 0;  // ne devrait pas arriver : 10 cartes max
+    const uint8_t idx = d.card[d.pos++];
+    return Card{static_cast<uint8_t>(idx % 13 + 1), static_cast<uint8_t>(idx / 13)};
+}
+
+uint8_t deckLeft(const Deck& d) {
+    return d.pos >= 52 ? 0 : static_cast<uint8_t>(52 - d.pos);
+}
+
 void shuffleShoe(Shoe& s, RngFn rng) {
     for (uint16_t i = 0; i < kShoeSize; ++i) {
         s.card[i] = static_cast<uint8_t>(i % 52);

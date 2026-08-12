@@ -2,6 +2,39 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-026 — 2026-08-11 — Video poker (Jacks or Better 9/6)
+
+Quatrième jeu, validé par Pierre. Barème **9/6 « full pay »** — celui qui
+donne les ~99,5 % de retour du video poker bien joué, et la meilleure
+variété face aux 95 % des machines à sous.
+
+- **Jeu UNIQUE de 52 cartes**, pas le sabot de quatre du blackjack.
+  Distribuer d'un sabot changerait le jeu en silence : seize rois
+  possibles au lieu de quatre. Type `Deck` ajouté à `cards.h`.
+- **L'échange puise dans le même jeu** que la donne : une carte déjà en
+  main ne peut pas revenir. Testé — aucun doublon après tirage.
+- **La quinte royale paie 800 à la mise maximale** au lieu de 250. C'est
+  la signature du jeu : la seule raison de miser gros. La mise s'affiche
+  en magenta quand elle est maximale.
+- **Curseur à six positions** : les cinq cartes puis une case DRAW. Sans
+  elle il faudrait une touche de plus, et le Cardputer n'en a pas
+  d'évidente qui soit libre.
+
+**Vérification exhaustive du classement** : les 2 598 960 mains de cinq
+cartes sont énumérées et leurs effectifs comparés aux valeurs de
+référence — 4 quintes royales, 36 quintes flush, 624 carrés, 3744 fulls,
+5108 couleurs, 10200 quintes, 54912 brelans, 123552 doubles paires. Si un
+seul diffère, le classement est faux quelque part. Le retour sans échange
+vaut 33,60 % : le plancher du jeu avant toute décision du joueur.
+
+Cas piégeux couverts : l'As compte **haut et bas** (A-2-3-4-5 est une
+quinte, A-2-3-4-5 assortie est une quinte flush et non une royale), et
+K-A-2-3-4 n'en est **pas** une — l'As ne fait pas le tour.
+
+Le hall passe à quatre entrées : les sous-titres ne tenaient plus sur la
+ligne (« VIDEO POKER » à l'échelle 2 mange déjà la place), ils vivent
+maintenant dans un bandeau qui ne décrit que l'entrée pointée.
+
 ## D-025 — 2026-08-11 — Deux repères d'interface corrigés
 
 - **« V MORE » se lisait « appuyez sur V ».** J'avais écrit V et ^ faute
