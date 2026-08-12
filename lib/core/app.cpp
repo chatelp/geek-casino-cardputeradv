@@ -157,6 +157,7 @@ void keyLobby(App& a, AppKey k, uint32_t now, RngFn rng) {
             break;
         case AppKey::Help:
             a.helpReturn = AppScreen::Lobby;
+            a.helpPage = 0;
             a.screen = helpOf(static_cast<GameId>(a.lobbyIndex));
             break;
         case AppKey::Back:
@@ -193,6 +194,7 @@ void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
             break;
         case AppKey::Help:
             a.helpReturn = AppScreen::Slot;
+            a.helpPage = 0;
             a.screen = AppScreen::SlotHelp;
             break;
         case AppKey::Settings:
@@ -227,6 +229,7 @@ void keyVideo(App& a, AppKey k, uint32_t now, RngFn rng) {
             break;
         case AppKey::Help:
             a.helpReturn = AppScreen::Video;
+            a.helpPage = 0;
             a.screen = AppScreen::VideoHelp;
             break;
         case AppKey::Settings:
@@ -262,6 +265,7 @@ void keyBlackjack(App& a, AppKey k, uint32_t now, RngFn rng) {
             break;
         case AppKey::Help:
             a.helpReturn = AppScreen::Blackjack;
+            a.helpPage = 0;
             a.screen = AppScreen::BjHelp;
             break;
         case AppKey::Settings:
@@ -349,6 +353,15 @@ void keyGlobalSettings(App& a, AppKey k) {
 
 }  // namespace
 
+uint8_t helpPageCount(AppScreen help) {
+    switch (help) {
+        case AppScreen::SlotHelp: return 2;   // gains, règles
+        case AppScreen::VideoHelp: return 3;  // gains, lignes, règles
+        case AppScreen::BjHelp: return 2;     // règles, actions
+        default: return 1;
+    }
+}
+
 void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
     if (k == AppKey::None) return;
     switch (a.screen) {
@@ -366,11 +379,19 @@ void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
 
         case AppScreen::SlotHelp:
         case AppScreen::VideoHelp:
-        case AppScreen::BjHelp:
-            if (k == AppKey::Help || k == AppKey::Back || k == AppKey::Confirm) {
+        case AppScreen::BjHelp: {
+            const uint8_t pages = helpPageCount(a.screen);
+            if (k == AppKey::Down && a.helpPage + 1 < pages) {
+                ++a.helpPage;
+            } else if (k == AppKey::Up && a.helpPage > 0) {
+                --a.helpPage;
+            } else if (k == AppKey::Help || k == AppKey::Back ||
+                       k == AppKey::Confirm) {
+                a.helpPage = 0;
                 a.screen = a.helpReturn;
             }
             break;
+        }
 
         case AppScreen::SlotSettings:
             if (k == AppKey::Left || k == AppKey::Right || k == AppKey::Confirm) {

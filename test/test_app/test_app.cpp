@@ -58,6 +58,38 @@ static void test_lobby_keys_route_to_the_right_screens() {
     TEST_ASSERT_EQUAL(AppScreen::Slot, a.screen);
 }
 
+static void test_help_pages_scroll_and_reset_on_close() {
+    // Les aides tiennent sur plusieurs pages : un écran de 240x135 ne peut
+    // pas montrer une table de gains ET cinq lignes de paiement.
+    core::seedXorShift(30);
+    App a = core::newApp(0, core::xorShift32);
+    typeName(a, "ZOE");
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);   // VIDEO SLOT
+    core::handleKey(a, AppKey::Help, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::VideoHelp, a.screen);
+    TEST_ASSERT_EQUAL_UINT8(0, a.helpPage);
+
+    const uint8_t pages = core::helpPageCount(AppScreen::VideoHelp);
+    TEST_ASSERT_TRUE_MESSAGE(pages >= 3, "l'aide du video slot doit expliquer les lignes");
+    for (uint8_t i = 1; i < pages; ++i) {
+        core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+        TEST_ASSERT_EQUAL_UINT8(i, a.helpPage);
+    }
+    // On ne dépasse pas la dernière page.
+    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_UINT8(pages - 1, a.helpPage);
+    core::handleKey(a, AppKey::Up, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_UINT8(pages - 2, a.helpPage);
+
+    // Fermer remet à la première page : rouvrir ne doit pas reprendre au
+    // milieu d'une explication.
+    core::handleKey(a, AppKey::Back, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(AppScreen::Lobby, a.screen);
+    TEST_ASSERT_EQUAL_UINT8(0, a.helpPage);
+}
+
 static void test_help_returns_where_it_was_opened() {
     // L'aide s'ouvre depuis l'accueil ET depuis le jeu : chaque sortie doit
     // revenir à son point d'entrée (bug signalé par Pierre : depuis
@@ -212,6 +244,7 @@ int main() {
     UNITY_BEGIN();
     RUN_TEST(test_first_launch_asks_for_a_name);
     RUN_TEST(test_lobby_keys_route_to_the_right_screens);
+    RUN_TEST(test_help_pages_scroll_and_reset_on_close);
     RUN_TEST(test_help_returns_where_it_was_opened);
     RUN_TEST(test_attract_spins_are_silent);
     RUN_TEST(test_esc_cancels_name_entry_when_a_player_exists);

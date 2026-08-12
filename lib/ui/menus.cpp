@@ -25,6 +25,26 @@ void drawHeader(lgfx::LGFX_Sprite& g, const char* title, uint16_t color) {
     drawText(g, title, 8, 5, color, 2);
 }
 
+// Pagination : des points pleins/vides, plus une flèche tant qu'il reste
+// une page. Sans ce repère, personne ne devine qu'il y a une suite.
+void drawPager(lgfx::LGFX_Sprite& g, uint8_t page, uint8_t count, uint32_t now) {
+    if (count < 2) return;
+    const int w = count * 7 - 3;
+    const int x0 = kScreenW - 8 - w;
+    for (uint8_t i = 0; i < count; ++i) {
+        const int x = x0 + i * 7;
+        if (i == page) g.fillRect(x, 9, 4, 4, P::cyan);
+        else drawFrame(g, x, 9, 4, 4, P::steel500, 1);
+    }
+    if (page + 1 < count && blink(now, 900)) {
+        // Chevron vers le bas, à droite du bandeau d'aide.
+        for (int k = 0; k < 3; ++k) {
+            g.fillRect(kScreenW - 12 + k, kScreenH - 11 + k, 1 + 2 * (2 - k), 1,
+                       P::cyan);
+        }
+    }
+}
+
 void drawHint(lgfx::LGFX_Sprite& g, const char* hint) {
     g.fillRect(0, kScreenH - 13, kScreenW, 13, P::ink800);
     g.fillRect(0, kScreenH - 13, kScreenW, 1, P::ink600);
@@ -117,85 +137,187 @@ void drawNameEntry(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
 }
 
 // ------------------------------------------------------------------ aide slot
-void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
+void drawSlotHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
     g.fillScreen(P::ink900);
-    drawHeader(g, "SLOTS - PAYTABLE", P::cyan);
+    const uint8_t pages = core::helpPageCount(core::AppScreen::SlotHelp);
 
-    // 8 rangs sur deux colonnes : [geek] [classique] xN. Les deux habillages
-    // côte à côte SONT la correspondance — pas besoin de mots.
-    const core::Paytable& pt = *app.game.machine.pay;
-    for (int i = 0; i < core::kSymbolCount; ++i) {
-        const int col = i / 4, row = i % 4;
-        const int x = 14 + col * 116;
-        const int y = 28 + row * 19;
-        drawSymbol(g, static_cast<uint8_t>(i), x, y + 1, 1);
-        drawSymbol(g, static_cast<uint8_t>(i), x + 20, y + 1, 1, 0, /*classic=*/true);
-        drawText(g, "x", x + 42, y + 3, P::steel300, 1);
-        drawNumber(g, pt.pay[i][3], x + 50, y + 2, i == core::kJackpotSymbol
-                   ? P::green : P::yellow, 2);
-    }
-    drawText(g, "ANY PAIR LEFT x2  -  </> CHANGE BET", kScreenW / 2, 106,
-             P::steel300, 1, Align::Center);
-    drawHint(g, "H OR ESC BACK");
-}
-
-void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
-    g.fillScreen(P::ink900);
-    drawHeader(g, "VIDEO SLOT", P::cyan);
-    const core::Paytable& pt = *app.video.pay;
-    // Deux groupes de quatre rangs. Les nombres sont alignés à droite sur
-    // des colonnes FIXES : à 15000, un alignement à gauche se chevauche.
-    constexpr int kGroupX[2] = {2, 122};
-    constexpr int kNumX[3] = {52, 84, 116};
-    for (int col = 0; col < 2; ++col) {
-        for (int k = 0; k < 3; ++k) {
-            drawText(g, k == 0 ? "3" : (k == 1 ? "4" : "5"),
-                     kGroupX[col] + kNumX[k], 26, P::steel500, 1, Align::Right);
+    if (app.helpPage == 0) {
+        drawHeader(g, "SLOTS - PAYTABLE", P::cyan);
+        // Les deux habillages côte à côte SONT la correspondance.
+        const core::Paytable& pt = *app.game.machine.pay;
+        for (int i = 0; i < core::kSymbolCount; ++i) {
+            const int col = i / 4, row = i % 4;
+            const int x = 14 + col * 116;
+            const int y = 28 + row * 19;
+            drawSymbol(g, static_cast<uint8_t>(i), x, y + 1, 1);
+            drawSymbol(g, static_cast<uint8_t>(i), x + 20, y + 1, 1, 0, true);
+            drawText(g, "x", x + 42, y + 3, P::steel300, 1);
+            drawNumber(g, pt.pay[i][3], x + 50, y + 2,
+                       i == core::kJackpotSymbol ? P::green : P::yellow, 2);
+        }
+        drawText(g, "ANY PAIR LEFT x2", kScreenW / 2, 106, P::steel300, 1,
+                 Align::Center);
+    } else {
+        drawHeader(g, "SLOTS - HOW TO PLAY", P::cyan);
+        static const char* kRules[] = {
+            "3 REELS, 1 PAYLINE - THE MIDDLE ROW",
+            "COMBOS READ FROM THE LEFT ONLY",
+            "3 ALIKE PAYS - 2 ALIKE PAYS x2",
+            "SAME PAIR NOT ON THE LEFT PAYS 0",
+            "</> CHANGE YOUR BET BETWEEN SPINS",
+            "SHAKE THE DEVICE OR PRESS SPACE",
+            "S SETTINGS - SWITCH GLYPH STYLE",
+        };
+        constexpr int kn = sizeof(kRules) / sizeof(kRules[0]);
+        for (int i = 0; i < kn; ++i) {
+            g.fillRect(10, 30 + i * 11, 3, 3, i == 5 ? P::magenta : P::cyan);
+            drawText(g, kRules[i], 18, 29 + i * 11, P::steel300, 1);
         }
     }
-    for (int i = 0; i < core::kSymbolCount; ++i) {
-        const int col = i / 4, row = i % 4;
-        const int x = kGroupX[col], y = 33 + row * 17;
-        drawSymbol(g, static_cast<uint8_t>(i), x, y, 1, 0,
-                   app.settings.slotSkin != 0);
-        for (int k = 0; k < 3; ++k) {
-            drawNumber(g, pt.pay[i][3 + k], x + kNumX[k], y + 5,
-                       i == core::kJackpotSymbol ? P::green : P::yellow, 1,
-                       Align::Right);
-        }
-    }
-    drawText(g, "5 LINES  -  </> CHANGE BET", kScreenW / 2, 104, P::steel300, 1,
-             Align::Center);
-    drawHint(g, "H OR ESC BACK");
+    drawPager(g, app.helpPage, pages, now);
+    drawHint(g, app.helpPage + 1 < pages ? "V MORE   H OR ESC BACK"
+                                         : "^ BACK   H OR ESC CLOSE");
 }
 
-void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app) {
-    g.fillScreen(P::ink900);
-    drawHeader(g, "BLACKJACK", P::cyan);
-    // Chaque ligne tient en 23 caractères : au-delà, elle passerait sous
-    // les cartes d'exemple posées à droite.
-    static const char* kRules[] = {
-        "BEAT THE DEALER TO 21",
-        "ACE IS 1 OR 11",
-        "FACES ARE WORTH 10",
-        "BLACKJACK PAYS 3:2",
-        "DEALER DRAWS TO 17",
-        "DOUBLE ON FIRST 2",
-        "TIE RETURNS YOUR BET",
-        "</> BET, THEN ACTION",
-    };
-    // Taille déduite du tableau : coder le compte en dur avait produit une
-    // lecture hors limites (segfault) dès qu'une règle a été retirée.
-    constexpr int kRuleCount = sizeof(kRules) / sizeof(kRules[0]);
-    for (int i = 0; i < kRuleCount; ++i) {
-        g.fillRect(10, 28 + i * 12, 3, 3, i == 2 ? P::green : P::cyan);
-        drawText(g, kRules[i], 18, 27 + i * 12, P::steel300, 1);
+// Schéma d'une ligne de paiement : la grille 5x3 en miniature, avec la
+// ligne tracée dessus. C'est la seule façon de montrer un chevron — cinq
+// phrases ne le feraient pas comprendre.
+void drawPaylineDiagram(lgfx::LGFX_Sprite& g, const core::Payline& pl, int x,
+                        int y, uint16_t col) {
+    constexpr int kCell = 7;
+    for (int c = 0; c < core::kVideoReels; ++c) {
+        for (int r = 0; r < core::kVideoRows; ++r) {
+            const int cx = x + c * kCell, cy = y + r * kCell;
+            drawFrame(g, cx, cy, kCell - 1, kCell - 1, P::ink600, 1);
+        }
     }
-    // Deux cartes d'exemple : le blackjack lui-même.
-    drawCard(g, core::Card{1, SUIT_SPADE}, 168, 34, false);
-    drawCard(g, core::Card{13, SUIT_HEART}, 196, 34, false);
-    drawText(g, "3:2", 196, 80, P::green, 2, Align::Center);
-    drawHint(g, "H OR ESC BACK");
+    // Cellules de la ligne, puis les segments qui les relient.
+    for (int c = 0; c < core::kVideoReels; ++c) {
+        const int cx = x + c * kCell, cy = y + pl.row[c] * kCell;
+        g.fillRect(cx + 1, cy + 1, kCell - 3, kCell - 3, col);
+        if (c + 1 < core::kVideoReels) {
+            const int ny = y + pl.row[c + 1] * kCell;
+            const int top = cy < ny ? cy : ny;
+            const int len = (cy < ny ? ny - cy : cy - ny) + 1;
+            g.fillRect(cx + kCell - 2, top + kCell / 2 - 1, 2, len, col);
+        }
+    }
+}
+
+void drawVideoHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
+    g.fillScreen(P::ink900);
+    const uint8_t pages = core::helpPageCount(core::AppScreen::VideoHelp);
+
+    if (app.helpPage == 0) {
+        drawHeader(g, "VIDEO SLOT - PAYTABLE", P::cyan);
+        const core::Paytable& pt = *app.video.pay;
+        constexpr int kGroupX[2] = {2, 122};
+        constexpr int kNumX[3] = {52, 84, 116};
+        for (int col = 0; col < 2; ++col) {
+            for (int k = 0; k < 3; ++k) {
+                drawText(g, k == 0 ? "3" : (k == 1 ? "4" : "5"),
+                         kGroupX[col] + kNumX[k], 26, P::steel500, 1, Align::Right);
+            }
+        }
+        for (int i = 0; i < core::kSymbolCount; ++i) {
+            const int col = i / 4, row = i % 4;
+            const int x = kGroupX[col], y = 33 + row * 17;
+            drawSymbol(g, static_cast<uint8_t>(i), x, y, 1, 0,
+                       app.settings.slotSkin != 0);
+            for (int k = 0; k < 3; ++k) {
+                drawNumber(g, pt.pay[i][3 + k], x + kNumX[k], y + 5,
+                           i == core::kJackpotSymbol ? P::green : P::yellow, 1,
+                           Align::Right);
+            }
+        }
+        drawText(g, "PAYS FOR 3, 4 OR 5 FROM THE LEFT", kScreenW / 2, 104,
+                 P::steel300, 1, Align::Center);
+    } else if (app.helpPage == 1) {
+        drawHeader(g, "VIDEO SLOT - 5 LINES", P::magenta);
+        // Cinq schémas : trois en haut, deux en bas, tous à la même échelle.
+        const core::Payline* lines = core::videoPaylines();
+        static const char* kNames[core::kVideoLines] = {
+            "MIDDLE", "TOP", "BOTTOM", "V DOWN", "V UP",
+        };
+        constexpr int kW = 35, kH = 21;
+        for (int i = 0; i < core::kVideoLines; ++i) {
+            const int col = i < 3 ? i : i - 3;
+            const int rowY = i < 3 ? 30 : 74;
+            const int count = i < 3 ? 3 : 2;
+            const int x = (kScreenW - count * (kW + 14) + 14) / 2 + col * (kW + 14);
+            drawPaylineDiagram(g, lines[i], x, rowY, P::magenta);
+            drawText(g, kNames[i], x + kW / 2 - 1, rowY + kH + 2, P::steel300, 1,
+                     Align::Center);
+        }
+        drawText(g, "EVERY LINE IS ALWAYS PLAYED", kScreenW / 2, 108,
+                 P::cyan, 1, Align::Center);
+    } else {
+        drawHeader(g, "VIDEO SLOT - HOW TO PLAY", P::cyan);
+        static const char* kRules[] = {
+            "5 REELS, 3 ROWS, 5 PAYLINES",
+            "YOUR BET IS PLACED ON EACH LINE",
+            "SO ONE SPIN COSTS BET x5",
+            "3 ALIKE FROM THE LEFT ALREADY PAYS",
+            "EVERY WINNING LINE PAYS, THEY ADD UP",
+            "5 INVADERS ON A LINE IS THE JACKPOT",
+            "</> BET   SHAKE OR SPACE TO SPIN",
+        };
+        constexpr int kn = sizeof(kRules) / sizeof(kRules[0]);
+        for (int i = 0; i < kn; ++i) {
+            g.fillRect(10, 30 + i * 11, 3, 3, i == 5 ? P::green : P::cyan);
+            drawText(g, kRules[i], 18, 29 + i * 11, P::steel300, 1);
+        }
+    }
+    drawPager(g, app.helpPage, pages, now);
+    drawHint(g, app.helpPage + 1 < pages ? "V MORE   H OR ESC BACK"
+                                         : "^ BACK   H OR ESC CLOSE");
+}
+
+void drawBjHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
+    g.fillScreen(P::ink900);
+    const uint8_t pages = core::helpPageCount(core::AppScreen::BjHelp);
+
+    if (app.helpPage == 0) {
+        drawHeader(g, "BLACKJACK - RULES", P::cyan);
+        static const char* kRules[] = {
+            "BEAT THE DEALER TO 21",
+            "ACE IS 1 OR 11",
+            "FACES ARE WORTH 10",
+            "BLACKJACK PAYS 3:2",
+            "DEALER DRAWS TO 17",
+            "TIE RETURNS YOUR BET",
+        };
+        constexpr int kn = sizeof(kRules) / sizeof(kRules[0]);
+        for (int i = 0; i < kn; ++i) {
+            g.fillRect(10, 30 + i * 12, 3, 3, i == 3 ? P::green : P::cyan);
+            drawText(g, kRules[i], 18, 29 + i * 12, P::steel300, 1);
+        }
+        drawCard(g, core::Card{1, SUIT_SPADE}, 168, 34, false);
+        drawCard(g, core::Card{13, SUIT_HEART}, 196, 34, false);
+        drawText(g, "3:2", 196, 80, P::green, 2, Align::Center);
+    } else {
+        drawHeader(g, "BLACKJACK - ACTIONS", P::cyan);
+        struct Act { const char* name; const char* what; };
+        static const Act kActs[] = {
+            {"HIT", "TAKE ONE MORE CARD"},
+            {"STAND", "KEEP YOUR HAND, DEALER PLAYS"},
+            {"DOUBLE", "DOUBLE THE BET, ONE CARD ONLY"},
+        };
+        for (int i = 0; i < 3; ++i) {
+            const int y = 30 + i * 20;
+            g.fillRect(10, y, 56, 15, P::ink700);
+            drawFrame(g, 10, y, 56, 15, P::cyan, 1);
+            drawText(g, kActs[i].name, 14, y + 3, P::white, 2);
+            drawText(g, kActs[i].what, 72, y + 5, P::steel300, 1);
+        }
+        drawText(g, "</> PICK, ENTER CONFIRMS", 10, 94, P::cyan, 1);
+        g.fillRect(10, 106, 3, 3, P::green);
+        drawText(g, "HINTS ON: GREEN DOT MARKS THE", 18, 104, P::steel300, 1);
+        drawText(g, "BASIC-STRATEGY MOVE", 18, 113, P::steel300, 1);
+    }
+    drawPager(g, app.helpPage, pages, now);
+    drawHint(g, app.helpPage + 1 < pages ? "V MORE   H OR ESC BACK"
+                                         : "^ BACK   H OR ESC CLOSE");
 }
 
 // ------------------------------------------------------------------- réglages
@@ -311,15 +433,15 @@ void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         case core::AppScreen::Slot:
             drawSlotScreen(g, app.game, now, app.settings.slotSkin != 0);
             break;
-        case core::AppScreen::SlotHelp: drawSlotHelp(g, app); break;
+        case core::AppScreen::SlotHelp: drawSlotHelp(g, app, now); break;
         case core::AppScreen::SlotSettings: drawSlotSettings(g, app, false); break;
         case core::AppScreen::Video:
             drawVideoScreen(g, app.video, now, app.settings.slotSkin != 0);
             break;
-        case core::AppScreen::VideoHelp: drawVideoHelp(g, app); break;
+        case core::AppScreen::VideoHelp: drawVideoHelp(g, app, now); break;
         case core::AppScreen::VideoSettings: drawSlotSettings(g, app, true); break;
         case core::AppScreen::Blackjack: drawBjScreen(g, app.bj, now); break;
-        case core::AppScreen::BjHelp: drawBjHelp(g, app); break;
+        case core::AppScreen::BjHelp: drawBjHelp(g, app, now); break;
         case core::AppScreen::BjSettings: drawBjSettings(g, app); break;
         case core::AppScreen::GlobalSettings: drawGlobalSettings(g, app); break;
         case core::AppScreen::Leaderboard: drawLeaderboard(g, app); break;

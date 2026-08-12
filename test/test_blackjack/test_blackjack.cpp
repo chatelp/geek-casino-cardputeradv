@@ -1,8 +1,10 @@
 // Blackjack : les règles se vérifient sans écran ni cartes en main.
 #include <cstdio>
 #include <initializer_list>
+#include <new>
 #include <unity.h>
 
+#include "bj_session.h"
 #include "blackjack.h"
 #include "cards.h"
 
@@ -196,8 +198,33 @@ static void test_long_session_stays_sane() {
     TEST_ASSERT_TRUE_MESSAGE(rtp < 1.05, "RTP anormalement haut : regles suspectes");
 }
 
+static void test_a_fresh_session_shows_no_cards() {
+    // Bug vu par Pierre : au lancement du blackjack, l'écran affichait des
+    // cartes fantômes. Cause — Hand::n et Shoe::ready n'avaient aucune
+    // valeur par défaut, donc une session fraîche partait avec un nombre
+    // de cartes tiré de la pile. Ce test remplit délibérément la mémoire
+    // de déchets avant de construire la session.
+    alignas(core::BjSession) unsigned char blob[sizeof(core::BjSession)];
+    for (size_t i = 0; i < sizeof(blob); ++i) blob[i] = 0xA5;
+    // SANS parenthèses : c'est l'initialisation par défaut, celle que subit
+    // `BjSession bj;` membre de App. Avec `()` le compilateur mettrait tout
+    // à zéro et le test ne prouverait rien.
+    core::BjSession* s = new (blob) core::BjSession;
+
+    TEST_ASSERT_EQUAL_UINT8_MESSAGE(0, s->bj.player.n, "cartes fantomes joueur");
+    TEST_ASSERT_EQUAL_UINT8_MESSAGE(0, s->bj.dealer.n, "cartes fantomes croupier");
+    TEST_ASSERT_EQUAL_UINT8(0, s->revealed);
+    TEST_ASSERT_EQUAL(core::BjPhase::Idle, s->bj.phase);
+    // Le sabot doit se déclarer NON prêt : sinon on distribuerait depuis
+    // un tableau jamais mélangé.
+    TEST_ASSERT_FALSE_MESSAGE(s->bj.shoe.ready, "sabot pretendu pret sans melange");
+    TEST_ASSERT_TRUE(core::needsShuffle(s->bj.shoe));
+    s->~BjSession();
+}
+
 int main() {
     UNITY_BEGIN();
+    RUN_TEST(test_a_fresh_session_shows_no_cards);
     RUN_TEST(test_aces_take_the_best_value);
     RUN_TEST(test_blackjack_is_exactly_two_cards);
     RUN_TEST(test_shoe_holds_every_card_the_right_number_of_times);

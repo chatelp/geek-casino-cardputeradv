@@ -23,7 +23,7 @@ ROOT = os.path.dirname(DESIGN)
 BUILD = os.path.join(DESIGN, "build")
 
 sys.path.insert(0, HERE)
-from art_symbols import SYMBOLS, CLASSIC_SYMBOLS, SUITS, ICONS  # noqa: E402
+from art_symbols import SYMBOLS, CLASSIC_SYMBOLS, SUITS, ICONS, CARD_BACK  # noqa: E402
 from art_font import GLYPHS, W as FW, H as FH, ADVANCE  # noqa: E402
 
 TOK = json.load(open(os.path.join(DESIGN, "tokens.json")))
@@ -96,6 +96,12 @@ def validate():
             for ch in row:
                 if ch != "." and ch not in KEYS:
                     errs.append("icone %s ligne %d : clé inconnue %r" % (iid, i, ch))
+    for i, row in enumerate(CARD_BACK):
+        if len(row) != 14:
+            errs.append("dos de carte ligne %d : %d colonnes au lieu de 14" % (i, len(row)))
+        for ch in row:
+            if ch != "." and ch not in KEYS:
+                errs.append("dos de carte ligne %d : clé inconnue %r" % (i, ch))
     for ch, g in GLYPHS.items():
         if len(g) != FH:
             errs.append("glyphe %r : %d lignes au lieu de %d" % (ch, len(g), FH))
@@ -1098,6 +1104,16 @@ def export_symbols():
             out.append("        " + ",".join("%d" % (0 if c == "." else idx[c]) for c in row) + ",\n")
         out.append("    },\n")
     out.append("};\n")
+    out.append("// Dos de carte 14x20, affiché à l'échelle 2.\n")
+    out.append("constexpr int kCardBackW = 14;\nconstexpr int kCardBackH = 20;\n")
+    out.append("constexpr uint8_t kCardBack[kCardBackW * kCardBackH] = {\n")
+    for row in CARD_BACK:
+        if len(row) != 14:
+            raise SystemExit("dos de carte : %d colonnes au lieu de 14 (%r)" % (len(row), row))
+        out.append("    " + ",".join("%d" % (0 if c == "." else idx[c]) for c in row) + ",\n")
+    if len(CARD_BACK) != 20:
+        raise SystemExit("dos de carte : %d lignes au lieu de 20" % len(CARD_BACK))
+    out.append("};\n\n")
     out.append("// Les trois nuances, nommées : le chrome de la démo les utilise\n")
     out.append("// directement (indexer la rampe dépendrait de l'ordre des clés).\n")
     out.append("constexpr uint16_t kGrayDark  = 0x%04X;\n" % grays[0])

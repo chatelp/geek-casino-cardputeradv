@@ -30,12 +30,14 @@ const Payline* videoPaylines();
 const ReelSet& videoReelSet();
 
 struct GridOutcome {
-    uint16_t pos[kMaxReels];
-    uint8_t sym[kMaxReels][kMaxRows];
-    LineWin wins[kMaxLines];
-    uint8_t winCount;
-    uint32_t totalMultiplier;
-    bool jackpot;
+    uint16_t pos[kMaxReels] = {};
+    uint8_t sym[kMaxReels][kMaxRows] = {};
+    LineWin wins[kMaxLines] = {};
+    // Mêmes valeurs par défaut que Hand, pour la même raison : un compteur
+    // non initialisé fait dessiner ce qui n'existe pas.
+    uint8_t winCount = 0;
+    uint32_t totalMultiplier = 0;
+    bool jackpot = false;
 };
 
 void fillGrid(const ReelSet& rs, GridOutcome& out, uint8_t rows);

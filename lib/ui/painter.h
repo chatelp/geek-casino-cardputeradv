@@ -38,6 +38,18 @@ void drawSymbolGray(lgfx::LGFX_Sprite& g, uint8_t sym, int x, int y, int scale,
                     bool classic = false);
 void drawIconGray(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale = 1);
 
+// Piste de circuit entre deux points. Une piste ne tourne JAMAIS à 90°
+// sur une vraie carte : elle casse l'angle à 45°. C'est le détail qui
+// distingue un dessin de circuit d'un simple quadrillage.
+void trace45(lgfx::LGFX_Sprite& g, int x0, int y0, int x1, int y1,
+             uint16_t color, int w = 1);
+
+// Via : anneau métallisé percé au centre.
+void drawVia(lgfx::LGFX_Sprite& g, int x, int y, uint16_t ring, uint16_t hole);
+
+// Dos de carte 14x20, mis à l'échelle.
+void drawCardBack(lgfx::LGFX_Sprite& g, int x, int y, int scale = 2);
+
 // Enseigne de carte 8x8 (blackjack).
 void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale = 1,
               uint16_t tint = 0);

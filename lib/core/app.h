@@ -67,6 +67,9 @@ struct App {
     // L'aide s'ouvre depuis l'accueil OU depuis le jeu : on revient
     // toujours d'où l'on vient, jamais vers un écran câblé en dur.
     AppScreen helpReturn = AppScreen::Lobby;
+    // Les aides tiennent sur plusieurs pages : un écran de 240x135 ne peut
+    // pas expliquer cinq lignes de paiement ET une table de gains.
+    uint8_t helpPage = 0;
     // Le solde vit dans App : les trois jeux le partagent au lieu d'en
     // garder chacun une copie qui divergerait.
     Economy econ;
@@ -97,6 +100,9 @@ void tickApp(App& a, uint32_t now, RngFn rng);
 constexpr uint8_t kGlobalSettingsRows = 4;  // SOUND, VOLUME, PLAYER, RESET
 constexpr uint8_t kSlotSettingsRows = 1;    // GLYPHS
 constexpr uint8_t kBjSettingsRows = 1;      // HINTS
+
+// Nombre de pages de chaque aide.
+uint8_t helpPageCount(AppScreen help);
 
 // Synchronise le SOLDE (partagé) — pas la mise, qui appartient au jeu.
 void pushEconomy(App& a);

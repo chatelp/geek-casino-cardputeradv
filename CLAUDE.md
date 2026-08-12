@@ -13,6 +13,16 @@ l'identité visuelle et le nom définitif restent à définir avec Pierre.
   automatique (voir décisions).
 - Aucune reprise de matière depuis Daoa Mini (palette, design system,
   lettermark, masques, corpus). La méthode oui, la matière non.
+- **Chaque jeu porte l'identité geek.** C'est une règle, pas une option :
+  un jeu qui ressemble à n'importe quel casino n'a pas sa place ici.
+  Deux façons de l'appliquer, selon ce que le geek touche :
+  - **Par le décor** (chrome, dos de cartes, sérigraphie, cabinet) quand
+    les éléments de jeu doivent rester lisibles — cartes du blackjack,
+    numéros d'une roulette. Aucun réglage : c'est acquis.
+  - **Par les éléments de jeu eux-mêmes** (symboles des rouleaux, faces
+    de dés) quand le geek les remplace. Là, **un réglage doit permettre
+    de revenir au jeu classique** : le joueur qui ne lit pas nos glyphes
+    ne doit pas être exclu. Voir le réglage GLYPHS des machines à sous.
 
 ## Rôles
 

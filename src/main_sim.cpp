@@ -200,6 +200,12 @@ int runCapture() {
         app.screen = core::AppScreen::VideoHelp;
         ui::drawApp(canvas, app, vt);
         if (!saveShot(canvas, "video_help.bmp")) return 1;
+        for (uint8_t pg = 1; pg < core::helpPageCount(core::AppScreen::VideoHelp); ++pg) {
+            const_cast<core::App&>(app).helpPage = pg;
+            ui::drawApp(canvas, app, vt);
+            if (!saveShot(canvas, pg == 1 ? "video_lines.bmp" : "video_rules.bmp")) return 1;
+        }
+        const_cast<core::App&>(app).helpPage = 0;
 
         app.screen = core::AppScreen::Blackjack;
         app.bj.hintsOn = true;
@@ -211,6 +217,13 @@ int runCapture() {
         }
         ui::drawApp(canvas, app, bt);
         if (!saveShot(canvas, "blackjack.bmp")) return 1;
+        // Table vide : c'est là que les empreintes de composants et la
+        // sérigraphie se voient, donc là que l'identité se lit le mieux.
+        app.bj = core::newBjSession(0);
+        ui::drawApp(canvas, app, 400);
+        if (!saveShot(canvas, "bj_table.bmp")) return 1;
+        core::bjStartHand(app.bj, bt, core::xorShift32);
+        for (int i = 0; i < 60; ++i) { bt += core::kFrameMs; core::bjUpdate(app.bj, bt, core::xorShift32); }
         app.screen = core::AppScreen::BjHelp;
         ui::drawApp(canvas, app, bt);
         if (!saveShot(canvas, "bj_help.bmp")) return 1;

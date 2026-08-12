@@ -103,6 +103,46 @@ void drawIcon(lgfx::LGFX_Sprite& g, uint8_t icon, int x, int y, int scale,
     blitIndexed(g, kIcons[icon], kIconPx, x, y, scale, tint, kSymbolPalette);
 }
 
+void trace45(lgfx::LGFX_Sprite& g, int x0, int y0, int x1, int y1,
+             uint16_t color, int w) {
+    const int dx = x1 - x0, dy = y1 - y0;
+    const int sx = dx >= 0 ? 1 : -1, sy = dy >= 0 ? 1 : -1;
+    const int adx = dx >= 0 ? dx : -dx, ady = dy >= 0 ? dy : -dy;
+    const int diag = adx < ady ? adx : ady;
+
+    // Segment diagonal d'abord, puis le reste tout droit.
+    int x = x0, y = y0;
+    for (int i = 0; i < diag; ++i) {
+        g.fillRect(x, y, w, w, color);
+        x += sx;
+        y += sy;
+    }
+    if (adx > ady) g.fillRect(x < x1 ? x : x1, y, adx - ady + w, w, color);
+    else if (ady > adx) g.fillRect(x, y < y1 ? y : y1, w, ady - adx + w, color);
+    g.fillRect(x1, y1, w, w, color);
+}
+
+void drawVia(lgfx::LGFX_Sprite& g, int x, int y, uint16_t ring, uint16_t hole) {
+    g.fillRect(x, y, 3, 3, ring);
+    g.fillRect(x + 1, y + 1, 1, 1, hole);
+}
+
+void drawCardBack(lgfx::LGFX_Sprite& g, int x, int y, int scale) {
+    for (int ry = 0; ry < kCardBackH; ++ry) {
+        int c = 0;
+        while (c < kCardBackW) {
+            const uint8_t idx = kCardBack[ry * kCardBackW + c];
+            if (idx == 0) { ++c; continue; }
+            int run = 1;
+            while (c + run < kCardBackW &&
+                   kCardBack[ry * kCardBackW + c + run] == idx) ++run;
+            g.fillRect(x + c * scale, y + ry * scale, run * scale, scale,
+                       kSymbolPalette[idx]);
+            c += run;
+        }
+    }
+}
+
 void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale,
               uint16_t tint) {
     if (suit >= kSuitCount) return;

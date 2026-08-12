@@ -18,7 +18,10 @@ struct Card {
 
 struct Hand {
     Card c[kHandMax];
-    uint8_t n;
+    // Valeur par défaut OBLIGATOIRE : sans elle, une main déclarée sans
+    // initialisation part avec un compte tiré de la pile mémoire, et
+    // l'écran dessine des cartes qui n'existent pas. Bug vu sur appareil.
+    uint8_t n = 0;
 };
 
 struct HandValue {
@@ -41,8 +44,10 @@ bool isBust(const Hand& h);
 // approche de la fin (pénétration ~75 %).
 struct Shoe {
     uint8_t card[kShoeSize];  // index 0..51 : rank = i%13+1, suit = i/13
-    uint16_t pos;
-    bool ready;
+    uint16_t pos = 0;
+    // `false` par défaut : un sabot qui se prétendrait prêt distribuerait
+    // depuis un tableau jamais mélangé.
+    bool ready = false;
 };
 
 void shuffleShoe(Shoe& s, RngFn rng);

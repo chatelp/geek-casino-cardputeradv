@@ -38,13 +38,10 @@ uint16_t suitColor(uint8_t suit) {
 
 void drawCard(lgfx::LGFX_Sprite& g, core::Card c, int x, int y, bool faceDown) {
     if (faceDown) {
-        // Dos de carte : motif de circuit, cohérent avec le reste du casino.
-        g.fillRect(x, y, kCardW, kCardH, P::violetDk);
-        drawFrame(g, x, y, kCardW, kCardH, P::violet, 1);
-        for (int i = 4; i < kCardH - 4; i += 5) {
-            g.fillRect(x + 4, y + i, kCardW - 8, 2, P::violet);
-        }
-        g.fillRect(x + kCardW / 2 - 2, y + 4, 4, kCardH - 8, P::violetDk);
+        // Le dos est ce qu'on voit le plus souvent : c'est lui qui porte
+        // l'identité. Circuit à vias, invader en médaillon — dessiné dans
+        // le design system, pas bricolé ici.
+        drawCardBack(g, x, y, 2);
         return;
     }
 
@@ -75,7 +72,8 @@ void drawHand(lgfx::LGFX_Sprite& g, const core::Hand& h, uint8_t visible, int y,
 
 void drawTotal(lgfx::LGFX_Sprite& g, const core::Hand& h, uint8_t visible, int y,
                bool hidden, uint16_t color) {
-    if (hidden || visible == 0) {
+    if (visible == 0) return;  // table vide : rien à totaliser
+    if (hidden) {
         drawText(g, "?", kScreenW - 20, y + kCardH / 2 - 7, P::steel500, 2,
                  Align::Center);
         return;
@@ -144,8 +142,110 @@ void drawActions(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) {
 
 }  // namespace
 
+namespace {
+
+// La table de blackjack EST une carte électronique : le tapis vert du
+// casino et le vernis épargne d'un PCB sont exactement le même vert.
+// C'est ce jeu de mots qui apporte le geek sans toucher aux figures.
+void drawTable(lgfx::LGFX_Sprite& g) {
+    constexpr int kTx = 4, kTy = 18, kTw = kScreenW - 8, kTh = 88;
+
+    // Vernis épargne, puis bord de carte plus clair : une carte a une
+    // tranche visible, pas un simple trait.
+    g.fillRect(kTx, kTy, kTw, kTh, P::pcb);
+    drawFrame(g, kTx, kTy, kTw, kTh, P::pcbEdge, 1);
+    drawFrame(g, kTx + 1, kTy + 1, kTw - 2, kTh - 2, P::pcbLine, 1);
+
+    // Maillage de vias du plan de masse : une grille de perçages cousant
+    // le cuivre. C'est ce motif-là qu'on reconnaît sur une vraie carte,
+    // bien plus qu'un aplat.
+    for (int y = kTy + 8; y < kTy + kTh - 6; y += 13) {
+        const bool odd = ((y - kTy) / 13) & 1;
+        for (int x = kTx + (odd ? 13 : 7); x < kTx + kTw - 6; x += 13) {
+            // Zone d'exclusion sous la sérigraphie : un fondeur ne place
+            // pas de via sous un marquage, et le texte y gagne en lisibilité.
+            if (x < 74 && y > 20 && y < 100) continue;
+            drawVia(g, x, y, P::pcbLine, P::pcb);
+        }
+    }
+
+    // Trous de fixation aux angles.
+    const int hx[2] = {kTx + 3, kTx + kTw - 9};
+    const int hy[2] = {kTy + 3, kTy + kTh - 9};
+    for (int a = 0; a < 2; ++a) {
+        for (int b = 0; b < 2; ++b) {
+            g.fillRect(hx[a], hy[b], 6, 6, P::steel500);
+            g.fillRect(hx[a] + 2, hy[b] + 2, 2, 2, P::ink900);
+        }
+    }
+
+    // Pistes routées, toutes cassées à 45°. Elles relient des pastilles
+    // dorées — la finition ENIG d'une carte réelle.
+    const int mid = kPlayerY - 6;
+    struct Route { int16_t x0, y0, x1, y1; };
+    // Routage tenu HORS de la zone de sérigraphie (x < 76, y 22..86) :
+    // une piste qui traverse un marquage le rend illisible, sur écran
+    // comme sur cuivre.
+    static const Route kRoutes[] = {
+        {226, 34, 196, 64}, {226, 52, 202, 76}, {212, 92, 190, 100},
+        {150, 100, 182, 100}, {92, 100, 120, 100}, {14, 94, 44, 100},
+    };
+    for (const auto& r : kRoutes) {
+        trace45(g, r.x0, r.y0, r.x1, r.y1, P::pcbEdge, 1);
+        g.fillRect(r.x0 - 1, r.y0 - 1, 3, 3, P::tan);   // pastille dorée
+        g.fillRect(r.x1 - 1, r.y1 - 1, 3, 3, P::tan);
+    }
+
+    // Bus horizontal séparant croupier et joueur — l'arc de la table
+    // réelle, tracé comme une piste large et ponctué de vias.
+    g.fillRect(kTx + 12, mid, kTw - 24, 2, P::pcbEdge);
+    for (int x = kTx + 22; x < kTx + kTw - 20; x += 30) {
+        drawVia(g, x, mid - 1, P::tan, P::pcb);
+    }
+
+    // Empreintes de composants là où les cartes se posent : une table de
+    // casino a ses emplacements sérigraphiés, un circuit aussi.
+    for (int row = 0; row < 2; ++row) {
+        const int y = row == 0 ? kDealerY : kPlayerY;
+        for (int i = 0; i < 2; ++i) {
+            const int x = (kScreenW - 40 - (kCardStep + kCardW)) / 2 + 10 + i * kCardStep;
+            drawFrame(g, x - 2, y - 2, kCardW + 4, kCardH + 4, P::pcbEdge, 1);
+            g.fillRect(x - 2, y - 2, 3, 1, P::tan);   // repère broche 1
+            g.fillRect(x - 2, y - 2, 1, 3, P::tan);
+            // Pastilles de brasage de part et d'autre de l'empreinte.
+            for (int k = 0; k < 3; ++k) {
+                g.fillRect(x - 5, y + 6 + k * 12, 3, 5, P::tan);
+                g.fillRect(x + kCardW + 2, y + 6 + k * 12, 3, 5, P::tan);
+            }
+        }
+    }
+}
+
+// Sérigraphie : le texte réglementaire d'une table de casino, rendu comme
+// un marquage de circuit. Échelle 1 assumée — une sérigraphie est petite
+// par nature, et c'est du décor, pas une information dont le jeu dépend.
+void drawSilkscreen(lgfx::LGFX_Sprite& g) {
+    // Bloc en marge gauche : c'est la seule bande libre, et c'est
+    // exactement là qu'un vrai circuit porte son marquage. Les cartes
+    // occupent le centre à partir de x=80.
+    static const char* kMarks[] = {
+        "DEALER", "STANDS ON", "ALL 17", "", "BJ PAYS", "3:2",
+    };
+    constexpr int kMarkCount = sizeof(kMarks) / sizeof(kMarks[0]);
+    for (int i = 0; i < kMarkCount; ++i) {
+        if (kMarks[i][0] == '\0') continue;
+        drawText(g, kMarks[i], 9, 24 + i * 10,
+                 i < 3 ? P::pcbEdge : P::pcbLine, 1);
+    }
+    drawText(g, "REV 1.0", 9, 84, P::pcbLine, 1);
+}
+
+}  // namespace
+
 void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) {
     g.fillScreen(P::ink900);
+    drawTable(g);
+    drawSilkscreen(g);
 
     // HUD en surimpression, comme partout ailleurs maintenant.
     drawIcon(g, ICON_COIN, 3, 3);
@@ -169,10 +269,10 @@ void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) 
     drawHand(g, s.bj.player, core::bjVisiblePlayer(s), kPlayerY, false);
     drawTotal(g, s.bj.player, core::bjVisiblePlayer(s), kPlayerY, false, P::white);
 
-    if (s.revealed < 4) {
+    if (s.bj.phase != core::BjPhase::Idle && s.revealed < 4) {
         drawText(g, "DEALING", kScreenW / 2, kActionsY + 4, P::steel300, 2,
                  Align::Center);
-    } else if (s.bj.phase == core::BjPhase::PlayerTurn) {
+    } else if (s.bj.phase == core::BjPhase::PlayerTurn && s.revealed >= 4) {
         drawActions(g, s, now);
     } else if (s.bj.phase == core::BjPhase::DealerTurn) {
         drawText(g, "DEALER PLAYS", kScreenW / 2, kActionsY + 4, P::cyan, 2,

@@ -406,6 +406,33 @@ SUITS = [
     ]},
 ]
 
+# Dos de carte, 14x20 — affiché à l'échelle 2 (28x40). Une carte de casino
+# a un dos à motif répété ; ici le motif est un circuit, avec vias et un
+# invader en médaillon. C'est le dos qu'on voit le plus souvent à l'écran :
+# c'est donc lui qui porte l'identité, pas les figures.
+CARD_BACK = [
+    "EEEEEEEEEEEEEE",
+    "EppppppppppppE",
+    "EpPpPpPpPpPpPE",
+    "EppppppppppppE",
+    "EpPpggggggpPpE",
+    "Eppg.g..g.gppE",
+    "EpPggggggggPpE",
+    "Eppg.gggg.gppE",
+    "EpPggg..gggPpE",
+    "Eppg.g..g.gppE",
+    "EpPpggggggpPpE",
+    "EppppppppppppE",
+    "EpPpPpPpPpPpPE",
+    "EppppppppppppE",
+    "EpPpPpPpPpPpPE",
+    "EppppppppppppE",
+    "EpPpPpPpPpPpPE",
+    "EppppppppppppE",
+    "EpPpPpPpPpPpPE",
+    "EEEEEEEEEEEEEE",
+]
+
 # Petits pictogrammes d'interface, 12x12 — pas des symboles de rouleau.
 ICONS = {
     "COIN": {

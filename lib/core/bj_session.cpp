@@ -18,6 +18,14 @@ Cue takeBjCue(BjSession& s) {
 
 BjSession newBjSession(uint32_t now) {
     BjSession s;
+    // Ceinture et bretelles : les valeurs par défaut de Hand suffisent,
+    // mais une session neuve doit être explicitement vide.
+    handClear(s.bj.player);
+    handClear(s.bj.dealer);
+    s.bj.phase = BjPhase::Idle;
+    s.bj.outcome = BjOutcome::None;
+    s.bj.stake = 0;
+    s.bj.payout = 0;
     s.econ = freshEconomy();
     s.phaseT0 = now;
     s.lastInputMs = now;

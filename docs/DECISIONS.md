@@ -2,6 +2,60 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-024 — 2026-08-11 — Cartes fantômes : mémoire non initialisée
+
+Pierre : « c'est quoi l'écran bizarre au lancement du blackjack avec
+toutes les cartes affichées ? » — un vrai bug, et de la pire espèce.
+
+`Hand::n` et `Shoe::ready` n'avaient **aucune valeur par défaut**. Une
+session déclarée sans initialisation (`BjSession bj;` membre de `App`)
+partait donc avec un nombre de cartes tiré de la pile mémoire, et l'écran
+dessinait jusqu'à douze cartes qui n'existaient pas. Pire : un sabot qui
+se prétend `ready` distribue depuis un tableau **jamais mélangé**.
+
+Ce défaut est traître parce qu'il dépend de l'état de la pile : il peut
+ne jamais se voir en test, apparaître sur l'appareil, et disparaître au
+recompilage suivant.
+
+- Valeurs par défaut ajoutées à `Hand`, `Shoe` et `GridOutcome` (même
+  classe de défaut côté video slot, corrigée par prévention).
+- `newBjSession` vide explicitement les deux mains.
+- **Test écrit AVANT le correctif** : il remplit la mémoire de `0xA5`
+  puis construit la session **par défaut** (sans parenthèses — avec `()`
+  le compilateur mettrait tout à zéro et le test ne prouverait rien). Il
+  a bien échoué sur « 165 cartes en main » avant correction.
+
+## D-023 — 2026-08-11 — Le geek au blackjack, aides paginées, règle du geek
+
+**Règle de projet actée** (inscrite dans les garde-fous de CLAUDE.md) :
+chaque jeu porte l'identité geek, mais de deux façons distinctes selon ce
+qu'elle touche. Par le **décor** quand les éléments de jeu doivent rester
+lisibles (cartes, numéros) — acquis, sans réglage. Par les **éléments de
+jeu** quand le geek les remplace (glyphes des rouleaux, faces de dés) —
+et alors **un réglage doit ramener le jeu classique**.
+
+**Blackjack — le décor.** Le tapis vert d'une table de casino et le
+vernis épargne d'un circuit imprimé sont exactement le même vert : c'est
+ce jeu de mots qui porte le geek sans toucher aux figures.
+
+- Première version : aplat vert. Jugée insuffisante par Pierre, à raison
+  — un aplat n'est pas un circuit. Ce qui fait reconnaître une carte à un
+  maker, c'est le **maillage de vias** du plan de masse, les **pistes qui
+  cassent à 45°** (jamais à 90) et les **pastilles dorées** de finition.
+- **Zone d'exclusion** sous la sérigraphie : ni via ni piste sous un
+  marquage. C'est la règle d'un vrai fondeur, et le texte y gagne.
+- Empreintes de composants là où les cartes se posent, avec repère
+  broche 1 et pastilles de brasage.
+- **Dos de carte** dessiné dans le design system : circuit à vias et
+  invader en médaillon. C'est le dos qu'on voit le plus souvent, donc
+  c'est lui qui porte l'identité.
+
+**Aides paginées** (↑/↓), avec pastilles de pagination et chevron. Un
+écran de 240×135 ne peut pas expliquer une table de gains ET cinq lignes
+de paiement. Le video slot gagne surtout une page où **les cinq lignes
+sont dessinées** sur des grilles 5×3 miniatures — un chevron ne
+s'explique pas en mots.
+
 ## D-022 — 2026-08-11 — La célébration de gain devient un vrai moment
 
 Retour de Pierre après essai : « le gain s'affiche très brièvement ».

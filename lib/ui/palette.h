@@ -26,6 +26,9 @@ constexpr uint16_t violet     = 0xA2FF;  // #A55DFF  Néon tertiaire — disquet
 constexpr uint16_t violetDk   = 0x5973;  // #5A2C9C  Ombre du violet
 constexpr uint16_t red        = 0xF969;  // #FF2C4A  Alerte, LED rouge, solde bas
 constexpr uint16_t tan        = 0xEE11;  // #EFC38C  Corps de résistance — seule teinte non néon
+constexpr uint16_t pcb        = 0x0962;  // #082C10  Surface de carte — le tapis de blackjack EST un circuit
+constexpr uint16_t pcbLine    = 0x1AE6;  // #185D31  Piste et sérigraphie sur la carte
+constexpr uint16_t pcbEdge    = 0x3C6A;  // #398E52  Bord de carte, contours de sérigraphie
 
 }  // namespace pal
 }  // namespace ui
