@@ -13,12 +13,17 @@ namespace core {
 
 constexpr uint8_t kMaxPlayers = 8;
 constexpr uint8_t kNameMax = 8;  // caractères, hors terminateur
+constexpr uint8_t kBetGames = 5;  // un cran de mise par jeu
 
 struct Player {
     char name[kNameMax + 1];
     int32_t credits;
     uint32_t spins;
     uint32_t bestWin;
+    // La mise appartient au couple (joueur, jeu) : elle vit donc DANS le
+    // joueur, pas dans une table parallèle qu'il faudrait garder
+    // synchrone. Un cran par jeu, dans l'ordre de GameId.
+    uint8_t bet[kBetGames];
 };
 
 struct Roster {

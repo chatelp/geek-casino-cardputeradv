@@ -16,6 +16,9 @@ struct Celebration {
     float progress = 0.0f;     // 0 à 1
     uint32_t counted = 0;      // montant affiché pendant le décompte
     bool demo = false;
+    // Intitulé affiché au-dessus du montant (nom de la main, du pari…).
+    // Nul pour les machines à sous, où « WIN » suffit.
+    const char* label = nullptr;
 };
 
 // Décalage de tremblement à appliquer au reste de l'écran. Renvoie 0 hors

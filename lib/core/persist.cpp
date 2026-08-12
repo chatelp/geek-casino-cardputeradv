@@ -33,9 +33,15 @@ bool saveValid(const SaveData& s) {
     if (s.playerCount > kMaxPlayers) return false;
     if (s.playerCount > 0 && s.currentPlayer >= s.playerCount) return false;
     if (s.settings.volume > 3 || s.settings.muted > 1 || s.settings.slotSkin > 1) return false;
+    if (s.settings.demoOn > 1 || s.settings.demoDelay >= kDemoDelaySteps) return false;
+    if (s.settings.bootFx > 1) return false;
     for (uint8_t i = 0; i < s.playerCount; ++i) {
         if (!nameValid(s.players[i].name)) return false;
         if (s.players[i].credits < 0) return false;
+        // Un cran de mise hors échelle indexerait le tableau hors bornes.
+        for (uint8_t g = 0; g < kBetGames; ++g) {
+            if (s.players[i].bet[g] >= kBetSteps) return false;
+        }
     }
     return s.sum == saveChecksum(s);
 }
@@ -47,57 +53,6 @@ bool applySave(const SaveData& s, Roster& r, Settings& st) {
     for (uint8_t i = 0; i < s.playerCount; ++i) r.players[i] = s.players[i];
     st = s.settings;
     return true;
-}
-
-namespace {
-uint8_t betsChecksum(const BetMemory& b) {
-    uint8_t h = 17;
-    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
-        for (uint8_t g = 0; g < kBetGames; ++g) {
-            h = static_cast<uint8_t>(h * 31 + b.bet[p][g]);
-        }
-    }
-    h = static_cast<uint8_t>(h * 31 + b.demoOn);
-    h = static_cast<uint8_t>(h * 31 + b.demoDelay);
-    return h;
-}
-}  // namespace
-
-BetMemory freshBets() {
-    BetMemory b{};
-    b.magic = kBetMagic;
-    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
-        for (uint8_t g = 0; g < kBetGames; ++g) b.bet[p][g] = kDefaultBetIndex;
-    }
-    b.demoOn = 1;
-    b.demoDelay = kDefaultDemoDelay;
-    b.sum = betsChecksum(b);
-    return b;
-}
-
-BetMemory makeBets(const BetMemory& src) {
-    BetMemory b = src;
-    b.magic = kBetMagic;
-    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
-        for (uint8_t g = 0; g < kBetGames; ++g) {
-            if (b.bet[p][g] >= kBetSteps) b.bet[p][g] = kDefaultBetIndex;
-        }
-    }
-    if (b.demoOn > 1) b.demoOn = 1;
-    if (b.demoDelay >= kDemoDelaySteps) b.demoDelay = kDefaultDemoDelay;
-    b.sum = betsChecksum(b);
-    return b;
-}
-
-bool betsValid(const BetMemory& b) {
-    if (b.magic != kBetMagic) return false;
-    for (uint8_t p = 0; p < kMaxPlayers; ++p) {
-        for (uint8_t g = 0; g < kBetGames; ++g) {
-            if (b.bet[p][g] >= kBetSteps) return false;
-        }
-    }
-    if (b.demoOn > 1 || b.demoDelay >= kDemoDelaySteps) return false;
-    return b.sum == betsChecksum(b);
 }
 
 }  // namespace core

@@ -164,7 +164,8 @@ void drawCelebration(lgfx::LGFX_Sprite& g, const Celebration& c, uint32_t now) {
         return;
     }
 
-    drawText(g, "WIN", px + 8, py + 6, c.demo ? kGrayMid : P::steel300, 1);
+    drawText(g, c.label ? c.label : "WIN", px + 8, py + 6,
+             c.demo ? kGrayMid : P::steel300, 1);
     if (c.multiplier > 0 && c.tier >= core::Tier::Mid) {
         // Pastille du multiplicateur : dit POURQUOI le gain est gros.
         const int bw = numberWidth(c.multiplier, 1) + 12;

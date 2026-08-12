@@ -1,6 +1,7 @@
 #include "vp_screen.h"
 
 #include "bj_screen.h"  // drawCard, partagé — un seul rendu de carte
+#include "celebration.h"
 #include "layout.h"
 #include "painter.h"
 #include "palette.h"
@@ -138,19 +139,19 @@ void drawResult(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
                  P::steel500, 1, Align::Center);
         return;
     }
-    const bool huge = s.result >= core::PokerRank::StraightFlush;
-    const uint16_t col = huge ? P::green
-                        : (s.result >= core::PokerRank::FullHouse ? P::yellow
-                                                                  : P::cyan);
-    if (!huge || blink(now, 320)) {
-        drawText(g, core::pokerRankName(s.result), kScreenW / 2, kMsgY + 2, col,
-                 1, Align::Center);
-    }
-    const int wl = textWidth("WIN ", 2);
-    const int wn = numberWidth(static_cast<int32_t>(s.payout), 2);
-    const int x0 = (kScreenW - wl - wn) / 2;
-    drawText(g, "WIN", x0, kMsgY + 12, P::yellow, 2);
-    drawNumber(g, static_cast<int32_t>(s.payout), x0 + wl, kMsgY + 12, P::white, 2);
+    // Le montant vit dans le panneau de célébration : ici on ne garde que
+    // l'invite pour la main suivante.
+    drawText(g, "SPACE FOR A NEW HAND", kScreenW / 2, kMsgY + 20, P::steel500, 1,
+             Align::Center);
+}
+
+core::Tier tierOfRank(core::PokerRank r) {
+    // La royale et la quinte flush sont les deux mains qu'on raconte : le
+    // palier maximal leur est réservé.
+    if (r >= core::PokerRank::StraightFlush) return core::Tier::Jackpot;
+    if (r >= core::PokerRank::FullHouse) return core::Tier::Big;
+    if (r >= core::PokerRank::Straight) return core::Tier::Mid;
+    return core::Tier::Small;
 }
 
 }  // namespace
@@ -163,6 +164,18 @@ void drawVpScreen(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) 
     drawCards(g, s, now);
     drawActions(g, s, now);
     drawResult(g, s, now);
+
+    if (s.phase == core::VpPhase::Result && s.payout > 0) {
+        Celebration c;
+        c.tier = tierOfRank(s.result);
+        c.payout = s.payout;
+        c.label = core::pokerRankName(s.result);
+        c.progress = core::celebrateProgress(core::Phase::Celebrate, c.tier,
+                                             s.phaseT0, now);
+        c.counted = core::countedPayout(c.payout, c.progress);
+        c.demo = g_demo;
+        drawCelebration(g, c, now);
+    }
 }
 
 }  // namespace ui

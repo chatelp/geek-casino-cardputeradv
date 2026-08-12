@@ -2,6 +2,41 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-029 — 2026-08-12 — Sauvegarde unifiée, boot d'arcade, célébrations
+
+**Sauvegarde consolidée.** Pierre ayant accepté de perdre ses
+préférences, le bloc annexe disparaît : il n'existait que pour ne pas
+invalider les classements. Tout revient dans **une seule structure** —
+un magic, une version, une somme de contrôle, un chemin de lecture et
+d'écriture. Surtout, **la mise vit désormais DANS le joueur**
+(`Player::bet[5]`), là où elle appartient : plus de table parallèle à
+garder synchrone, et changer de joueur change ses mises sans une ligne de
+code supplémentaire.
+
+**Lignes de réglages nommées.** Elles ont glissé trois fois en ajoutant
+des options, et à chaque fois des tests ont cassé sur des index recomptés
+à la main. Un `enum GlobalRow` remplace les nombres, dans le code comme
+dans les tests. Un nom ne glisse pas.
+
+**Séquence d'allumage façon vieille borne** (réglage BOOT FX) : bruit
+multicolore, barres de couleur avec déchirures de balayage, faux test
+mémoire en phosphore vert, puis le nom qui émerge du bruit. 2,65 s, et
+n'importe quelle touche la saute — on ne fait pas attendre quelqu'un qui
+sait ce qu'il veut. Le bruit est **déterministe** (hachage de x, y et du
+numéro d'image) : mêmes captures, donc mêmes tests possibles.
+
+**Secouer lance aussi la bille** de la roulette. Le geste vaut partout où
+il a un sens physique — lancer des rouleaux, lancer une bille — mais pas
+aux jeux de cartes, où « secouer pour distribuer » ne veut rien dire.
+
+**Célébrations partout.** Blackjack, video poker et roulette reçoivent le
+panneau des machines à sous, avec le décompte du gain. Le palier vient de
+ce que le jeu considère comme remarquable : blackjack 3:2 et quinte
+royale au sommet, plein de roulette aussi ; douzaine et brelan au milieu.
+Le panneau gagne un **intitulé** — « FULL HOUSE », « BLACKJACK! », le nom
+du pari — parce que dans ces jeux le *comment* compte autant que le
+combien.
+
 ## D-028 — 2026-08-11 — Mode démo dans les cinq jeux, et réglable
 
 Demande de Pierre : même déclenchement et mêmes couleurs que les slots,

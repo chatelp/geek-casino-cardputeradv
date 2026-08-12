@@ -141,8 +141,10 @@ static void test_esc_cancels_name_entry_when_a_player_exists() {
     // Changement de joueur, puis on se ravise : Échap ramène à l'accueil
     // et la saisie en cours est oubliée.
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
-    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Navigation par NOM de ligne : ajouter un réglage ne casse plus rien.
+    for (int d = 0; d < core::RowPlayer; ++d) {
+        core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    }
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     TEST_ASSERT_EQUAL(AppScreen::NameEntry, a.screen);
     typeName(a, "BOB");
@@ -163,8 +165,10 @@ static void test_switching_player_swaps_the_balance() {
 
     // Nouveau joueur via réglages (ligne PLAYER, Enter).
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
-    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Navigation par NOM de ligne : ajouter un réglage ne casse plus rien.
+    for (int d = 0; d < core::RowPlayer; ++d) {
+        core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    }
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     TEST_ASSERT_EQUAL(AppScreen::NameEntry, a.screen);
     typeName(a, "TWO");
@@ -176,8 +180,10 @@ static void test_switching_player_swaps_the_balance() {
 
     // Retour à ONE par ←/→ sur la ligne PLAYER : son solde revient.
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
-    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Navigation par NOM de ligne : ajouter un réglage ne casse plus rien.
+    for (int d = 0; d < core::RowPlayer; ++d) {
+        core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    }
     core::handleKey(a, AppKey::Right, 0, core::xorShift32);
     TEST_ASSERT_EQUAL_STRING("ONE", a.roster.players[a.roster.current].name);
     TEST_ASSERT_EQUAL_INT32(750, a.econ.credits);
@@ -189,8 +195,10 @@ static void test_same_name_switches_instead_of_duplicating() {
     typeName(a, "ONE");
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
-    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Navigation par NOM de ligne : ajouter un réglage ne casse plus rien.
+    for (int d = 0; d < core::RowPlayer; ++d) {
+        core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    }
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     typeName(a, "ONE");
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
@@ -205,8 +213,7 @@ static void test_reset_needs_two_presses_and_wipes_everything() {
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
 
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    // Ligne RESET BOARD, dernière du menu.
-    for (int i = 0; i < core::kGlobalSettingsRows - 1; ++i) {
+    for (int i = 0; i < core::RowReset; ++i) {
         core::handleKey(a, AppKey::Down, 0, core::xorShift32);
     }
 

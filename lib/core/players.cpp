@@ -39,6 +39,7 @@ bool addOrSwitchPlayer(Roster& r, const char* name) {
     p.credits = kStartingCredits;
     p.spins = 0;
     p.bestWin = 0;
+    for (uint8_t g = 0; g < kBetGames; ++g) p.bet[g] = kDefaultBetIndex;
     r.current = r.count;
     ++r.count;
     return true;

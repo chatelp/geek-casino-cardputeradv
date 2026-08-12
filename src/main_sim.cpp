@@ -100,20 +100,7 @@ void loadApp(core::App& a) {
     core::SaveData s{};
     const bool ok = std::fread(&s, sizeof(s), 1, f) == 1;
     std::fclose(f);
-    if (ok && core::applySave(s, a.roster, a.settings)) {
-        // Bloc de mises facultatif : une sauvegarde d'avant cette
-        // fonctionnalité se charge normalement, avec les mises par défaut.
-        core::BetMemory b{};
-        FILE* fb = std::fopen(kSavePath, "rb");
-        if (fb) {
-            std::fseek(fb, sizeof(s), SEEK_SET);
-            if (std::fread(&b, sizeof(b), 1, fb) == 1 && core::betsValid(b)) {
-                a.bets = b;
-            }
-            std::fclose(fb);
-        }
-        core::enterFromSave(a);
-    }
+    if (ok && core::applySave(s, a.roster, a.settings)) core::enterFromSave(a);
     // Sauvegarde illisible : on repart sur la saisie du nom, sans casser
     // le fichier — il sera réécrit à la première partie.
 }
@@ -123,11 +110,9 @@ void saveApp(core::App& a) {
     core::syncPlayer(a.roster, a.econ, a.game.spins + a.video.spins + a.bj.hands, 0);
     core::storePlayerBets(a);
     const core::SaveData s = core::makeSave(a.roster, a.settings);
-    const core::BetMemory b = core::makeBets(a.bets);
     FILE* f = std::fopen(kSavePath, "wb");
     if (!f) return;
     std::fwrite(&s, sizeof(s), 1, f);
-    std::fwrite(&b, sizeof(b), 1, f);
     std::fclose(f);
     a.dirty = false;
 }
@@ -158,6 +143,29 @@ int runCapture() {
         app.roster.players[1].credits = 720;
         app.roster.players[1].bestWin = 250;
         core::addOrSwitchPlayer(app.roster, "PIXEL");
+
+        // La séquence d'allumage, à quatre instants.
+        {
+            struct BootShot { uint32_t t; const char* name; };
+            static const BootShot kBoots[] = {
+                {200, "boot_noise.bmp"}, {700, "boot_bars.bmp"},
+                {1400, "boot_test.bmp"}, {2200, "boot_logo.bmp"},
+            };
+            app.screen = core::AppScreen::Boot;
+            app.bootT0 = 0;
+            for (const auto& b : kBoots) {
+                ui::drawApp(canvas, app, b.t);
+                if (!saveShot(canvas, b.name)) return 1;
+            }
+            // Séquence entière, pour en juger le rythme.
+            for (uint32_t t = 0; t <= core::kBootTotalMs + 200; t += core::kFrameMs) {
+                char nm[32];
+                std::snprintf(nm, sizeof(nm), "../boot/boot_%04u.bmp", t / core::kFrameMs);
+                ui::drawApp(canvas, app, t);
+                if (!saveShot(canvas, nm)) return 1;
+            }
+            app.screen = core::AppScreen::Lobby;
+        }
 
         struct Shotdef { core::AppScreen sc; const char* name; };
         static const Shotdef defs[] = {
@@ -368,6 +376,7 @@ int simRun(bool* running) {
     const uint32_t t0 = SDL_GetTicks();
     core::App app = core::newApp(0, core::xorShift32);
     loadApp(app);
+    core::beginBoot(app, 0);
     KeyEdge edge;
 
     while (*running) {

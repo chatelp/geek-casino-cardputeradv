@@ -1,5 +1,6 @@
 #include "bj_screen.h"
 
+#include "celebration.h"
 #include "layout.h"
 #include "painter.h"
 #include "palette.h"
@@ -288,16 +289,11 @@ void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) 
         drawText(g, "DEALER PLAYS", kScreenW / 2, kActionsY + 4, P::cyan, 2,
                  Align::Center);
     } else if (s.bj.phase == core::BjPhase::Settle) {
-        const char* t = outcomeText(s.bj.outcome);
-        const uint16_t c = outcomeColor(s.bj.outcome);
-        const bool big = s.bj.outcome == core::BjOutcome::PlayerBlackjack;
-        if (!big || blink(now, 320)) {
-            drawText(g, t, kScreenW / 2, kActionsY + 4, A(c), 2, Align::Center);
-        }
-        if (s.bj.payout > 0) {
-            drawText(g, "+", 8, kActionsY + 4, P::yellow, 2);
-            drawNumber(g, static_cast<int32_t>(s.bj.payout), 20, kActionsY + 4,
-                       P::yellow, 2);
+        // Les mains perdantes gardent leur ligne de texte ; les gagnantes
+        // passent par le panneau de célébration, commun à tous les jeux.
+        if (s.bj.payout == 0) {
+            drawText(g, outcomeText(s.bj.outcome), kScreenW / 2, kActionsY + 4,
+                     A(outcomeColor(s.bj.outcome)), 2, Align::Center);
         }
     } else if (g_demo) {
         drawText(g, "DEMO", kScreenW / 2, kActionsY + 4, kGrayLight, 2,
@@ -305,6 +301,23 @@ void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) 
     } else {
         drawText(g, "PRESS SPACE TO DEAL", kScreenW / 2, kActionsY + 4, P::cyan, 2,
                  Align::Center);
+    }
+
+    if (s.bj.phase == core::BjPhase::Settle && s.bj.payout > 0) {
+        Celebration c;
+        // Le blackjack paie 3:2 : c'est le sommet du jeu, il mérite le
+        // palier le plus haut. Une victoire simple reste un palier moyen.
+        c.tier = s.bj.outcome == core::BjOutcome::PlayerBlackjack
+                     ? core::Tier::Big
+                     : (s.bj.outcome == core::BjOutcome::Push ? core::Tier::Small
+                                                              : core::Tier::Mid);
+        c.payout = s.bj.payout;
+        c.progress = core::celebrateProgress(core::Phase::Celebrate, c.tier,
+                                             s.phaseT0, now);
+        c.counted = core::countedPayout(c.payout, c.progress);
+        c.demo = g_demo;
+        c.label = outcomeText(s.bj.outcome);
+        drawCelebration(g, c, now);
     }
 }
 

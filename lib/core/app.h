@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "bj_session.h"
+#include "boot.h"
 #include "game.h"
 #include "persist.h"
 #include "players.h"
@@ -23,6 +24,7 @@
 namespace core {
 
 enum class AppScreen : uint8_t {
+    Boot,            // séquence d'allumage, sautable
     NameEntry,       // premier lancement, nouveau joueur, ou après reset
     Lobby,
     Slot,
@@ -81,14 +83,14 @@ struct App {
     // Le solde vit dans App : les trois jeux le partagent au lieu d'en
     // garder chacun une copie qui divergerait.
     Economy econ;
-    // Mise par joueur et par jeu, persistée à côté du classement.
-    // Porte aussi les préférences de démo (activation et délai).
-    BetMemory bets;
     // Dernier geste du joueur, tous écrans confondus. C'est LUI qui arme
     // le mode démo, pas une horloge par jeu — sinon quatre compteurs
     // divergeraient.
     uint32_t lastInputMs = 0;
     uint32_t lastDemoMs = 0;
+    // Instant du démarrage : la séquence d'allumage s'y réfère.
+    uint32_t bootT0 = 0;
+    AppScreen afterBoot = AppScreen::NameEntry;
     bool resetArmed = false;    // le reset demande une seconde pression
     bool quitRequested = false; // Échap depuis l'accueil (sim uniquement)
     bool dirty = false;         // une sauvegarde est due
@@ -114,8 +116,23 @@ void tickApp(App& a, uint32_t now, RngFn rng);
 
 constexpr uint8_t kSlotSettingsRows = 1;    // GLYPHS
 constexpr uint8_t kBjSettingsRows = 1;      // HINTS
-// SON, VOLUME, DÉMO, DÉLAI, JOUEUR, RESET
-constexpr uint8_t kGlobalSettingsRows = 6;
+// Lignes des réglages généraux, NOMMÉES. Elles ont glissé trois fois en
+// ajoutant des options, et à chaque fois des tests ont cassé sur des
+// index recomptés à la main. Un nom ne glisse pas.
+enum GlobalRow : uint8_t {
+    RowSound = 0,
+    RowVolume,
+    RowDemo,
+    RowDemoDelay,
+    RowBootFx,
+    RowPlayer,
+    RowReset,
+    kGlobalSettingsRows,
+};
+
+// Démarre la séquence d'allumage si le réglage l'autorise ; sinon va
+// directement à l'écran prévu.
+void beginBoot(App& a, uint32_t now);
 
 // Le jeu à l'écran est-il en train de se jouer tout seul ?
 bool appInDemo(const App& a);

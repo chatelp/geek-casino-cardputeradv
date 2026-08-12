@@ -7,8 +7,8 @@ namespace core {
 // portée (au format vidéo, une mise de 5 engage 25). Passer d'un jeu à
 // l'autre ne doit pas changer l'enjeu à l'insu du joueur.
 uint32_t demoDelayMs(const App& a) {
-    const uint8_t i = a.bets.demoDelay < kDemoDelaySteps ? a.bets.demoDelay
-                                                         : kDefaultDemoDelay;
+    const uint8_t i = a.settings.demoDelay < kDemoDelaySteps ? a.settings.demoDelay
+                                                             : kDefaultDemoDelay;
     return static_cast<uint32_t>(kDemoDelays[i]) * 1000u;
 }
 
@@ -21,6 +21,13 @@ bool appInDemo(const App& a) {
         case AppScreen::Roulette: return a.roulette.attract;
         default: return false;
     }
+}
+
+void beginBoot(App& a, uint32_t now) {
+    a.afterBoot = a.screen;   // là où l'app allait avant l'intermède
+    a.bootT0 = now;
+    a.lastInputMs = now;
+    a.screen = a.settings.bootFx ? AppScreen::Boot : a.afterBoot;
 }
 
 void pushEconomy(App& a) {
@@ -37,25 +44,28 @@ void pushEconomy(App& a) {
     clampBet(a.roulette.econ);
 }
 
+// La mise vit DANS le joueur : plus de table parallèle à garder
+// synchrone, et changer de joueur change ses mises sans un mot de code
+// supplémentaire.
 void storePlayerBets(App& a) {
-    if (a.roster.count == 0 || a.roster.current >= kMaxPlayers) return;
-    uint8_t* row = a.bets.bet[a.roster.current];
-    row[0] = a.game.machine.econ.betIndex;
-    row[1] = a.video.econ.betIndex;
-    row[2] = a.bj.econ.betIndex;
-    row[3] = a.poker.econ.betIndex;
-    row[4] = a.roulette.econ.betIndex;
-    a.bets = makeBets(a.bets);  // somme de contrôle à jour
+    Player* p = currentPlayer(a.roster);
+    if (!p) return;
+    p->bet[0] = a.game.machine.econ.betIndex;
+    p->bet[1] = a.video.econ.betIndex;
+    p->bet[2] = a.bj.econ.betIndex;
+    p->bet[3] = a.poker.econ.betIndex;
+    p->bet[4] = a.roulette.econ.betIndex;
 }
 
 void loadPlayerBets(App& a) {
-    if (a.roster.count == 0 || a.roster.current >= kMaxPlayers) return;
-    const uint8_t* row = a.bets.bet[a.roster.current];
-    a.game.machine.econ.betIndex = row[0] < kBetSteps ? row[0] : kDefaultBetIndex;
-    a.video.econ.betIndex = row[1] < kBetSteps ? row[1] : kDefaultBetIndex;
-    a.bj.econ.betIndex = row[2] < kBetSteps ? row[2] : kDefaultBetIndex;
-    a.poker.econ.betIndex = row[3] < kBetSteps ? row[3] : kDefaultBetIndex;
-    a.roulette.econ.betIndex = row[4] < kBetSteps ? row[4] : kDefaultBetIndex;
+    Player* p = currentPlayer(a.roster);
+    if (!p) return;
+    auto pick = [](uint8_t v) { return v < kBetSteps ? v : kDefaultBetIndex; };
+    a.game.machine.econ.betIndex = pick(p->bet[0]);
+    a.video.econ.betIndex = pick(p->bet[1]);
+    a.bj.econ.betIndex = pick(p->bet[2]);
+    a.poker.econ.betIndex = pick(p->bet[3]);
+    a.roulette.econ.betIndex = pick(p->bet[4]);
     pushEconomy(a);  // ramène chaque mise à ce que le solde permet
 }
 
@@ -108,7 +118,6 @@ App newApp(uint32_t now, RngFn rng) {
     a.poker = newVpSession(now);
     a.roulette = newRouletteSession(now, rng);
     a.econ = freshEconomy();
-    a.bets = freshBets();
     pushEconomy(a);
     return a;
 }
@@ -407,24 +416,25 @@ void keyGlobalSettings(App& a, AppKey k) {
         case AppKey::Left:
         case AppKey::Right: {
             const bool inc = k == AppKey::Right;
-            if (a.menuIndex == 0) {
+            if (a.menuIndex == RowSound) {
                 a.settings.muted = a.settings.muted ? 0 : 1;
                 a.dirty = true;
-            } else if (a.menuIndex == 1) {
+            } else if (a.menuIndex == RowVolume) {
                 if (inc && a.settings.volume < 3) ++a.settings.volume;
                 if (!inc && a.settings.volume > 0) --a.settings.volume;
                 a.dirty = true;
                 pushCue(a.game, Cue::BetChange);
-            } else if (a.menuIndex == 2) {
-                a.bets.demoOn = a.bets.demoOn ? 0 : 1;
-                a.bets = makeBets(a.bets);
+            } else if (a.menuIndex == RowDemo) {
+                a.settings.demoOn = a.settings.demoOn ? 0 : 1;
                 a.dirty = true;
-            } else if (a.menuIndex == 3) {
-                if (inc && a.bets.demoDelay + 1 < kDemoDelaySteps) ++a.bets.demoDelay;
-                if (!inc && a.bets.demoDelay > 0) --a.bets.demoDelay;
-                a.bets = makeBets(a.bets);
+            } else if (a.menuIndex == RowDemoDelay) {
+                if (inc && a.settings.demoDelay + 1 < kDemoDelaySteps) ++a.settings.demoDelay;
+                if (!inc && a.settings.demoDelay > 0) --a.settings.demoDelay;
                 a.dirty = true;
-            } else if (a.menuIndex == 4 && a.roster.count > 0) {
+            } else if (a.menuIndex == RowBootFx) {
+                a.settings.bootFx = a.settings.bootFx ? 0 : 1;
+                a.dirty = true;
+            } else if (a.menuIndex == RowPlayer && a.roster.count > 0) {
                 storePlayerBets(a);   // les mises du joueur qui s'en va
                 syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 const uint8_t n = a.roster.count;
@@ -438,11 +448,11 @@ void keyGlobalSettings(App& a, AppKey k) {
             break;
         }
         case AppKey::Confirm:
-            if (a.menuIndex == 4) {
+            if (a.menuIndex == RowPlayer) {
                 storePlayerBets(a);
                 syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 a.screen = AppScreen::NameEntry;
-            } else if (a.menuIndex == 5) {
+            } else if (a.menuIndex == RowReset) {
                 if (!a.resetArmed) {
                     a.resetArmed = true;
                 } else {
@@ -450,7 +460,6 @@ void keyGlobalSettings(App& a, AppKey k) {
                     a.resetArmed = false;
                     a.dirty = true;
                     a.econ = freshEconomy();
-                    a.bets = freshBets();
                     a.game.spins = 0;
                     a.video.spins = 0;
                     a.bj.hands = 0;
@@ -489,6 +498,11 @@ void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
     // Un geste, n'importe lequel, désarme la démo partout.
     a.lastInputMs = now;
     switch (a.screen) {
+        case AppScreen::Boot:
+            // N'importe quelle touche saute l'intermède : on ne fait pas
+            // attendre quelqu'un qui sait déjà ce qu'il veut.
+            a.screen = a.afterBoot;
+            break;
         case AppScreen::NameEntry:
             if (k == AppKey::Confirm) commitName(a);
             if (k == AppKey::Back && a.roster.count > 0) {
@@ -630,8 +644,13 @@ void driveDemo(App& a, uint32_t now, RngFn rng) {
 }  // namespace
 
 void tickApp(App& a, uint32_t now, RngFn rng) {
+    if (a.screen == AppScreen::Boot) {
+        if (now - a.bootT0 >= kBootTotalMs) a.screen = a.afterBoot;
+        a.lastInputMs = now;  // pas de démo pendant l'allumage
+        return;
+    }
     // Armement commun : un seul compteur d'inactivité pour tout l'objet.
-    const bool armed = a.bets.demoOn != 0 &&
+    const bool armed = a.settings.demoOn != 0 &&
                        now - a.lastInputMs >= demoDelayMs(a);
     a.game.demoArmed = armed;
     a.video.demoArmed = armed;

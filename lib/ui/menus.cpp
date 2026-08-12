@@ -4,6 +4,7 @@
 #include "painter.h"
 #include "palette.h"
 #include "bj_screen.h"
+#include "boot_fx.h"
 #include "slot_screen.h"
 #include "symbols.h"
 #include "video_screen.h"
@@ -408,6 +409,7 @@ void drawRouletteHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) 
         drawHeader(g, "ROULETTE RULES", P::cyan, true);
         static const char* kRules[] = {
             "37 POCKETS: ZERO PLUS 1 TO 36",
+            "SHAKE OR SPACE TO SPIN",
             "ONE BET AT A TIME, PICK WITH </>",
             "ON STRAIGHT, UP/DOWN PICKS IT",
             "OTHERWISE UP/DOWN SETS THE BET",
@@ -439,7 +441,7 @@ void drawGlobalSettings(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
     drawHeader(g, "SETTINGS", P::yellow);
 
-    const int rowH = 15;
+    const int rowH = 13;
     for (int i = 0; i < core::kGlobalSettingsRows; ++i) {
         const int y = 27 + i * rowH;
         const bool sel = app.menuIndex == i;
@@ -448,16 +450,17 @@ void drawGlobalSettings(lgfx::LGFX_Sprite& g, const core::App& app) {
             drawFrame(g, 6, y, kScreenW - 12, rowH - 2, P::cyan, 1);
         }
         static const char* kLabels[core::kGlobalSettingsRows] = {
-            "SOUND", "VOLUME", "DEMO MODE", "DEMO AFTER", "PLAYER", "RESET BOARD",
+            "SOUND", "VOLUME", "DEMO MODE", "DEMO AFTER", "BOOT FX",
+            "PLAYER", "RESET BOARD",
         };
         drawText(g, kLabels[i], 12, y + 3, sel ? P::white : P::steel300, 1);
 
         switch (i) {
-            case 0:
+            case core::RowSound:
                 drawText(g, app.settings.muted ? "OFF" : "ON", kScreenW - 12, y + 3,
                          app.settings.muted ? P::steel500 : P::green, 1, Align::Right);
                 break;
-            case 1: {
+            case core::RowVolume: {
                 // Quatre barres : le volume se lit sans chiffre.
                 for (int k = 0; k < 3; ++k) {
                     const int bx = kScreenW - 12 - (3 - k) * 8;
@@ -466,29 +469,33 @@ void drawGlobalSettings(lgfx::LGFX_Sprite& g, const core::App& app) {
                 }
                 break;
             }
-            case 2:
-                drawText(g, app.bets.demoOn ? "ON" : "OFF", kScreenW - 12, y + 3,
-                         app.bets.demoOn ? P::green : P::steel500, 1, Align::Right);
+            case core::RowDemo:
+                drawText(g, app.settings.demoOn ? "ON" : "OFF", kScreenW - 12, y + 3,
+                         app.settings.demoOn ? P::green : P::steel500, 1, Align::Right);
                 break;
-            case 3: {
+            case core::RowDemoDelay: {
                 // Grisé quand la démo est coupée : un réglage sans effet
                 // doit se voir comme tel.
-                const uint16_t col = app.bets.demoOn ? P::cyan : P::ink600;
-                const uint8_t d = app.bets.demoDelay < core::kDemoDelaySteps
-                    ? app.bets.demoDelay : core::kDefaultDemoDelay;
+                const uint16_t col = app.settings.demoOn ? P::cyan : P::ink600;
+                const uint8_t d = app.settings.demoDelay < core::kDemoDelaySteps
+                    ? app.settings.demoDelay : core::kDefaultDemoDelay;
                 drawNumber(g, core::kDemoDelays[d], kScreenW - 22, y + 3, col, 1,
                            Align::Right);
                 drawText(g, "S", kScreenW - 12, y + 3, col, 1, Align::Right);
                 break;
             }
-            case 4: {
+            case core::RowBootFx:
+                drawText(g, app.settings.bootFx ? "ON" : "OFF", kScreenW - 12, y + 3,
+                         app.settings.bootFx ? P::green : P::steel500, 1, Align::Right);
+                break;
+            case core::RowPlayer: {
                 const core::Player* p = app.roster.count
                     ? &app.roster.players[app.roster.current] : nullptr;
                 drawText(g, p ? p->name : "-", kScreenW - 12, y + 3, P::cyan, 1,
                          Align::Right);
                 break;
             }
-            case 5:
+            case core::RowReset:
                 drawText(g, app.resetArmed ? "PRESS AGAIN" : "ENTER",
                          kScreenW - 12, y + 3,
                          app.resetArmed ? P::red : P::steel500, 1, Align::Right);
@@ -563,6 +570,9 @@ void drawLeaderboard(lgfx::LGFX_Sprite& g, const core::App& app) {
 
 void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
     switch (app.screen) {
+        case core::AppScreen::Boot:
+            drawBootFx(g, now - app.bootT0);
+            break;
         case core::AppScreen::NameEntry: drawNameEntry(g, app, now); break;
         case core::AppScreen::Lobby: drawLobby(g, app); break;
         case core::AppScreen::Slot:

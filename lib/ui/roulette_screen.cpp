@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "celebration.h"
 #include "layout.h"
 #include "painter.h"
 #include "palette.h"
@@ -142,15 +143,7 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::RouletteSession& s, uint32_t 
             break;
         case core::RltPhase::Result: {
             if (s.won) {
-                const int wl = textWidth("WIN ", 2);
-                const int wn = numberWidth(static_cast<int32_t>(s.payout), 2);
-                const int x0 = (kScreenW - wl - wn) / 2;
-                const bool big = s.kind == core::BetKind::Straight;
-                if (!big || blink(now, 300)) {
-                    drawText(g, "WIN", x0, kMsgY, P::yellow, 2);
-                    drawNumber(g, static_cast<int32_t>(s.payout), x0 + wl, kMsgY,
-                               P::white, 2);
-                }
+                // Le montant vit dans le panneau de célébration.
             } else if (s.winNumber == 0) {
                 // Le zéro mérite d'être nommé : c'est là que la maison gagne.
                 drawText(g, "ZERO - HOUSE TAKES ALL", kScreenW / 2, kMsgY + 2,
@@ -175,6 +168,22 @@ void drawRouletteScreen(lgfx::LGFX_Sprite& g, const core::RouletteSession& s,
     drawEncoder(g);
     drawBetPanel(g, s);
     drawMessage(g, s, now);
+
+    if (s.phase == core::RltPhase::Result && s.won) {
+        Celebration c;
+        // Un plein paie 36 fois : c'est l'événement du jeu. Une douzaine
+        // est un palier moyen, une chance simple le plus petit.
+        c.tier = s.kind == core::BetKind::Straight ? core::Tier::Jackpot
+               : (core::roulettePayout(s.kind) > 2 ? core::Tier::Mid
+                                                   : core::Tier::Small);
+        c.payout = s.payout;
+        c.label = core::betName(s.kind);
+        c.progress = core::celebrateProgress(core::Phase::Celebrate, c.tier,
+                                             s.phaseT0, now);
+        c.counted = core::countedPayout(c.payout, c.progress);
+        c.demo = g_demo;
+        drawCelebration(g, c, now);
+    }
 }
 
 }  // namespace ui

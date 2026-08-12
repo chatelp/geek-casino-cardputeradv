@@ -168,8 +168,10 @@ static void test_each_player_keeps_their_own_bets() {
 
     // Nouveau joueur : il repart sur la mise par défaut, pas celle de ZOE.
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
-    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Navigation par NOM de ligne : ajouter un réglage ne casse plus rien.
+    for (int d = 0; d < core::RowPlayer; ++d) {
+        core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    }
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     for (const char* c = "BOB"; *c; ++c) core::feedNameChar(a, *c);
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
@@ -178,31 +180,46 @@ static void test_each_player_keeps_their_own_bets() {
 
     // Retour à ZOE : elle retrouve la sienne.
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
-    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Navigation par NOM de ligne : ajouter un réglage ne casse plus rien.
+    for (int d = 0; d < core::RowPlayer; ++d) {
+        core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    }
     core::handleKey(a, AppKey::Right, 0, core::xorShift32);
     TEST_ASSERT_EQUAL_STRING("ZOE", a.roster.players[a.roster.current].name);
     TEST_ASSERT_EQUAL_UINT16(zoeBet, core::bet(a.game.machine.econ));
 }
 
-static void test_bet_memory_survives_a_save_round_trip() {
+static void test_bets_travel_with_the_player_through_a_save() {
+    // La mise vit DANS le joueur : elle traverse donc une sauvegarde sans
+    // code dédié. Une sauvegarde abîmée est rejetée en bloc plutôt que
+    // d'indexer un tableau hors bornes.
     App a = started(92);
-    a.bets.bet[0][0] = 4; a.bets.bet[0][1] = 1; a.bets.bet[0][2] = 3;
-    const core::BetMemory saved = core::makeBets(a.bets);
-    TEST_ASSERT_TRUE(core::betsValid(saved));
+    a.game.machine.econ.betIndex = 4;
+    a.video.econ.betIndex = 1;
+    a.bj.econ.betIndex = 3;
+    a.poker.econ.betIndex = 0;
+    a.roulette.econ.betIndex = 2;
+    core::storePlayerBets(a);
+
+    const core::SaveData saved = core::makeSave(a.roster, a.settings);
+    TEST_ASSERT_TRUE(core::saveValid(saved));
 
     App b = started(93);
-    TEST_ASSERT_TRUE(core::betsValid(saved));
-    b.bets = saved;
-    core::loadPlayerBets(b);
+    TEST_ASSERT_TRUE(core::applySave(saved, b.roster, b.settings));
+    core::enterFromSave(b);
     TEST_ASSERT_EQUAL_UINT8(4, b.game.machine.econ.betIndex);
     TEST_ASSERT_EQUAL_UINT8(1, b.video.econ.betIndex);
     TEST_ASSERT_EQUAL_UINT8(3, b.bj.econ.betIndex);
+    TEST_ASSERT_EQUAL_UINT8(0, b.poker.econ.betIndex);
+    TEST_ASSERT_EQUAL_UINT8(2, b.roulette.econ.betIndex);
 
-    // Un octet corrompu invalide le bloc : les mises par défaut reprennent.
-    core::BetMemory bad = saved;
-    bad.bet[2][1] = 99;
-    TEST_ASSERT_FALSE(core::betsValid(bad));
+    // Cran de mise hors échelle : toute la sauvegarde est refusée.
+    core::SaveData bad = saved;
+    bad.players[0].bet[2] = 99;
+    TEST_ASSERT_FALSE(core::saveValid(bad));
+    core::SaveData bad2 = saved;
+    bad2.settings.demoDelay = 99;
+    TEST_ASSERT_FALSE(core::saveValid(bad2));
 }
 
 static void test_poker_hand_runs_deal_hold_draw() {
@@ -435,7 +452,7 @@ static void test_demo_runs_free_and_silent_in_every_game() {
 
 static void test_demo_can_be_switched_off() {
     App a = started(140);
-    a.bets.demoOn = 0;
+    a.settings.demoOn = 0;
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);  // slots
     for (uint32_t t = 0; t < 120000; t += core::kFrameMs) {
         core::tickApp(a, t, core::xorShift32);
@@ -447,7 +464,7 @@ static void test_demo_can_be_switched_off() {
 static void test_demo_delay_follows_the_setting() {
     // Le délai réglé doit être respecté : ni plus tôt, ni jamais.
     App a = started(141);
-    a.bets.demoDelay = 0;  // 10 s
+    a.settings.demoDelay = 0;  // 10 s
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     TEST_ASSERT_EQUAL_UINT32(10000, core::demoDelayMs(a));
 
@@ -488,7 +505,7 @@ int main() {
     RUN_TEST(test_video_bet_respects_the_real_cost_of_a_spin);
     RUN_TEST(test_each_game_keeps_its_own_bet);
     RUN_TEST(test_each_player_keeps_their_own_bets);
-    RUN_TEST(test_bet_memory_survives_a_save_round_trip);
+    RUN_TEST(test_bets_travel_with_the_player_through_a_save);
     RUN_TEST(test_poker_hand_runs_deal_hold_draw);
     RUN_TEST(test_poker_cursor_wraps_over_the_draw_slot);
     RUN_TEST(test_every_lobby_entry_opens_its_game);

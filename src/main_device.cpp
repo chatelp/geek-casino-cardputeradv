@@ -65,13 +65,6 @@ static void loadFromNvs() {
     core::SaveData s{};
     if (prefs.getBytes("save", &s, sizeof(s)) == sizeof(s) &&
         core::applySave(s, app.roster, app.settings)) {
-        // Clé séparée : une sauvegarde d'avant cette fonctionnalité se
-        // charge normalement, avec les mises par défaut.
-        core::BetMemory b{};
-        if (prefs.getBytes("bets", &b, sizeof(b)) == sizeof(b) &&
-            core::betsValid(b)) {
-            app.bets = b;
-        }
         core::enterFromSave(app);
     }
     // Sinon : premier lancement (ou sauvegarde corrompue rejetée en bloc)
@@ -88,9 +81,7 @@ static void saveToNvs(uint32_t now) {
                      app.game.spins + app.video.spins + app.bj.hands, 0);
     core::storePlayerBets(app);
     const core::SaveData s = core::makeSave(app.roster, app.settings);
-    const core::BetMemory b = core::makeBets(app.bets);
     prefs.putBytes("save", &s, sizeof(s));
-    prefs.putBytes("bets", &b, sizeof(b));
     app.dirty = false;
     lastSaveMs = now;
 }
@@ -132,9 +123,12 @@ static void handleKeyboard(uint32_t now) {
 
 // --------------------------------------------------------------------- IMU
 static void handleShake(uint32_t now) {
-    // Le geste vaut pour les deux machines à sous, pas au blackjack.
+    // Le geste vaut partout où il a un sens physique : lancer des
+    // rouleaux ou lancer une bille. Pas aux jeux de cartes, où « secouer
+    // pour distribuer » ne veut rien dire.
     if (app.screen != core::AppScreen::Slot &&
-        app.screen != core::AppScreen::Video) return;
+        app.screen != core::AppScreen::Video &&
+        app.screen != core::AppScreen::Roulette) return;
     // L'IMU n'est pas ré-exposée par le wrapper Cardputer : API M5Unified.
     float ax = 0, ay = 0, az = 0;
     M5.Imu.update();
@@ -156,6 +150,7 @@ void setup() {
     prefs.begin("geekcasino", false);
     app = core::newApp(millis(), trng);
     loadFromNvs();
+    core::beginBoot(app, millis());
 }
 
 void loop() {
