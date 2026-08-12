@@ -2,6 +2,28 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-036 — 2026-08-12 — Le nom public : « Silicon Casino »
+
+La contrainte dominante, posée par Pierre : **être trouvé dans une
+recherche M5Burner**. La recherche y est un filtre texte sans synonymes —
+le mot « casino » doit donc être dans le nom, en toutes lettres.
+L'originalité vient du qualificatif : **Silicon**, le casino en silicium,
+geek par la matière même de la puce et cohérent avec tout ce que le
+projet dessine déjà (cabinet-circuit, table-PCB, boot ROM).
+
+Écarté : « Casino ROM » (évoque l'émulation plus que le jeu),
+« Pixel Casino » (déjà utilisé par des jeux de slots mobiles),
+« Neon Casino » et « Bit Casino » (collisions avec des casinos en argent
+réel en ligne — pour un jouet sans argent, zéro confusion souhaitée).
+
+Appliqué partout où le joueur voit le nom : logo de boot (« SILICON »
+en magenta, « CASINO » en cyan), ligne de ROM du faux self-test, en-tête
+de l'accueil, cartes du design system. Le dépôt GitHub garde son nom
+historique `geek-casino-cardputeradv` : les liens existants ne cassent
+pas, et le README explique la différence. La description M5Burner devra
+contenir « slots, blackjack, video poker, roulette » pour les autres
+recherches.
+
 ## D-035 — 2026-08-12 — La secousse brouille la courbe ; la bille rebondit avant le règlement
 
 **Le paquet qui défilait se lisait comme des diodes.** Retour de Pierre

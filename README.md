@@ -1,4 +1,4 @@
-# Geek Casino — machine à sous pour M5Stack Cardputer ADV
+# Silicon Casino — casino de poche pour M5Stack Cardputer ADV
 
 Jeu de casino hors-ligne pour **M5Stack Cardputer ADV** (ESP32-S3, écran
 240 × 135, clavier 56 touches, IMU BMI270, haut-parleur 1 W).
@@ -8,8 +8,10 @@ Jeu de casino hors-ligne pour **M5Stack Cardputer ADV** (ESP32-S3, écran
 > d'animation, pas un produit de jeu d'argent. Le joueur ne peut jamais
 > être définitivement ruiné : la machine renfloue.
 
-Nom de code provisoire. Le premier module est une machine à sous à trois
-rouleaux ; l'architecture prévoit d'autres jeux.
+**Silicon Casino** est le nom public — le casino en silicium, choisi
+pour rester trouvable dans une recherche (« casino ») tout en portant
+l'identité maker du projet. Le dépôt garde son nom historique
+`geek-casino-cardputeradv` pour ne pas casser les liens.
 
 ## État
 

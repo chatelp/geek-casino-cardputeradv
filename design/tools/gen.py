@@ -521,7 +521,7 @@ def screen_lobby():
     draw_traces(p)
     p.rect(0, 0, SCREEN_W, 24, C["ink800"])
     p.rect(0, 23, SCREEN_W, 1, C["magenta"])
-    p.text("GEEK CASINO", 8, 5, C["magenta"], 2)
+    p.text("SILICON CASINO", 8, 5, C["magenta"], 2)
     p.art(ICONS["COIN"]["art"], SCREEN_W - 62, 6, 1)
     p.text("1250", SCREEN_W - 46, 6, C["yellow"], 2)
     # Tout le texte est à l'échelle 2 : à l'échelle 1 (7 px) une ligne serait
@@ -1421,7 +1421,7 @@ def export_overview():
            'height="%d" shape-rendering="crispEdges">' % (W, H, W * 3, H * 3),
            '<rect width="%d" height="%d" fill="#101018"/>' % (W, H)]
     t = Paint()
-    t.text("GEEK CASINO", gap, 14, C["magenta"], 2)
+    t.text("SILICON CASINO", gap, 14, C["magenta"], 2)
     t.text("PIXEL-ART NEON - NUIT D'ARCADE - 240x135", gap, 34, C["steel300"], 1)
     out.append("".join(t.out))
     for i, (name, svg) in enumerate(shots):

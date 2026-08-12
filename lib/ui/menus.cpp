@@ -74,7 +74,7 @@ void drawHint(lgfx::LGFX_Sprite& g, const char* hint) {
 // ------------------------------------------------------------------ accueil
 void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
-    drawHeader(g, "GEEK CASINO", P::magenta);
+    drawHeader(g, "SILICON CASINO", P::magenta);
 
     const core::Player* p = app.roster.count
             ? &app.roster.players[app.roster.current] : nullptr;

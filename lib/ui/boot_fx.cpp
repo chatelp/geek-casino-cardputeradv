@@ -74,7 +74,7 @@ void drawSelftest(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
     // Panel_ST7789 et ne connaît pas de révision. On n'affiche que ce qu'on
     // peut montrer.
     static const char* kLines[] = {
-        "GEEK CASINO BOOT ROM V1.0",
+        "SILICON CASINO BOOT ROM V1.0",
         "CPU   ESP32-S3  240 MHZ",
         "FLASH 8 MB   PSRAM NONE",
         "VRAM  64800 BYTES",
@@ -116,7 +116,7 @@ void drawLogo(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
     drawNoise(g, frame, fade * 0.30f);
 
     const int cy = kScreenH / 2 - 16;
-    drawText(g, "GEEK", kScreenW / 2, cy, P::magenta, 3, Align::Center);
+    drawText(g, "SILICON", kScreenW / 2, cy, P::magenta, 3, Align::Center);
     drawText(g, "CASINO", kScreenW / 2, cy + 24, P::cyan, 3, Align::Center);
 
     // Trois invaders sous le nom, qui apparaissent l'un après l'autre.

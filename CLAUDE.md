@@ -1,8 +1,10 @@
-# Geek Casino — machine à sous pour M5Stack Cardputer ADV
+# Silicon Casino — casino de poche pour M5Stack Cardputer ADV
 
 Jeu de casino hors-ligne pour Cardputer ADV (ESP32-S3, 240×135, 56 touches,
-IMU BMI270, haut-parleur 1 W). Nom de code provisoire : « Geek Casino » —
-l'identité visuelle et le nom définitif restent à définir avec Pierre.
+IMU BMI270, haut-parleur 1 W). Nom public acté : **« Silicon Casino »**
+(D-036) — « Casino » en toutes lettres pour la recherche M5Burner, le
+silicium pour l'identité maker. « Geek Casino » reste le nom de code du
+dépôt.
 
 ## Garde-fous — non négociables sans décision explicite de Pierre
 
@@ -85,7 +87,7 @@ en **escalade selon le gain**. Le jackpot est le **space invader**.
 Le **cabinet est une carte électronique** (trous de fixation, pistes,
 vias) et le **levier est dessiné à droite**, hors cabinet : le geste IMU
 actionne un objet visible. Les modules se nomment platement — **SLOTS**,
-pas de nom poétique ; c'est « Geek Casino » qui porte l'identité.
+pas de nom poétique ; c'est « Silicon Casino » qui porte l'identité.
 
 Le design system vit sur claude.ai/design, projet « Geek Casino — Design
 System » — son identifiant est dans `private/design-system.md`, hors
