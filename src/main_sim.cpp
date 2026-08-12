@@ -147,9 +147,12 @@ int runCapture() {
         // La séquence d'allumage, à quatre instants.
         {
             struct BootShot { uint32_t t; const char* name; };
+            // Instants choisis DANS chaque phase (bruit 0-380, barres
+            // 380-820, test 820-2380, logo 2380-3160). Le test est pris
+            // tard : c'est là que les huit lignes sont toutes affichées.
             static const BootShot kBoots[] = {
-                {200, "boot_noise.bmp"}, {700, "boot_bars.bmp"},
-                {1400, "boot_test.bmp"}, {2200, "boot_logo.bmp"},
+                {200, "boot_noise.bmp"}, {600, "boot_bars.bmp"},
+                {2250, "boot_test.bmp"}, {2900, "boot_logo.bmp"},
             };
             app.screen = core::AppScreen::Boot;
             app.bootT0 = 0;
@@ -199,7 +202,11 @@ int runCapture() {
         {
             uint32_t st = 500;
             core::startSpin(app.game, st, core::xorShift32);
-            for (int i = 0; i < 24; ++i) {
+            // Capture calée juste APRÈS le verrouillage du premier rouleau :
+            // c'est le seul instant où la salve est à l'écran, et une image
+            // prise au hasard ne montrerait que la trace au repos.
+            const uint32_t lock0 = app.game.motion[0].t0 + app.game.motion[0].dur;
+            while (st < lock0 + 120) {
                 st += core::kFrameMs;
                 core::updateGame(app.game, st, core::xorShift32);
             }

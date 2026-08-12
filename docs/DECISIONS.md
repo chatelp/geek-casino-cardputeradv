@@ -2,6 +2,36 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-033 — 2026-08-12 — L'analyseur de spectre remplacé par une trace d'oscilloscope
+
+Le bandeau de D-032 ne marchait pas sur l'appareil : Pierre a constaté
+« quasi aucune amplitude » sur les à-coups. Diagnostic : en gonflant le
+socle des barres pour qu'elles soient bien visibles, on leur avait retiré
+la marge dont l'à-coup avait besoin. Les barres du centre montaient déjà à
+cinq crans sur cinq — le coup n'avait plus nulle part où aller.
+
+Ce n'est pas un défaut de réglage, c'est le registre : **des barres assez
+grosses pour être lues occupent la hauteur qu'il faudrait garder libre**.
+Toute correction aurait rendu le repos illisible pour rendre le coup
+visible, ou l'inverse.
+
+D'où le changement complet demandé par Pierre : une **trace
+d'oscilloscope**. Au repos elle est presque plate — un tiers de la
+demi-hauteur, plafond explicite dans le code — et chaque verrouillage de
+rouleau y injecte une **salve** qui sature l'amplitude, passe au magenta,
+puis **défile vers la gauche** à un pixel toutes les quatre millisecondes.
+On voit l'événement naître au bord droit et traverser. Trois rouleaux font
+trois salves qui se suivent ; cinq au format vidéo. Le contraste est
+désormais structurel et non obtenu à force de réglage — et un test vérifie
+que la salve dépasse le repos d'un facteur deux au moins.
+
+C'est aussi plus juste : le cabinet est une carte électronique (D-009), et
+ce qu'on pose sous une carte, c'est une sonde. Un réticule discret pose la
+trace sur un instrument plutôt que de la laisser flotter.
+
+Même architecture que ce qu'elle remplace : **pur**, sans état ni horloge,
+tout se déduit des rouleaux. `lib/core/spinband.*` est supprimé.
+
 ## D-032 — 2026-08-12 — Un analyseur de spectre au bas des machines à sous ; les chiffres du démarrage deviennent vrais
 
 **Le bandeau du bas ne servait qu'à écrire « SPINNING ».** Vingt pixels de
@@ -33,6 +63,15 @@ grésillerait au lieu d'onduler.
 Le `kMsgY` du format vidéo passe de 121 à **120** : la dernière rangée de
 symboles finit à 119, et ce pixel récupéré donne cinq crans au lieu de
 quatre, soit la même lecture qu'au 3x1.
+
+**Le test de démarrage prend le temps d'être lu.** Huit lignes en 750 ms
+faisaient moins de 100 ms chacune : de quoi voir défiler, pas de quoi
+lire. La phase passe à 1560 ms, soit une ligne toutes les 163 ms, et les
+deux phases de bruit rendent 190 ms — le total ne monte que de 2650 à
+3160 ms, et n'importe quelle touche saute toujours la séquence. La
+dernière ligne obtient enfin **son** « OK » : le compte s'arrêtait au
+nombre de lignes, elle restait donc bloquée sur son compteur et le test se
+terminait sans jamais conclure.
 
 **Les chiffres de l'écran de démarrage sont maintenant vérifiés.** Le test
 est faux — c'est le principe — mais les valeurs annoncées ne le sont plus :

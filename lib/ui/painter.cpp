@@ -214,47 +214,34 @@ void desaturate(lgfx::LGFX_Sprite& g) {
     }
 }
 
-void drawSpinBand(lgfx::LGFX_Sprite& g, int x, int y, int w, int h,
-                  const core::BandDrive& d, uint32_t now) {
-    // Rangée de diodes : segments de 2 px espacés de 1. Une barre pleine se
-    // lirait comme une jauge de chargement — ce sont les interruptions qui
-    // la font lire comme un niveau.
-    // Segments épais quand la place le permet (3x1, 20 px de haut), plus
-    // fins sinon (vidéo, 14 px) : cinq crans d'un côté, quatre de l'autre.
-    // Mieux vaut quatre gros crans que six traits qu'on ne distingue pas.
-    const int segStep = h >= 18 ? 4 : 3;
-    const int segH = segStep - 1;
-    const int pitch = w / core::kBandBars;
-    const int barW = pitch - 2;
-    const int segs = h / segStep;
-    if (segs <= 0 || barW <= 0) return;
+void drawScope(lgfx::LGFX_Sprite& g, int x, int y, int w, int h,
+               const core::ScopeDrive& d, uint32_t now) {
+    if (w <= 0 || h < 6) return;
+    const int mid = y + h / 2;
+    const int halfH = h / 2 - 1;
 
-    for (int i = 0; i < core::kBandBars; ++i) {
-        const int bx = x + i * pitch + 1;
-        const uint8_t lvl = core::bandLevel(static_cast<uint8_t>(i), now, d);
-        const int lit = (lvl * segs + 50) / 100;
-        for (int s = 0; s < segs; ++s) {
-            const int sy = y + h - (s + 1) * segStep;
-            uint16_t c;
-            if (s >= lit) {
-                // Les segments éteints restent visibles, très sombres : le
-                // bandeau garde sa forme même quand tout retombe.
-                c = P::ink700;
-            } else if (s * 3 >= segs * 2) {
-                c = P::magenta;   // le haut du spectre, réservé aux pointes
-            } else if (s * 3 >= segs) {
-                c = P::amber;
-            } else {
-                c = P::cyan;
-            }
-            g.fillRect(bx, sy, barW, segH, c);
-        }
-        // Témoin de crête : un trait clair qui plane puis retombe.
-        const uint8_t pk = core::bandPeak(static_cast<uint8_t>(i), now, d);
-        const int ps = (pk * segs + 50) / 100;
-        if (ps > 0 && ps <= segs) {
-            g.fillRect(bx, y + h - ps * segStep, barW, 1, P::white);
-        }
+    // L'écran de la sonde : fond d'encre, réticule discret. Sans grille,
+    // une trace flotte ; avec, elle est POSÉE sur un instrument.
+    g.fillRect(x, y, w, h, P::ink900);
+    for (int gx = x; gx < x + w; gx += 24) {
+        g.fillRect(gx, y + 1, 1, h - 2, P::ink700);
+    }
+    g.fillRect(x, mid, w, 1, P::ink700);
+
+    int prev = mid;
+    for (int i = 0; i < w; ++i) {
+        const int v = core::scopeAt(i, w, now, d);
+        int yy = mid - (v * halfH) / 100;
+        if (yy < y) yy = y;
+        if (yy > y + h - 1) yy = y + h - 1;
+        // Au-delà des deux tiers d'amplitude on passe au magenta : la
+        // salve se distingue du repos par la couleur autant que par la
+        // hauteur, et reste lisible même figée sur une capture.
+        const uint16_t c = (v > 62 || v < -62) ? P::magenta : P::cyan;
+        const int a = yy < prev ? yy : prev;
+        const int b = yy > prev ? yy : prev;
+        g.fillRect(x + i, a, 1, b - a + 1, c);
+        prev = yy;
     }
 }
 

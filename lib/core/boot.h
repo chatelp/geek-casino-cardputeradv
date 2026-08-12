@@ -18,10 +18,14 @@ enum class BootPhase : uint8_t {
     Done,
 };
 
-constexpr uint32_t kBootNoiseMs = 450;
-constexpr uint32_t kBootBarsMs = 550;
-constexpr uint32_t kBootTestMs = 750;
-constexpr uint32_t kBootLogoMs = 900;
+// Les glitchs sont du décor, le test est de la LECTURE : le budget penche
+// donc du côté du test. Huit lignes en 750 ms faisaient moins de 100 ms
+// chacune — de quoi voir défiler, pas de quoi lire. Le total ne bouge que
+// de 500 ms parce que les deux phases de bruit ont rendu du temps.
+constexpr uint32_t kBootNoiseMs = 380;
+constexpr uint32_t kBootBarsMs = 440;
+constexpr uint32_t kBootTestMs = 1560;
+constexpr uint32_t kBootLogoMs = 780;
 constexpr uint32_t kBootTotalMs =
     kBootNoiseMs + kBootBarsMs + kBootTestMs + kBootLogoMs;
 

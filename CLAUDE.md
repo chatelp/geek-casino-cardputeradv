@@ -130,6 +130,10 @@ Règles issues du design system :
   doivent se voir. Toute colonne de rouleau se dessine **découpée** au
   hublot, sinon elle déborde sur le bandeau de crédits.
 - **Aucun glyphe `$`** dans la fonte : garde-fou, pas oubli.
+- Une animation d'intensité **garde sa marge au repos**. Un analyseur de
+  spectre a échoué ici pour l'avoir oubliée : ses barres remplissaient
+  déjà la hauteur, donc l'à-coup ne se voyait pas (D-033). Ce qui doit
+  exploser doit d'abord être plat.
 
 ## Architecture
 
@@ -137,9 +141,9 @@ Règles issues du design system :
 lib/core/   Logique pure C++17 — AUCUN include Arduino/M5/lgfx.
             Testée par test-native. Rouleaux, table de gains, économie,
             ET le mouvement : le rythme est de la logique, pas du dessin.
-            `spinband` en est l'exemple limite — un analyseur de spectre
-            écrit SANS état, entièrement déduit de l'instant et des
-            rouleaux, donc testable image par image.
+            `scope` en est l'exemple limite — une trace d'oscilloscope
+            écrite SANS état, entièrement déduite de l'instant et des
+            rouleaux, donc testable colonne par colonne.
             Le temps entre par un paramètre `now`, jamais lu d'une horloge
             interne — c'est ce qui rend les transitions testables et les
             captures reproductibles.

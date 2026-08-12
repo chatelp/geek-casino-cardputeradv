@@ -5,7 +5,7 @@
 #include <cstdint>
 
 #include "font5x7.h"
-#include "spinband.h"
+#include "scope.h"
 #include "hal_display.h"
 #include "symbols.h"
 
@@ -82,11 +82,11 @@ void drawBetArrows(lgfx::LGFX_Sprite& g, int leftX, int rightX, int y,
 // tard sans y penser.
 void desaturate(lgfx::LGFX_Sprite& g);
 
-// L'analyseur de spectre du bas d'écran, pendant un tour. Les hauteurs
-// viennent de core::bandLevel() — ici on ne fait que peindre. Segmenté
-// comme une vraie rangée de diodes : une barre pleine se lit comme une
-// jauge de chargement, une barre en segments se lit comme un niveau.
-void drawSpinBand(lgfx::LGFX_Sprite& g, int x, int y, int w, int h,
-                  const core::BandDrive& d, uint32_t now);
+// La trace d'oscilloscope du bas d'écran, pendant un tour. Les écarts
+// viennent de core::scopeAt() — ici on ne fait que peindre. La trace est
+// dessinée CONTINUE (chaque colonne rejoint la précédente) : une suite de
+// points isolés ne se lit pas comme un signal.
+void drawScope(lgfx::LGFX_Sprite& g, int x, int y, int w, int h,
+               const core::ScopeDrive& d, uint32_t now);
 
 }  // namespace ui

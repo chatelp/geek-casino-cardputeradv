@@ -84,7 +84,10 @@ void drawSelftest(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
         "SND   1W  800-2600 HZ",
     };
     constexpr int kn = sizeof(kLines) / sizeof(kLines[0]);
-    const int shown = 1 + static_cast<int>(p * kn * 1.4f);
+    // On va jusqu'à kn+1 : la dernière ligne doit avoir SON « OK ». Avec le
+    // compte arrêté à kn, elle restait bloquée sur son compteur et le test
+    // se terminait sans jamais conclure.
+    const int shown = 1 + static_cast<int>(p * (kn + 1) * 1.06f);
     for (int i = 0; i < kn && i < shown; ++i) {
         const int y = 14 + i * 13;
         drawText(g, kLines[i], 12, y, P::greenDk, 1);
@@ -97,8 +100,11 @@ void drawSelftest(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
                        Align::Right);
         }
     }
-    // Curseur clignotant, comme une console qui attend.
-    if ((frame / 8) & 1) g.fillRect(12, 14 + shown * 13, 5, 7, P::green);
+    // Curseur clignotant, comme une console qui attend. Borné à la dernière
+    // ligne : `shown` dépasse le nombre de lignes en fin de phase, et le
+    // curseur serait sorti de l'écran.
+    const int cy = 14 + (shown < kn ? shown : kn) * 13;
+    if ((frame / 8) & 1) g.fillRect(12, cy, 5, 7, P::green);
 }
 
 // Le logo émerge : le bruit se retire, les lettres restent.
