@@ -39,7 +39,14 @@ bool saveValid(const SaveData& s);
 // elle ne l'est pas — l'appelant repart sur un premier lancement.
 bool applySave(const SaveData& s, Roster& r, Settings& st);
 
-// --- Mémoire des mises : un cran par JOUEUR et par JEU.
+// Délais de déclenchement du mode démo, en secondes. Une échelle plutôt
+// qu'une saisie libre : on change d'un cran, sans clavier numérique.
+constexpr uint16_t kDemoDelays[] = {10, 20, 30, 60, 120, 300};
+constexpr uint8_t kDemoDelaySteps = sizeof(kDemoDelays) / sizeof(kDemoDelays[0]);
+constexpr uint8_t kDefaultDemoDelay = 1;  // 20 s
+
+// --- Bloc annexe : mises par joueur et par jeu, PLUS les préférences de
+// démo.
 // Deux joueurs n'ont pas le même appétit, et au format vidéo une mise de
 // 5 en engage 25 : une mise commune changerait l'enjeu à leur insu.
 //
@@ -47,12 +54,16 @@ bool applySave(const SaveData& s, Roster& r, Settings& st);
 // bumper la version, donc d'invalider les sauvegardes existantes et
 // d'effacer le classement. Son absence rend simplement les mises par
 // défaut, sans rien casser.
-constexpr uint32_t kBetMagic = 0x47434233;  // "GCB3" — 5 jeux
+constexpr uint32_t kBetMagic = 0x47434234;  // "GCB4" — 5 jeux + démo
 constexpr uint8_t kBetGames = 5;            // un cran par jeu
 
 struct BetMemory {
     uint32_t magic;
     uint8_t bet[kMaxPlayers][kBetGames];
+    // Le mode démo est une invitation, pas une obligation : sur un bureau
+    // partagé, une machine qui se lance seule peut déranger.
+    uint8_t demoOn = 1;
+    uint8_t demoDelay = kDefaultDemoDelay;
     uint8_t sum;
 };
 

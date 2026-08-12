@@ -168,8 +168,8 @@ static void test_each_player_keeps_their_own_bets() {
 
     // Nouveau joueur : il repart sur la mise par défaut, pas celle de ZOE.
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
-    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
+    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     for (const char* c = "BOB"; *c; ++c) core::feedNameChar(a, *c);
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
@@ -178,8 +178,8 @@ static void test_each_player_keeps_their_own_bets() {
 
     // Retour à ZOE : elle retrouve la sienne.
     core::handleKey(a, AppKey::Settings, 0, core::xorShift32);
-    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
-    core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    // Ligne PLAYER : le menu a gagné DEMO MODE et DEMO AFTER.
+    for (int d = 0; d < 4; ++d) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
     core::handleKey(a, AppKey::Right, 0, core::xorShift32);
     TEST_ASSERT_EQUAL_STRING("ZOE", a.roster.players[a.roster.current].name);
     TEST_ASSERT_EQUAL_UINT16(zoeBet, core::bet(a.game.machine.econ));
@@ -400,6 +400,83 @@ static void test_basic_strategy_matches_the_reference_table() {
     TEST_ASSERT_EQUAL(core::BjAction::Stand, core::bjBasicStrategy(mk({10, 7}), up(11), false));
 }
 
+static void test_demo_runs_free_and_silent_in_every_game() {
+    // Le contrat du mode démo, vérifié pour CHAQUE jeu : il se déclenche
+    // après le délai réglé, il ne coûte ni ne rapporte un jeton, et il
+    // n'émet aucun son.
+    for (uint8_t gidx = 0; gidx < core::kGameCount; ++gidx) {
+        App a = started(static_cast<uint32_t>(120 + gidx));
+        for (uint8_t k = 0; k < gidx; ++k) {
+            core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+        }
+        core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+
+        const int32_t before = a.econ.credits;
+        uint32_t now = 0;
+        bool sawDemo = false;
+        // Deux fois le délai, plus de quoi jouer plusieurs tours.
+        const uint32_t limit = core::demoDelayMs(a) * 2 + 40000;
+        for (uint32_t t = 0; t < limit; t += core::kFrameMs) {
+            now = t;
+            core::tickApp(a, now, core::xorShift32);
+            while (core::takeCue(a.game) != core::Cue::None) {}
+            while (core::takeVideoCue(a.video) != core::Cue::None) {}
+            while (core::takeBjCue(a.bj) != core::Cue::None) {}
+            while (core::takeVpCue(a.poker) != core::Cue::None) {}
+            while (core::takeRltCue(a.roulette) != core::Cue::None) {}
+            if (core::appInDemo(a)) sawDemo = true;
+        }
+        TEST_ASSERT_TRUE_MESSAGE(sawDemo, "la demo ne s'est pas declenchee");
+        core::pullEconomy(a);
+        TEST_ASSERT_EQUAL_INT32_MESSAGE(before, a.econ.credits,
+                                        "la demo a touche aux jetons");
+    }
+}
+
+static void test_demo_can_be_switched_off() {
+    App a = started(140);
+    a.bets.demoOn = 0;
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);  // slots
+    for (uint32_t t = 0; t < 120000; t += core::kFrameMs) {
+        core::tickApp(a, t, core::xorShift32);
+        TEST_ASSERT_FALSE_MESSAGE(core::appInDemo(a),
+                                  "la demo est partie alors qu'elle est coupee");
+    }
+}
+
+static void test_demo_delay_follows_the_setting() {
+    // Le délai réglé doit être respecté : ni plus tôt, ni jamais.
+    App a = started(141);
+    a.bets.demoDelay = 0;  // 10 s
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL_UINT32(10000, core::demoDelayMs(a));
+
+    uint32_t t = 0;
+    for (; t < 9000; t += core::kFrameMs) {
+        core::tickApp(a, t, core::xorShift32);
+        TEST_ASSERT_FALSE_MESSAGE(core::appInDemo(a), "demo partie trop tot");
+    }
+    bool started_ = false;
+    for (; t < 30000 && !started_; t += core::kFrameMs) {
+        core::tickApp(a, t, core::xorShift32);
+        started_ = core::appInDemo(a);
+    }
+    TEST_ASSERT_TRUE_MESSAGE(started_, "demo jamais partie apres le delai");
+
+    // Un geste reprend la main. Le tour de démo EN COURS finit sa course
+    // en gris — c'est le comportement voulu, hérité des machines à sous :
+    // couper net un rouleau en pleine rotation serait plus déroutant que
+    // de le laisser se poser. Ce qui compte, c'est qu'aucun nouveau tour
+    // ne parte et qu'on revienne en couleurs.
+    core::handleKey(a, AppKey::Left, t, core::xorShift32);
+    bool backToColour = false;
+    for (uint32_t u = t; u < t + 8000; u += core::kFrameMs) {
+        core::tickApp(a, u, core::xorShift32);
+        if (!core::appInDemo(a)) { backToColour = true; break; }
+    }
+    TEST_ASSERT_TRUE_MESSAGE(backToColour, "la demo ne s'est jamais arretee");
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_lobby_offers_three_playable_games);
@@ -415,6 +492,9 @@ int main() {
     RUN_TEST(test_poker_hand_runs_deal_hold_draw);
     RUN_TEST(test_poker_cursor_wraps_over_the_draw_slot);
     RUN_TEST(test_every_lobby_entry_opens_its_game);
+    RUN_TEST(test_demo_runs_free_and_silent_in_every_game);
+    RUN_TEST(test_demo_can_be_switched_off);
+    RUN_TEST(test_demo_delay_follows_the_setting);
     RUN_TEST(test_roulette_spin_charges_and_settles);
     RUN_TEST(test_roulette_long_session_never_deadlocks);
     RUN_TEST(test_blackjack_deal_is_progressive_then_playable);

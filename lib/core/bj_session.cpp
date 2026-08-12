@@ -3,6 +3,7 @@
 namespace core {
 
 void pushBjCue(BjSession& s, Cue c) {
+    if (s.attract) return;  // la démo n'impose rien à la pièce
     const uint8_t next = static_cast<uint8_t>((s.cueTail + 1) % 6);
     if (next == s.cueHead) return;
     s.cueQueue[s.cueTail] = c;
@@ -32,18 +33,23 @@ BjSession newBjSession(uint32_t now) {
     return s;
 }
 
-bool bjStartHand(BjSession& s, uint32_t now, RngFn rng) {
+bool bjStartHand(BjSession& s, uint32_t now, RngFn rng, bool byPlayer) {
     if (s.bj.phase == BjPhase::PlayerTurn || s.bj.phase == BjPhase::DealerTurn) {
         return false;
     }
+    // La démo joue gratuitement : on restaure le solde après la donne, et
+    // le règlement fera de même. Le tirage, lui, est bien réel.
+    const int32_t before = s.econ.credits;
     if (!bjDeal(s.bj, s.econ, rng)) return false;
+    s.attract = !byPlayer;
+    if (s.attract) s.econ.credits = before;
     s.phaseT0 = now;
     s.lastStepMs = now;
     s.lastInputMs = now;
     s.revealed = 0;     // les quatre cartes apparaissent une à une
     s.choice = BjChoice::Hit;
     ++s.hands;
-    pushBjCue(s, Cue::SpinStart);
+    if (byPlayer) pushBjCue(s, Cue::SpinStart);
     return true;
 }
 
@@ -64,6 +70,7 @@ void bjMoveChoice(BjSession& s, int8_t delta, uint32_t now) {
 
 void bjConfirm(BjSession& s, uint32_t now, RngFn rng) {
     s.lastInputMs = now;
+    const int32_t creditsBefore = s.econ.credits;
     if (s.bj.phase != BjPhase::PlayerTurn) return;
     if (s.revealed < 4) return;  // pas d'action avant la fin de la donne
 
@@ -82,6 +89,7 @@ void bjConfirm(BjSession& s, uint32_t now, RngFn rng) {
             pushBjCue(s, Cue::ReelStop3);
             break;
     }
+    if (s.attract) s.econ.credits = creditsBefore;
     s.phaseT0 = now;
     s.lastStepMs = now;
     if (!bjCanDouble(s.bj, s.econ) && s.choice == BjChoice::Double) {
@@ -120,7 +128,9 @@ void bjUpdate(BjSession& s, uint32_t now, RngFn rng) {
         if (now - s.lastStepMs >= kBjDealerStepMs) {
             s.lastStepMs = now;
             if (!bjDealerStep(s.bj, rng)) {
+                const int32_t before = s.econ.credits;
                 bjSettle(s.bj, s.econ);
+                if (s.attract) s.econ.credits = before;
                 pushBjCue(s, outcomeCue(s.bj.outcome));
                 s.phaseT0 = now;
             } else {

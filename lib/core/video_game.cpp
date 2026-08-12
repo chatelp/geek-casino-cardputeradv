@@ -159,7 +159,7 @@ uint8_t updateVideoGame(VideoGame& g, uint32_t now, RngFn rng) {
             }
             break;
         case Phase::Idle:
-            if (now - g.lastInputMs >= kAttractDelayMs &&
+            if (g.demoArmed &&
                 (g.lastAttractMs == 0 || now - g.lastAttractMs >= kAttractIntervalMs)) {
                 startVideoSpin(g, now, rng, /*byPlayer=*/false);
             }

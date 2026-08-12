@@ -13,6 +13,12 @@ namespace P = pal;
 
 namespace {
 
+// Mode démo : tout passe en gris clair, comme aux machines à sous. Le
+// monochrome EST le message — inutile d'un bandeau clignotant.
+bool g_demo = false;
+uint16_t A(uint16_t accent) { return g_demo ? kGrayLight : accent; }
+uint16_t D(uint16_t dim) { return g_demo ? kGrayMid : dim; }
+
 bool blink(uint32_t now, uint32_t periodMs) {
     return ((now / (periodMs / 2)) & 1u) != 0;
 }
@@ -36,18 +42,20 @@ uint16_t suitColor(uint8_t suit) {
 
 }  // namespace
 
-void drawCard(lgfx::LGFX_Sprite& g, core::Card c, int x, int y, bool faceDown) {
+void drawCard(lgfx::LGFX_Sprite& g, core::Card c, int x, int y, bool faceDown,
+              bool demo) {
     if (faceDown) {
         // Le dos est ce qu'on voit le plus souvent : c'est lui qui porte
         // l'identité. Circuit à vias, invader en médaillon — dessiné dans
         // le design system, pas bricolé ici.
-        drawCardBack(g, x, y, 2);
+        if (demo) drawCardBackGray(g, x, y, 2);
+        else drawCardBack(g, x, y, 2);
         return;
     }
 
-    g.fillRect(x, y, kCardW, kCardH, P::steel300);
-    drawFrame(g, x, y, kCardW, kCardH, P::white, 1);
-    const uint16_t col = suitColor(c.suit);
+    g.fillRect(x, y, kCardW, kCardH, demo ? kGrayMid : P::steel300);
+    drawFrame(g, x, y, kCardW, kCardH, demo ? kGrayLight : P::white, 1);
+    const uint16_t col = demo ? P::ink900 : suitColor(c.suit);
 
     const char* lbl = rankLabel(c.rank);
     if (lbl) drawText(g, lbl, x + 3, y + 3, col, 2);
@@ -55,7 +63,8 @@ void drawCard(lgfx::LGFX_Sprite& g, core::Card c, int x, int y, bool faceDown) {
 
     // L'enseigne occupe le bas de la carte : le rang se lit en haut, comme
     // sur une vraie carte tenue en éventail.
-    blitSuit(g, c.suit, x + kCardW - 11, y + kCardH - 11);
+    blitSuit(g, c.suit, x + kCardW - 11, y + kCardH - 11, 1,
+             demo ? P::ink900 : 0);
 }
 
 namespace {
@@ -66,7 +75,7 @@ void drawHand(lgfx::LGFX_Sprite& g, const core::Hand& h, uint8_t visible, int y,
     const int w = visible > 0 ? (visible - 1) * step + kCardW : 0;
     const int x0 = (kScreenW - 40 - w) / 2 + 10;
     for (uint8_t i = 0; i < visible && i < h.n; ++i) {
-        drawCard(g, h.c[i], x0 + i * step, y, hideSecond && i == 1);
+        drawCard(g, h.c[i], x0 + i * step, y, hideSecond && i == 1, g_demo);
     }
 }
 
@@ -243,13 +252,14 @@ void drawSilkscreen(lgfx::LGFX_Sprite& g) {
 }  // namespace
 
 void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) {
+    g_demo = s.attract;
     g.fillScreen(P::ink900);
     drawTable(g);
     drawSilkscreen(g);
 
     // HUD en surimpression, comme partout ailleurs maintenant.
     drawIcon(g, ICON_COIN, 3, 3);
-    drawNumber(g, s.econ.credits, 19, 3, P::yellow, 2);
+    drawNumber(g, s.econ.credits, 19, 3, A(P::yellow), 2);
     // Entre deux mains on montre la mise réglable ; pendant la main, la
     // mise engagée (doublée le cas échéant, en magenta).
     const bool between = s.bj.phase != core::BjPhase::PlayerTurn &&
@@ -257,7 +267,7 @@ void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) 
     const int32_t shown = between ? core::bet(s.econ) : s.bj.stake;
     const int bw = numberWidth(shown, 2);
     drawNumber(g, shown, kScreenW - 8, 3,
-               s.bj.doubled && !between ? P::magenta : P::cyan, 2, Align::Right);
+               A(s.bj.doubled && !between ? P::magenta : P::cyan), 2, Align::Right);
     drawText(g, "BET", kScreenW - 14 - bw, 3, P::steel300, 2, Align::Right);
     drawBetArrows(g, kScreenW - 14 - bw - 10, kScreenW - 6, 4, P::steel500,
                   between && s.econ.betIndex > 0,
@@ -282,13 +292,16 @@ void drawBjScreen(lgfx::LGFX_Sprite& g, const core::BjSession& s, uint32_t now) 
         const uint16_t c = outcomeColor(s.bj.outcome);
         const bool big = s.bj.outcome == core::BjOutcome::PlayerBlackjack;
         if (!big || blink(now, 320)) {
-            drawText(g, t, kScreenW / 2, kActionsY + 4, c, 2, Align::Center);
+            drawText(g, t, kScreenW / 2, kActionsY + 4, A(c), 2, Align::Center);
         }
         if (s.bj.payout > 0) {
             drawText(g, "+", 8, kActionsY + 4, P::yellow, 2);
             drawNumber(g, static_cast<int32_t>(s.bj.payout), 20, kActionsY + 4,
                        P::yellow, 2);
         }
+    } else if (g_demo) {
+        drawText(g, "DEMO", kScreenW / 2, kActionsY + 4, kGrayLight, 2,
+                 Align::Center);
     } else {
         drawText(g, "PRESS SPACE TO DEAL", kScreenW / 2, kActionsY + 4, P::cyan, 2,
                  Align::Center);

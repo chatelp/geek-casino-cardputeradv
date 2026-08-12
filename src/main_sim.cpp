@@ -298,6 +298,22 @@ int runCapture() {
         app.screen = core::AppScreen::RouletteHelp;
         ui::drawApp(canvas, app, rt);
         if (!saveShot(canvas, "roulette_help.bmp")) return 1;
+        // Les nouveaux jeux en mode démo : gris, gratuits, muets.
+        app.screen = core::AppScreen::Roulette;
+        app.roulette.attract = true;
+        ui::drawApp(canvas, app, rt);
+        if (!saveShot(canvas, "demo_roulette.bmp")) return 1;
+        app.roulette.attract = false;
+        app.screen = core::AppScreen::Blackjack;
+        app.bj.attract = true;
+        ui::drawApp(canvas, app, bt);
+        if (!saveShot(canvas, "demo_bj.bmp")) return 1;
+        app.bj.attract = false;
+        app.screen = core::AppScreen::Poker;
+        app.poker.attract = true;
+        ui::drawApp(canvas, app, pt);
+        if (!saveShot(canvas, "demo_poker.bmp")) return 1;
+        app.poker.attract = false;
         app.screen = core::AppScreen::Roulette;
 
         // Le mode démo : monochrome gris, un tour gratuit en cours.

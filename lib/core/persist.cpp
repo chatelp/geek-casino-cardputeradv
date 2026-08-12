@@ -57,6 +57,8 @@ uint8_t betsChecksum(const BetMemory& b) {
             h = static_cast<uint8_t>(h * 31 + b.bet[p][g]);
         }
     }
+    h = static_cast<uint8_t>(h * 31 + b.demoOn);
+    h = static_cast<uint8_t>(h * 31 + b.demoDelay);
     return h;
 }
 }  // namespace
@@ -67,6 +69,8 @@ BetMemory freshBets() {
     for (uint8_t p = 0; p < kMaxPlayers; ++p) {
         for (uint8_t g = 0; g < kBetGames; ++g) b.bet[p][g] = kDefaultBetIndex;
     }
+    b.demoOn = 1;
+    b.demoDelay = kDefaultDemoDelay;
     b.sum = betsChecksum(b);
     return b;
 }
@@ -79,6 +83,8 @@ BetMemory makeBets(const BetMemory& src) {
             if (b.bet[p][g] >= kBetSteps) b.bet[p][g] = kDefaultBetIndex;
         }
     }
+    if (b.demoOn > 1) b.demoOn = 1;
+    if (b.demoDelay >= kDemoDelaySteps) b.demoDelay = kDefaultDemoDelay;
     b.sum = betsChecksum(b);
     return b;
 }
@@ -90,6 +96,7 @@ bool betsValid(const BetMemory& b) {
             if (b.bet[p][g] >= kBetSteps) return false;
         }
     }
+    if (b.demoOn > 1 || b.demoDelay >= kDemoDelaySteps) return false;
     return b.sum == betsChecksum(b);
 }
 

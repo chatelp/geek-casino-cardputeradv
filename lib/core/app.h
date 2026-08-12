@@ -82,7 +82,13 @@ struct App {
     // garder chacun une copie qui divergerait.
     Economy econ;
     // Mise par joueur et par jeu, persistée à côté du classement.
+    // Porte aussi les préférences de démo (activation et délai).
     BetMemory bets;
+    // Dernier geste du joueur, tous écrans confondus. C'est LUI qui arme
+    // le mode démo, pas une horloge par jeu — sinon quatre compteurs
+    // divergeraient.
+    uint32_t lastInputMs = 0;
+    uint32_t lastDemoMs = 0;
     bool resetArmed = false;    // le reset demande une seconde pression
     bool quitRequested = false; // Échap depuis l'accueil (sim uniquement)
     bool dirty = false;         // une sauvegarde est due
@@ -105,9 +111,16 @@ void nameBackspace(App& a);
 void tickApp(App& a, uint32_t now, RngFn rng);
 
 // Nombre de lignes des menus (pour l'affichage et la navigation).
-constexpr uint8_t kGlobalSettingsRows = 4;  // SOUND, VOLUME, PLAYER, RESET
+
 constexpr uint8_t kSlotSettingsRows = 1;    // GLYPHS
 constexpr uint8_t kBjSettingsRows = 1;      // HINTS
+// SON, VOLUME, DÉMO, DÉLAI, JOUEUR, RESET
+constexpr uint8_t kGlobalSettingsRows = 6;
+
+// Le jeu à l'écran est-il en train de se jouer tout seul ?
+bool appInDemo(const App& a);
+// Délai d'armement en millisecondes, d'après les réglages.
+uint32_t demoDelayMs(const App& a);
 
 // Nombre de pages de chaque aide.
 uint8_t helpPageCount(AppScreen help);

@@ -15,11 +15,18 @@ namespace P = pal;
 
 namespace {
 
+// Mode démo : tout passe en gris clair, comme aux machines à sous. Le
+// monochrome EST le message — inutile d'un bandeau clignotant.
+bool g_demo = false;
+uint16_t A(uint16_t accent) { return g_demo ? kGrayLight : accent; }
+uint16_t D(uint16_t dim) { return g_demo ? kGrayMid : dim; }
+
 bool blink(uint32_t now, uint32_t periodMs) {
     return ((now / (periodMs / 2)) & 1u) != 0;
 }
 
 uint16_t pocketColour(uint8_t n) {
+    if (g_demo) return n == 0 ? kGrayMid : (core::isRed(n) ? kGrayLight : P::ink700);
     if (n == 0) return P::greenDk;
     return core::isRed(n) ? P::magentaDk : P::ink700;
 }
@@ -58,7 +65,7 @@ void drawWheel(lgfx::LGFX_Sprite& g, const core::RouletteSession& s, uint32_t no
 
     // Repère de lecture : deux chevrons pointant la case centrale.
     const int cx = kScreenW / 2;
-    const uint16_t mark = s.phase == core::RltPhase::Spinning ? P::yellow : P::cyan;
+    const uint16_t mark = A(s.phase == core::RltPhase::Spinning ? P::yellow : P::cyan);
     for (int k = 0; k < 5; ++k) {
         g.fillRect(cx - 4 + k, kStripY - 6 + k, 9 - 2 * k, 1, mark);
         g.fillRect(cx - 4 + k, kStripY + kStripH + 5 - k, 9 - 2 * k, 1, mark);
@@ -78,11 +85,11 @@ void drawEncoder(lgfx::LGFX_Sprite& g) {
 
 void drawHud(lgfx::LGFX_Sprite& g, const core::RouletteSession& s) {
     drawIcon(g, ICON_COIN, 3, 3);
-    drawNumber(g, s.econ.credits, 19, 3, P::yellow, 2);
+    drawNumber(g, s.econ.credits, 19, 3, A(P::yellow), 2);
     const bool idle = s.phase != core::RltPhase::Spinning;
     const int32_t shown = idle ? core::bet(s.econ) : s.stake;
     const int bw = numberWidth(shown, 2);
-    drawNumber(g, shown, kScreenW - 8, 3, P::cyan, 2, Align::Right);
+    drawNumber(g, shown, kScreenW - 8, 3, A(P::cyan), 2, Align::Right);
     drawText(g, "BET", kScreenW - 14 - bw, 3, P::steel300, 2, Align::Right);
     drawBetArrows(g, kScreenW - 14 - bw - 10, kScreenW - 6, 4, P::steel500,
                   idle && s.econ.betIndex > 0,
@@ -94,15 +101,15 @@ void drawHud(lgfx::LGFX_Sprite& g, const core::RouletteSession& s) {
 // clavier ne rend pas agréable.
 void drawBetPanel(lgfx::LGFX_Sprite& g, const core::RouletteSession& s) {
     const bool straight = s.kind == core::BetKind::Straight;
-    const uint16_t col = s.kind == core::BetKind::Red ? P::magenta
-                       : (s.kind == core::BetKind::Black ? P::steel300 : P::cyan);
+    const uint16_t col = A(s.kind == core::BetKind::Red ? P::magenta
+                       : (s.kind == core::BetKind::Black ? P::steel300 : P::cyan));
 
     g.fillRect(6, kBetY, kScreenW - 12, kBetH, P::ink800);
     drawFrame(g, 6, kBetY, kScreenW - 12, kBetH, P::ink600, 1);
     drawText(g, "BET ON", 12, kBetY + 3, P::steel500, 1);
     drawText(g, "PAYS", kScreenW - 12, kBetY + 3, P::steel500, 1, Align::Right);
     drawNumber(g, core::roulettePayout(s.kind), kScreenW - 12, kBetY + 12,
-               P::yellow, 2, Align::Right);
+               A(P::yellow), 2, Align::Right);
 
     if (straight) {
         drawNumber(g, s.straight, 12, kBetY + 12, P::white, 2);
@@ -111,8 +118,8 @@ void drawBetPanel(lgfx::LGFX_Sprite& g, const core::RouletteSession& s) {
         g.fillRect(nx, kBetY + 12, 12, 12, pocketColour(s.straight));
         // Chevrons DESSINÉS : la fonte n'a pas de « ^ », l'écrire donnait
         // un blanc et le repère disparaissait.
-        drawChevronV(g, nx + 20, kBetY + 13, false, P::cyan);
-        drawChevronV(g, nx + 20, kBetY + 18, true, P::cyan);
+        drawChevronV(g, nx + 20, kBetY + 13, false, A(P::cyan));
+        drawChevronV(g, nx + 20, kBetY + 18, true, A(P::cyan));
         drawText(g, "PICK", nx + 28, kBetY + 15, P::steel500, 1);
     } else {
         drawText(g, core::betName(s.kind), 12, kBetY + 12, col, 2);
@@ -120,6 +127,10 @@ void drawBetPanel(lgfx::LGFX_Sprite& g, const core::RouletteSession& s) {
 }
 
 void drawMessage(lgfx::LGFX_Sprite& g, const core::RouletteSession& s, uint32_t now) {
+    if (g_demo) {
+        drawText(g, "DEMO", kScreenW / 2, kMsgY, kGrayLight, 2, Align::Center);
+        return;
+    }
     switch (s.phase) {
         case core::RltPhase::Idle:
             drawText(g, "</> BET   SPACE TO SPIN", kScreenW / 2, kMsgY + 2,
@@ -157,6 +168,7 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::RouletteSession& s, uint32_t 
 
 void drawRouletteScreen(lgfx::LGFX_Sprite& g, const core::RouletteSession& s,
                         uint32_t now) {
+    g_demo = s.attract;
     g.fillScreen(P::ink900);
     drawHud(g, s);
     drawWheel(g, s, now);

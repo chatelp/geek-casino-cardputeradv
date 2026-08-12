@@ -22,7 +22,8 @@ multi-joueurs avec classement persistant en NVS.
 - [x] Aléa injecté, testé, sans biais de modulo
 - [x] Design system : palette, fonte 5×7, 8 glyphes, écrans
 - [x] Bandes de rouleaux, table de gains, économie — **RTP exact 95,24 %**
-- [x] Animation des rouleaux, machine à états, mode démo (gratuit)
+- [x] Animation des rouleaux, machine à états
+- [x] Mode démo dans les cinq jeux — gratuit, muet, gris, réglable
 - [x] Son 800–2600 Hz (contrainte testée), geste IMU, NVS signée
 - [x] Accueil, aide (H), réglages globaux et par jeu (S), classement (L)
 - [x] Deux habillages de rouleaux : geek et classique — mêmes gains

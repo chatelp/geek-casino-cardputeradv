@@ -133,20 +133,30 @@ static void test_attract_spins_are_free() {
     TEST_ASSERT_EQUAL_INT32(before, g.machine.econ.credits);
 }
 
-static void test_attract_mode_takes_over_when_left_alone() {
+static void test_attract_only_runs_when_the_app_arms_it() {
+    // Le délai n'appartient plus au jeu : il est commun à tout l'objet et
+    // réglable, donc c'est l'app qui arme. Un jeu non armé ne part JAMAIS
+    // tout seul, quel que soit le temps écoulé.
     core::seedXorShift(7);
     uint32_t now = 0;
     core::Game g = core::newGame(now, core::xorShift32);
-    // Avant le délai, rien ne bouge.
-    now += core::kAttractDelayMs - core::kFrameMs;
-    core::updateGame(g, now, core::xorShift32);
-    TEST_ASSERT_EQUAL(core::Phase::Idle, g.phase);
+    for (int i = 0; i < 2000; ++i) {
+        now += core::kFrameMs;
+        core::updateGame(g, now, core::xorShift32);
+    }
+    TEST_ASSERT_EQUAL_MESSAGE(core::Phase::Idle, g.phase,
+                              "la demo est partie sans etre armee");
     TEST_ASSERT_FALSE(g.attract);
-    // Après, la machine joue seule.
-    now += core::kFrameMs * 2;
+
+    // Une fois armé, le tour part et il est gratuit.
+    const int32_t before = g.machine.econ.credits;
+    g.demoArmed = true;
+    now += core::kFrameMs;
     core::updateGame(g, now, core::xorShift32);
     TEST_ASSERT_EQUAL(core::Phase::Spinning, g.phase);
     TEST_ASSERT_TRUE(g.attract);
+    TEST_ASSERT_EQUAL_INT32_MESSAGE(before, g.machine.econ.credits,
+                                    "la demo a coute des jetons");
 }
 
 static void test_win_countup_lands_exactly_and_never_overshoots() {
@@ -217,7 +227,7 @@ int main() {
     RUN_TEST(test_tiers_follow_the_paytable);
     RUN_TEST(test_game_returns_to_idle_and_shows_the_outcome);
     RUN_TEST(test_attract_spins_are_free);
-    RUN_TEST(test_attract_mode_takes_over_when_left_alone);
+    RUN_TEST(test_attract_only_runs_when_the_app_arms_it);
     RUN_TEST(test_win_countup_lands_exactly_and_never_overshoots);
     RUN_TEST(test_celebration_lasts_long_enough_to_be_read);
     RUN_TEST(test_a_long_session_never_deadlocks);

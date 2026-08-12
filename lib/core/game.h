@@ -57,6 +57,9 @@ struct Game {
     uint32_t phaseT0 = 0;
     uint32_t lastInputMs = 0;
     bool attract = false;         // le tour courant est joué par la machine
+    // Armé par l'app selon les réglages : le délai n'appartient plus au
+    // jeu, il est commun à tout l'objet et réglable.
+    bool demoArmed = false;
     uint8_t reelsStopped = 0;
     uint32_t lastAttractMs = 0;
     uint32_t spins = 0;           // compteur de session, persisté

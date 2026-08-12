@@ -135,7 +135,8 @@ void drawVia(lgfx::LGFX_Sprite& g, int x, int y, uint16_t ring, uint16_t hole) {
     g.fillRect(x + 1, y + 1, 1, 1, hole);
 }
 
-void drawCardBack(lgfx::LGFX_Sprite& g, int x, int y, int scale) {
+namespace {
+void blitCardBack(lgfx::LGFX_Sprite& g, int x, int y, int scale, const uint16_t* pal) {
     for (int ry = 0; ry < kCardBackH; ++ry) {
         int c = 0;
         while (c < kCardBackW) {
@@ -144,11 +145,19 @@ void drawCardBack(lgfx::LGFX_Sprite& g, int x, int y, int scale) {
             int run = 1;
             while (c + run < kCardBackW &&
                    kCardBack[ry * kCardBackW + c + run] == idx) ++run;
-            g.fillRect(x + c * scale, y + ry * scale, run * scale, scale,
-                       kSymbolPalette[idx]);
+            g.fillRect(x + c * scale, y + ry * scale, run * scale, scale, pal[idx]);
             c += run;
         }
     }
+}
+}  // namespace
+
+void drawCardBackGray(lgfx::LGFX_Sprite& g, int x, int y, int scale) {
+    blitCardBack(g, x, y, scale, kSymbolPaletteGray);
+}
+
+void drawCardBack(lgfx::LGFX_Sprite& g, int x, int y, int scale) {
+    blitCardBack(g, x, y, scale, kSymbolPalette);
 }
 
 void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale,

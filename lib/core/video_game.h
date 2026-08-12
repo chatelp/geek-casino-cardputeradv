@@ -26,6 +26,7 @@ struct VideoGame {
     uint32_t lastInputMs = 0;
     uint32_t lastAttractMs = 0;
     bool attract = false;
+    bool demoArmed = false;
     uint8_t reelsStopped = 0;
     uint32_t spins = 0;
 

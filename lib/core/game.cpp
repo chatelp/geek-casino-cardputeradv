@@ -153,9 +153,10 @@ uint8_t updateGame(Game& g, uint32_t now, RngFn rng) {
             }
             break;
         case Phase::Idle:
-            // Deux conditions : le joueur est parti ET la démo a laissé
-            // passer un moment depuis son tour précédent.
-            if (now - g.lastInputMs >= kAttractDelayMs &&
+            // Deux conditions : le joueur est parti (c'est l'app qui le
+            // décide, via lastInputMs) ET la démo a laissé passer un
+            // moment depuis son tour précédent.
+            if (g.demoArmed &&
                 (g.lastAttractMs == 0 || now - g.lastAttractMs >= kAttractIntervalMs)) {
                 startSpin(g, now, rng, /*byPlayer=*/false);
             }

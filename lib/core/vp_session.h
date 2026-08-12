@@ -38,6 +38,7 @@ struct VpSession {
     uint32_t payout = 0;
     bool bailedOut = false;
     bool maxBet = false;      // la royale paie 800 au lieu de 250
+    bool attract = false;     // tour de démo : gratuit, muet, gris
     uint32_t hands = 0;
 
     Economy econ;
@@ -52,7 +53,7 @@ struct VpSession {
 
 VpSession newVpSession(uint32_t now);
 
-bool vpDeal(VpSession& s, uint32_t now, RngFn rng);
+bool vpDeal(VpSession& s, uint32_t now, RngFn rng, bool byPlayer = true);
 void vpMoveCursor(VpSession& s, int8_t delta);
 // Enter : garde/relâche la carte sous le curseur, ou lance l'échange si le
 // curseur est sur DRAW.

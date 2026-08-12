@@ -53,6 +53,7 @@ void drawVia(lgfx::LGFX_Sprite& g, int x, int y, uint16_t ring, uint16_t hole);
 
 // Dos de carte 14x20, mis à l'échelle.
 void drawCardBack(lgfx::LGFX_Sprite& g, int x, int y, int scale = 2);
+void drawCardBackGray(lgfx::LGFX_Sprite& g, int x, int y, int scale = 2);
 
 // Enseigne de carte 8x8 (blackjack).
 void blitSuit(lgfx::LGFX_Sprite& g, uint8_t suit, int x, int y, int scale = 1,

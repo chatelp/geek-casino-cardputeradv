@@ -2,6 +2,41 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-028 — 2026-08-11 — Mode démo dans les cinq jeux, et réglable
+
+Demande de Pierre : même déclenchement et mêmes couleurs que les slots,
+plus deux réglages.
+
+**Changement d'architecture** : le délai n'appartient plus à chaque jeu,
+il est **commun à l'objet**. Un seul compteur d'inactivité dans `App`
+arme tous les jeux ; auparavant chaque jeu tenait le sien, et quatre
+compteurs auraient divergé. `Game` et `VideoGame` reçoivent un drapeau
+`demoArmed` au lieu de décider seuls.
+
+- **Blackjack, video poker et roulette** ont leur démo, avec une
+  stratégie volontairement simple : la démo *montre* le jeu, elle ne
+  cherche pas à bien jouer. Le poker garde les rangs appariés, le
+  blackjack tire sous 17, la roulette change de pari à chaque tour pour
+  montrer l'éventail.
+- **Gratuite et muette** partout : aucun jeton ne bouge, aucune file de
+  son ne se remplit. Vérifié par un test qui parcourt **les cinq jeux**.
+- **Gris** partout, cartes comprises — une carte en couleurs au milieu
+  d'un écran gris casserait le message.
+- **Deux réglages** : DEMO MODE (on/off) et DEMO AFTER (10 / 20 / 30 /
+  60 / 120 / 300 s). Le délai est grisé quand la démo est coupée : un
+  réglage sans effet doit se voir comme tel.
+
+**Persistance sans casse, encore** : les deux réglages auraient grossi
+`Settings`, donc `SaveData`, donc invalidé le classement. Ils rejoignent
+le bloc annexe déjà séparé — celui des mises — qui devient le bloc des
+préférences.
+
+Nuance conservée volontairement : un tour de démo **en cours** finit sa
+course en gris quand le joueur reprend la main. Couper net un rouleau en
+pleine rotation serait plus déroutant que de le laisser se poser. Mon
+premier test l'exigeait trop strictement ; c'est l'assertion que j'ai
+corrigée, pas le comportement.
+
 ## D-027 — 2026-08-11 — Roulette européenne
 
 Cinquième jeu. Un seul zéro, 37 cases.

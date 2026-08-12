@@ -439,34 +439,64 @@ void drawGlobalSettings(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
     drawHeader(g, "SETTINGS", P::yellow);
 
-    const int y0 = 28, dy = 22;
-    drawRow(g, y0 + 0 * dy, app.menuIndex == 0, "SOUND");
-    drawText(g, app.settings.muted ? "OFF" : "ON", kScreenW - 16, y0 + 3,
-             app.settings.muted ? P::red : P::green, 2, Align::Right);
+    const int rowH = 15;
+    for (int i = 0; i < core::kGlobalSettingsRows; ++i) {
+        const int y = 27 + i * rowH;
+        const bool sel = app.menuIndex == i;
+        if (sel) {
+            g.fillRect(6, y, kScreenW - 12, rowH - 2, P::ink700);
+            drawFrame(g, 6, y, kScreenW - 12, rowH - 2, P::cyan, 1);
+        }
+        static const char* kLabels[core::kGlobalSettingsRows] = {
+            "SOUND", "VOLUME", "DEMO MODE", "DEMO AFTER", "PLAYER", "RESET BOARD",
+        };
+        drawText(g, kLabels[i], 12, y + 3, sel ? P::white : P::steel300, 1);
 
-    drawRow(g, y0 + 1 * dy, app.menuIndex == 1, "VOLUME");
-    for (int i = 0; i < 3; ++i) {  // trois barres de niveau
-        const bool on = app.settings.volume > i;
-        g.fillRect(kScreenW - 52 + i * 13, y0 + dy + 4 + (2 - i) * 4, 9,
-                   4 + i * 4, on ? P::cyan : P::ink600);
+        switch (i) {
+            case 0:
+                drawText(g, app.settings.muted ? "OFF" : "ON", kScreenW - 12, y + 3,
+                         app.settings.muted ? P::steel500 : P::green, 1, Align::Right);
+                break;
+            case 1: {
+                // Quatre barres : le volume se lit sans chiffre.
+                for (int k = 0; k < 3; ++k) {
+                    const int bx = kScreenW - 12 - (3 - k) * 8;
+                    g.fillRect(bx, y + 2, 5, 8,
+                               k < app.settings.volume ? P::yellow : P::ink600);
+                }
+                break;
+            }
+            case 2:
+                drawText(g, app.bets.demoOn ? "ON" : "OFF", kScreenW - 12, y + 3,
+                         app.bets.demoOn ? P::green : P::steel500, 1, Align::Right);
+                break;
+            case 3: {
+                // Grisé quand la démo est coupée : un réglage sans effet
+                // doit se voir comme tel.
+                const uint16_t col = app.bets.demoOn ? P::cyan : P::ink600;
+                const uint8_t d = app.bets.demoDelay < core::kDemoDelaySteps
+                    ? app.bets.demoDelay : core::kDefaultDemoDelay;
+                drawNumber(g, core::kDemoDelays[d], kScreenW - 22, y + 3, col, 1,
+                           Align::Right);
+                drawText(g, "S", kScreenW - 12, y + 3, col, 1, Align::Right);
+                break;
+            }
+            case 4: {
+                const core::Player* p = app.roster.count
+                    ? &app.roster.players[app.roster.current] : nullptr;
+                drawText(g, p ? p->name : "-", kScreenW - 12, y + 3, P::cyan, 1,
+                         Align::Right);
+                break;
+            }
+            case 5:
+                drawText(g, app.resetArmed ? "PRESS AGAIN" : "ENTER",
+                         kScreenW - 12, y + 3,
+                         app.resetArmed ? P::red : P::steel500, 1, Align::Right);
+                break;
+            default: break;
+        }
     }
-
-    drawRow(g, y0 + 2 * dy, app.menuIndex == 2, "PLAYER");
-    {
-        const core::Player* p = app.roster.count
-            ? &app.roster.players[app.roster.current] : nullptr;
-        drawText(g, p ? p->name : "-", kScreenW - 16, y0 + 2 * dy + 3, P::cyan, 2,
-                 Align::Right);
-    }
-
-    drawRow(g, y0 + 3 * dy, app.menuIndex == 3, "RESET BOARD");
-    if (app.resetArmed) {
-        drawText(g, "SURE?", kScreenW - 16, y0 + 3 * dy + 3, P::red, 2, Align::Right);
-    }
-
-    drawHint(g, app.menuIndex == 2 ? "</> SWITCH  ENTER NEW PLAYER"
-             : app.menuIndex == 3 ? "ENTER TWICE TO WIPE ALL"
-                                  : "</> CHANGE  S OR ESC BACK");
+    drawHint(g, "^v ROW   </> CHANGE   ESC BACK");
 }
 
 void drawBjSettings(lgfx::LGFX_Sprite& g, const core::App& app) {

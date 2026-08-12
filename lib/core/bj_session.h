@@ -23,6 +23,8 @@ struct BjSession {
     uint32_t lastInputMs = 0;
     uint8_t revealed = 0;      // cartes déjà montrées (distribution animée)
     bool hintsOn = false;      // réglage propre au jeu
+    // Tour joué par la machine : gratuit, muet, et rendu en gris.
+    bool attract = false;
     uint32_t hands = 0;
 
     Cue cueQueue[6] = {};
@@ -36,7 +38,7 @@ constexpr uint32_t kBjSettleMs = 2600;     // résultat affiché
 
 BjSession newBjSession(uint32_t now);
 
-bool bjStartHand(BjSession& s, uint32_t now, RngFn rng);
+bool bjStartHand(BjSession& s, uint32_t now, RngFn rng, bool byPlayer = true);
 void bjMoveChoice(BjSession& s, int8_t delta, uint32_t now);
 void bjConfirm(BjSession& s, uint32_t now, RngFn rng);
 void bjUpdate(BjSession& s, uint32_t now, RngFn rng);

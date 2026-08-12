@@ -32,6 +32,7 @@ struct RouletteSession {
     uint16_t stake = 0;
     uint32_t payout = 0;
     bool won = false;
+    bool attract = false;     // tour de démo : gratuit, muet, gris
     bool bailedOut = false;
     uint32_t phaseT0 = 0;
     uint32_t spins = 0;
@@ -44,7 +45,7 @@ RouletteSession newRouletteSession(uint32_t now, RngFn rng);
 
 void rltCycleBet(RouletteSession& s, int8_t delta);
 void rltCycleNumber(RouletteSession& s, int8_t delta);
-bool rltSpin(RouletteSession& s, uint32_t now, RngFn rng);
+bool rltSpin(RouletteSession& s, uint32_t now, RngFn rng, bool byPlayer = true);
 void rltUpdate(RouletteSession& s, uint32_t now);
 
 // Position fractionnaire sur la roue, pour l'affichage.

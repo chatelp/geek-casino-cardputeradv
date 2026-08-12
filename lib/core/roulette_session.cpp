@@ -3,6 +3,7 @@
 namespace core {
 
 void pushRltCue(RouletteSession& s, Cue c) {
+    if (s.attract) return;
     const uint8_t next = static_cast<uint8_t>((s.cueTail + 1) % 6);
     if (next == s.cueHead) return;
     s.cueQueue[s.cueTail] = c;
@@ -44,13 +45,14 @@ void rltCycleNumber(RouletteSession& s, int8_t delta) {
     pushRltCue(s, Cue::BetChange);
 }
 
-bool rltSpin(RouletteSession& s, uint32_t now, RngFn rng) {
+bool rltSpin(RouletteSession& s, uint32_t now, RngFn rng, bool byPlayer) {
     if (s.phase == RltPhase::Spinning) return false;
     clampBet(s.econ);
     if (!canSpin(s.econ)) return false;
 
+    s.attract = !byPlayer;
     s.stake = bet(s.econ);
-    placeBet(s.econ);
+    if (!s.attract) placeBet(s.econ);
 
     const uint8_t idx = static_cast<uint8_t>(drawBelow(rng, kPockets));
     s.winNumber = pocketAt(idx);
@@ -74,6 +76,12 @@ void rltUpdate(RouletteSession& s, uint32_t now) {
         case RltPhase::Spinning:
             if (!reelSettled(s.motion, now)) break;
             s.won = betWins(s.kind, s.straight, s.winNumber);
+            if (s.attract) {
+                s.payout = s.won ? roulettePayout(s.kind) * s.stake : 0;
+                s.phase = RltPhase::Result;
+                s.phaseT0 = now;
+                break;
+            }
             if (s.won) {
                 s.payout = static_cast<uint32_t>(roulettePayout(s.kind)) * s.stake;
                 award(s.econ, s.payout);

@@ -3,6 +3,7 @@
 namespace core {
 
 void pushVpCue(VpSession& s, Cue c) {
+    if (s.attract) return;
     const uint8_t next = static_cast<uint8_t>((s.cueTail + 1) % 6);
     if (next == s.cueHead) return;
     s.cueQueue[s.cueTail] = c;
@@ -26,14 +27,15 @@ VpSession newVpSession(uint32_t now) {
     return s;
 }
 
-bool vpDeal(VpSession& s, uint32_t now, RngFn rng) {
+bool vpDeal(VpSession& s, uint32_t now, RngFn rng, bool byPlayer) {
     if (s.phase == VpPhase::Holding) return false;
     clampBet(s.econ);
     if (!canSpin(s.econ)) return false;
 
+    s.attract = !byPlayer;
     s.stake = bet(s.econ);
     s.maxBet = vpIsMaxBet(s.econ);
-    placeBet(s.econ);
+    if (!s.attract) placeBet(s.econ);
 
     // Jeu neuf à chaque main : c'est ce dont dépendent les probabilités.
     shuffleDeck(s.deck, rng);
@@ -76,6 +78,7 @@ Cue cueForRank(PokerRank r) {
 void settle(VpSession& s, uint32_t now) {
     s.result = rankHand(s.hand);
     s.payout = static_cast<uint32_t>(pokerPayout(s.result, s.maxBet)) * s.stake;
+    if (s.attract) { s.phase = VpPhase::Result; s.phaseT0 = now; return; }
     award(s.econ, s.payout);
     if (needsBailout(s.econ)) {
         bailout(s.econ);

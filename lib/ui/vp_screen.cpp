@@ -16,6 +16,12 @@ namespace P = pal;
 
 namespace {
 
+// Mode démo : tout passe en gris clair, comme aux machines à sous. Le
+// monochrome EST le message — inutile d'un bandeau clignotant.
+bool g_demo = false;
+uint16_t A(uint16_t accent) { return g_demo ? kGrayLight : accent; }
+uint16_t D(uint16_t dim) { return g_demo ? kGrayMid : dim; }
+
 bool blink(uint32_t now, uint32_t periodMs) {
     return ((now / (periodMs / 2)) & 1u) != 0;
 }
@@ -46,7 +52,7 @@ void drawTable(lgfx::LGFX_Sprite& g) {
 
 void drawHud(lgfx::LGFX_Sprite& g, const core::VpSession& s) {
     drawIcon(g, ICON_COIN, 3, 3);
-    drawNumber(g, s.econ.credits, 19, 3, P::yellow, 2);
+    drawNumber(g, s.econ.credits, 19, 3, A(P::yellow), 2);
 
     const bool between = s.phase != core::VpPhase::Holding;
     const int32_t shown = between ? core::bet(s.econ) : s.stake;
@@ -54,7 +60,7 @@ void drawHud(lgfx::LGFX_Sprite& g, const core::VpSession& s) {
     // Mise maximale en magenta : c'est elle qui fait passer la royale de
     // 250 à 800, l'information doit sauter aux yeux.
     const bool maxi = between ? core::vpIsMaxBet(s.econ) : s.maxBet;
-    drawNumber(g, shown, kScreenW - 8, 3, maxi ? P::magenta : P::cyan, 2,
+    drawNumber(g, shown, kScreenW - 8, 3, A(maxi ? P::magenta : P::cyan), 2,
                Align::Right);
     drawText(g, "BET", kScreenW - 14 - bw, 3, P::steel300, 2, Align::Right);
     drawBetArrows(g, kScreenW - 14 - bw - 10, kScreenW - 6, 4, P::steel500,
@@ -71,14 +77,14 @@ void drawCards(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
             drawFrame(g, x, kCardsY, kCardW, kCardH, P::pcbEdge, 1);
             continue;
         }
-        drawCard(g, s.hand.c[i], x, kCardsY, false);
+        drawCard(g, s.hand.c[i], x, kCardsY, false, g_demo);
 
         if (s.held[i]) {
             // « HELD » sous la carte, plus un cadre : le joueur doit voir
             // d'un coup d'œil ce qu'il garde, sans compter.
-            drawFrame(g, x - 2, kCardsY - 2, kCardW + 4, kCardH + 4, P::yellow, 2);
+            drawFrame(g, x - 2, kCardsY - 2, kCardW + 4, kCardH + 4, A(P::yellow), 2);
             const int w = textWidth("HELD", 1) + 6;
-            g.fillRect(x + (kCardW - w) / 2, kHeldY, w, 9, P::yellow);
+            g.fillRect(x + (kCardW - w) / 2, kHeldY, w, 9, A(P::yellow));
             drawText(g, "HELD", x + kCardW / 2, kHeldY + 1, P::ink900, 1,
                      Align::Center);
         }
@@ -106,11 +112,18 @@ void drawActions(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
     if (onDraw && blink(now, 500)) {
         drawFrame(g, x - 3, kActionY - 3, w + 6, 24, P::cyan, 1);
     }
-    drawText(g, "</> PICK   ENTER HOLD/DRAW", kScreenW / 2, kMsgY + 6,
-             P::steel500, 1, Align::Center);
+    // Pas d'invite en démo : « DEMO » occupe déjà cette ligne.
+    if (!g_demo) {
+        drawText(g, "</> PICK   ENTER HOLD/DRAW", kScreenW / 2, kMsgY + 6,
+                 P::steel500, 1, Align::Center);
+    }
 }
 
 void drawResult(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
+    if (g_demo) {
+        drawText(g, "DEMO", kScreenW / 2, kMsgY + 4, kGrayLight, 2, Align::Center);
+        return;
+    }
     if (s.phase == core::VpPhase::Idle) {
         drawText(g, "PRESS SPACE TO DEAL", kScreenW / 2, kMsgY + 4, P::cyan, 2,
                  Align::Center);
@@ -143,6 +156,7 @@ void drawResult(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
 }  // namespace
 
 void drawVpScreen(lgfx::LGFX_Sprite& g, const core::VpSession& s, uint32_t now) {
+    g_demo = s.attract;
     g.fillScreen(P::ink900);
     drawTable(g);
     drawHud(g, s);

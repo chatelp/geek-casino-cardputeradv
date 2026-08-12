@@ -6,6 +6,23 @@ namespace core {
 // pas : chaque jeu garde la sienne, parce qu'elles n'ont pas la même
 // portée (au format vidéo, une mise de 5 engage 25). Passer d'un jeu à
 // l'autre ne doit pas changer l'enjeu à l'insu du joueur.
+uint32_t demoDelayMs(const App& a) {
+    const uint8_t i = a.bets.demoDelay < kDemoDelaySteps ? a.bets.demoDelay
+                                                         : kDefaultDemoDelay;
+    return static_cast<uint32_t>(kDemoDelays[i]) * 1000u;
+}
+
+bool appInDemo(const App& a) {
+    switch (a.screen) {
+        case AppScreen::Slot: return a.game.attract;
+        case AppScreen::Video: return a.video.attract;
+        case AppScreen::Blackjack: return a.bj.attract;
+        case AppScreen::Poker: return a.poker.attract;
+        case AppScreen::Roulette: return a.roulette.attract;
+        default: return false;
+    }
+}
+
 void pushEconomy(App& a) {
     a.game.machine.econ.credits = a.econ.credits;
     a.video.econ.credits = a.econ.credits;
@@ -398,7 +415,16 @@ void keyGlobalSettings(App& a, AppKey k) {
                 if (!inc && a.settings.volume > 0) --a.settings.volume;
                 a.dirty = true;
                 pushCue(a.game, Cue::BetChange);
-            } else if (a.menuIndex == 2 && a.roster.count > 0) {
+            } else if (a.menuIndex == 2) {
+                a.bets.demoOn = a.bets.demoOn ? 0 : 1;
+                a.bets = makeBets(a.bets);
+                a.dirty = true;
+            } else if (a.menuIndex == 3) {
+                if (inc && a.bets.demoDelay + 1 < kDemoDelaySteps) ++a.bets.demoDelay;
+                if (!inc && a.bets.demoDelay > 0) --a.bets.demoDelay;
+                a.bets = makeBets(a.bets);
+                a.dirty = true;
+            } else if (a.menuIndex == 4 && a.roster.count > 0) {
                 storePlayerBets(a);   // les mises du joueur qui s'en va
                 syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 const uint8_t n = a.roster.count;
@@ -412,11 +438,11 @@ void keyGlobalSettings(App& a, AppKey k) {
             break;
         }
         case AppKey::Confirm:
-            if (a.menuIndex == 2) {
+            if (a.menuIndex == 4) {
                 storePlayerBets(a);
                 syncPlayer(a.roster, a.econ, totalSpins(a), 0);
                 a.screen = AppScreen::NameEntry;
-            } else if (a.menuIndex == 3) {
+            } else if (a.menuIndex == 5) {
                 if (!a.resetArmed) {
                     a.resetArmed = true;
                 } else {
@@ -460,6 +486,8 @@ uint8_t helpPageCount(AppScreen help) {
 
 void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
     if (k == AppKey::None) return;
+    // Un geste, n'importe lequel, désarme la démo partout.
+    a.lastInputMs = now;
     switch (a.screen) {
         case AppScreen::NameEntry:
             if (k == AppKey::Confirm) commitName(a);
@@ -543,7 +571,81 @@ void nameBackspace(App& a) {
     a.nameEntry.rosterFull = false;
 }
 
+namespace {
+
+// Stratégie de démo, volontairement simple et lisible : la démo montre le
+// jeu, elle ne cherche pas à bien jouer.
+void driveDemo(App& a, uint32_t now, RngFn rng) {
+    switch (a.screen) {
+        case AppScreen::Blackjack:
+            if (a.bj.bj.phase == BjPhase::PlayerTurn && a.bj.revealed >= 4) {
+                // Une décision toutes les 700 ms, pour qu'on la voie.
+                if (now - a.bj.lastInputMs < 700) break;
+                a.bj.lastInputMs = now;
+                a.bj.choice = handValue(a.bj.bj.player).total < 17
+                    ? BjChoice::Hit : BjChoice::Stand;
+                bjConfirm(a.bj, now, rng);
+            } else if (a.bj.bj.phase == BjPhase::Idle ||
+                       a.bj.bj.phase == BjPhase::Settle) {
+                if (now - a.bj.phaseT0 < 2200) break;
+                bjStartHand(a.bj, now, rng, /*byPlayer=*/false);
+            }
+            break;
+        case AppScreen::Poker:
+            if (a.poker.phase == VpPhase::Holding &&
+                vpVisible(a.poker) >= kPokerHandSize) {
+                if (now - a.poker.phaseT0 < 1400) break;
+                // Garde les cartes dont le rang est apparié : la règle la
+                // plus simple qui produise un jeu crédible à regarder.
+                for (uint8_t i = 0; i < kPokerHandSize; ++i) {
+                    a.poker.held[i] = false;
+                    for (uint8_t j = 0; j < kPokerHandSize; ++j) {
+                        if (i != j && a.poker.hand.c[i].rank == a.poker.hand.c[j].rank) {
+                            a.poker.held[i] = true;
+                        }
+                    }
+                }
+                a.poker.cursor = kVpDrawSlot;
+                vpConfirm(a.poker, now, rng);
+            } else if (a.poker.phase != VpPhase::Holding) {
+                if (now - a.poker.phaseT0 < 2600) break;
+                vpDeal(a.poker, now, rng, /*byPlayer=*/false);
+            }
+            break;
+        case AppScreen::Roulette:
+            if (a.roulette.phase != RltPhase::Idle) break;
+            if (now - a.roulette.phaseT0 < 1200) break;
+            // Un pari différent à chaque tour : la démo montre l'éventail.
+            a.roulette.kind = static_cast<BetKind>(drawBelow(rng, kBetKinds));
+            if (a.roulette.kind == BetKind::Straight) {
+                a.roulette.straight = static_cast<uint8_t>(drawBelow(rng, kPockets));
+            }
+            rltSpin(a.roulette, now, rng, /*byPlayer=*/false);
+            break;
+        default:
+            break;
+    }
+}
+
+}  // namespace
+
 void tickApp(App& a, uint32_t now, RngFn rng) {
+    // Armement commun : un seul compteur d'inactivité pour tout l'objet.
+    const bool armed = a.bets.demoOn != 0 &&
+                       now - a.lastInputMs >= demoDelayMs(a);
+    a.game.demoArmed = armed;
+    a.video.demoArmed = armed;
+    if (armed) {
+        driveDemo(a, now, rng);
+    } else {
+        // Désarmé : les jeux à rouleaux repartent en couleurs.
+        noteInput(a.game, now);
+        noteVideoInput(a.video, now);
+        a.bj.attract = false;
+        a.poker.attract = false;
+        a.roulette.attract = false;
+    }
+
     switch (a.screen) {
         case AppScreen::Slot:
             updateGame(a.game, now, rng);
@@ -579,7 +681,7 @@ void tickApp(App& a, uint32_t now, RngFn rng) {
             break;
         }
         default:
-            // Hors jeu, le mode démo ne doit pas s'armer.
+            // Hors jeu (menus, aide), rien ne s'anime.
             noteInput(a.game, now);
             noteVideoInput(a.video, now);
             break;
