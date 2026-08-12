@@ -123,6 +123,9 @@ Règles issues du design system :
   illisible en main, même pour une mention secondaire.
 - Les couleurs affichées sont les **valeurs quantifiées RGB565**, jamais
   les valeurs d'origine — le design system montre ce que l'écran fera.
+- Le **mode démo se grise d'un bloc** : `ui::desaturate()` convertit
+  l'écran fini en luminance, dans `drawApp()`. Ne jamais griser couleur par
+  couleur — ce qu'on dessine ensuite en oubliant l'aide reste en couleurs.
 - Le **hublot est plus haut que le symbole** : les voisins de la bande
   doivent se voir. Toute colonne de rouleau se dessine **découpée** au
   hublot, sinon elle déborde sur le bandeau de crédits.
@@ -164,8 +167,10 @@ pio run -e cardputer-adv -t upload                 # flash
 ## Pièges matériels vérifiés (projet précédent, mesures réelles)
 
 - **Rendu** : tout dessiner dans un sprite plein écran 16 bits (64,8 Ko)
-  puis `pushSprite` d'un bloc. `readRect` renvoie du RGB565 aux octets
-  inversés.
+  puis `pushSprite` d'un bloc. Le RGB565 est stocké **octets inversés** —
+  `readRect` le renvoie ainsi, et le tampon de `getBuffer()` aussi. Tout
+  post-traitement pixel à pixel doit faire le `bswap16`, sinon on obtient
+  du magenta uniforme au lieu d'un gris (mesuré, 2026-08-12).
 - **Couleurs lgfx** : les surcharges sont typées — un littéral nu
   (`0x18E3u`, uint32) est interprété **RGB888**, seuls les `uint16_t`
   passent par RGB565. Toujours des `constexpr uint16_t` nommées, jamais

@@ -2,6 +2,45 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-031 — 2026-08-12 — La touche retour marche toujours ; le gris de la démo s'applique à l'écran fini
+
+**On ne pouvait pas sortir d'une main.** Poker, blackjack et roulette
+refusaient la touche retour en cours de partie, « pour ne pas solder une
+mise engagée ». Le raisonnement était faux, et le code le prouve : les
+sessions sont créées une seule fois dans `newApp()`, et `tickApp()` comme
+`driveDemo()` n'avancent que le jeu **affiché**. Une main qu'on quitte est
+donc gelée telle quelle et attend au retour — rien n'est soldé, rien n'est
+perdu. Le blocage ne protégeait rien ; il enfermait le joueur, et sans
+message, puisqu'une touche refusée ne fait rien du tout.
+
+La règle est désormais uniforme sur les cinq jeux : **la touche retour
+marche toujours**. Pas de remboursement non plus, sinon elle deviendrait
+une annulation gratuite — voir une mauvaise donne, sortir, revenir,
+redonner. Deux tests : l'un sort des cinq jeux en pleine main, l'autre
+vérifie qu'on retrouve la même main et le même solde au retour. Le premier
+échoue bien si l'on remet la garde (`Expected 2 Was 12`, écran resté sur
+le poker).
+
+**Le gris de la démo se posait couleur par couleur.** Chaque écran portait
+ses aides `A()`/`D()`, et tout ce qu'on dessinait ensuite en les oubliant
+restait en couleurs : le décor de circuit imprimé du poker, son curseur,
+son bouton `DRAW`. Une règle qu'il faut se rappeler d'appliquer à chaque
+trait finit toujours par être oubliée quelque part — c'est la même famille
+que les files de sons non drainées (D-030).
+
+`ui::desaturate()` convertit **l'écran fini** en luminance perçue
+(Rec.601), une fois, dans `drawApp()`. La conversion porte sur le
+résultat, plus sur l'intention : rien de ce qui est à l'écran ne peut y
+échapper, y compris ce qu'on dessinera plus tard sans y penser. Mesure sur
+capture : **0 pixel coloré sur 32 400** dans les quatre écrans de démo,
+les écrans normaux inchangés.
+
+**Piège confirmé au passage** : le tampon du sprite 16 bits stocke le
+RGB565 **octets inversés**. La première version lisait le mot tel quel et
+donnait un écran magenta uniforme au lieu d'un gris. Même piège que celui
+déjà noté pour `readRect`, à un autre endroit — il est maintenant écrit
+dans `painter.cpp` là où on peut le rencontrer.
+
 ## D-030 — 2026-08-12 — Un seul point de vidange des sons ; le design system montre des captures, plus des maquettes
 
 **Poker et roulette étaient muets.** Les deux jeux poussaient bien leurs

@@ -68,4 +68,17 @@ void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c,
 void drawBetArrows(lgfx::LGFX_Sprite& g, int leftX, int rightX, int y,
                    uint16_t color, bool canLower, bool canRaise);
 
+// Passe TOUT le sprite en niveaux de gris, une fois, après le dessin.
+//
+// Le mode démo était grisé couleur par couleur, à l'appel : chaque écran
+// portait ses aides A()/D(), et tout ce qu'on dessinait ensuite en les
+// oubliant restait en couleurs — le décor de circuit imprimé du poker, son
+// curseur, son bouton DRAW. Une règle qu'il faut se rappeler d'appliquer à
+// chaque trait finit toujours par être oubliée quelque part.
+//
+// Ici la conversion porte sur le résultat, pas sur l'intention : rien de ce
+// qui est à l'écran ne peut y échapper, y compris ce qu'on dessinera plus
+// tard sans y penser.
+void desaturate(lgfx::LGFX_Sprite& g);
+
 }  // namespace ui

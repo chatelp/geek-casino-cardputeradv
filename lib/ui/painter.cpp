@@ -181,4 +181,33 @@ void drawFrame(lgfx::LGFX_Sprite& g, int x, int y, int w, int h, uint16_t c, int
     g.fillRect(x + w - t, y + t, t, h - 2 * t, c);
 }
 
+void desaturate(lgfx::LGFX_Sprite& g) {
+    auto* px = static_cast<uint16_t*>(g.getBuffer());
+    if (!px) return;
+    const int n = g.width() * g.height();
+    for (int i = 0; i < n; ++i) {
+        // Le sprite 16 bits stocke le RGB565 OCTETS INVERSÉS — c'est le
+        // format que veut l'écran, et c'est le même piège que celui déjà
+        // noté pour readRect. Lire le mot tel quel donnait un écran magenta
+        // uniforme, pas un gris. Mesuré sur capture le 2026-08-12.
+        const uint16_t c = __builtin_bswap16(px[i]);
+        // RGB565 ramené en 8 bits par canal, puis luminance perçue
+        // (coefficients Rec.601 en entiers : 77/150/29 sur 256). Une moyenne
+        // simple ferait passer le vert du circuit pour un gris trop sombre.
+        // Extension 5/6 bits vers 8 par recopie des bits de poids fort :
+        // exact aux extrémités, sans division — 32 400 pixels par image, ce
+        // n'est pas l'endroit où en faire trois.
+        const uint32_t r5 = (c >> 11) & 0x1F;
+        const uint32_t g6 = (c >> 5) & 0x3F;
+        const uint32_t b5 = c & 0x1F;
+        const uint32_t r = (r5 << 3) | (r5 >> 2);
+        const uint32_t gr = (g6 << 2) | (g6 >> 4);
+        const uint32_t b = (b5 << 3) | (b5 >> 2);
+        const uint32_t l = (77u * r + 150u * gr + 29u * b) >> 8;
+        const uint16_t grey = static_cast<uint16_t>(
+            ((l >> 3) << 11) | ((l >> 2) << 5) | (l >> 3));
+        px[i] = __builtin_bswap16(grey);
+    }
+}
+
 }  // namespace ui

@@ -228,6 +228,20 @@ void keyLobby(App& a, AppKey k, uint32_t now, RngFn rng) {
     }
 }
 
+// Retour à l'accueil. RÈGLE : la touche retour marche TOUJOURS, dans les
+// cinq jeux, quelle que soit la phase.
+//
+// Les jeux de cartes et la roulette la refusaient en cours de main, « pour
+// ne pas solder une mise engagée ». Le raisonnement était faux : les
+// sessions sont créées une seule fois dans newApp(), et tickApp() comme
+// driveDemo() n'avancent que le jeu AFFICHÉ. Une main qu'on quitte est donc
+// gelée telle quelle et attend au retour — rien n'est soldé, rien n'est
+// perdu. Le blocage ne protégeait rien ; il enfermait le joueur, sans même
+// un message pour lui dire pourquoi sa touche restait sans effet.
+//
+// Ne pas rembourser non plus : la mise reste engagée sur la main gelée.
+// Rembourser ferait de la touche retour une annulation gratuite — voir une
+// mauvaise donne, sortir, revenir, redonner.
 void leaveGame(App& a) {
     syncAndMarkDirty(a);
     a.screen = AppScreen::Lobby;
@@ -333,12 +347,7 @@ void keyBlackjack(App& a, AppKey k, uint32_t now, RngFn rng) {
             a.screen = AppScreen::BjSettings;
             break;
         case AppKey::Back:
-            // On ne quitte pas une main en cours : elle se solderait sans
-            // que le joueur voie le résultat de sa mise.
-            if (a.bj.bj.phase != BjPhase::PlayerTurn &&
-                a.bj.bj.phase != BjPhase::DealerTurn) {
-                leaveGame(a);
-            }
+            leaveGame(a);
             break;
         default:
             break;
@@ -374,8 +383,7 @@ void keyPoker(App& a, AppKey k, uint32_t now, RngFn rng) {
             a.screen = AppScreen::PokerHelp;
             break;
         case AppKey::Back:
-            // On ne quitte pas au milieu d'une main : la mise est engagée.
-            if (a.poker.phase != VpPhase::Holding) leaveGame(a);
+            leaveGame(a);
             break;
         default:
             break;
@@ -405,7 +413,7 @@ void keyRoulette(App& a, AppKey k, uint32_t now, RngFn rng) {
             a.screen = AppScreen::RouletteHelp;
             break;
         case AppKey::Back:
-            if (a.roulette.phase != RltPhase::Spinning) leaveGame(a);
+            leaveGame(a);
             break;
         default:
             break;

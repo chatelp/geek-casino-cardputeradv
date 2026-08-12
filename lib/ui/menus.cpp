@@ -597,6 +597,10 @@ void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         case core::AppScreen::GlobalSettings: drawGlobalSettings(g, app); break;
         case core::AppScreen::Leaderboard: drawLeaderboard(g, app); break;
     }
+    // Le gris de la démo s'applique ICI, sur l'écran fini : c'est le seul
+    // endroit où rien ne peut lui échapper. Grisé trait par trait, il
+    // laissait passer tout ce qu'on ajoutait sans y penser.
+    if (core::appInDemo(app)) desaturate(g);
 }
 
 }  // namespace ui

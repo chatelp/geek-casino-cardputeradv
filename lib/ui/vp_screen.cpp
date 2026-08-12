@@ -17,8 +17,11 @@ namespace P = pal;
 
 namespace {
 
-// Mode démo : tout passe en gris clair, comme aux machines à sous. Le
-// monochrome EST le message — inutile d'un bandeau clignotant.
+// Mode démo : le monochrome EST le message, inutile d'un bandeau
+// clignotant. La mise en gris elle-même ne se fait PLUS ici : ui::drawApp()
+// désature l'écran fini d'un bloc (voir painter.h). Ces deux aides ne
+// restent que pour choisir un gris de contraste là où la couleur portait une
+// hiérarchie — le décor, lui, n'a plus rien à déclarer.
 bool g_demo = false;
 uint16_t A(uint16_t accent) { return g_demo ? kGrayLight : accent; }
 uint16_t D(uint16_t dim) { return g_demo ? kGrayMid : dim; }

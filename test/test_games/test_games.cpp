@@ -526,6 +526,74 @@ static void test_every_game_actually_makes_sound() {
     }
 }
 
+static void test_back_always_leaves_any_game_mid_hand() {
+    // Poker, blackjack et roulette refusaient la touche retour en cours de
+    // main. Le joueur était enfermé, sans même un message le lui disant —
+    // et le blocage ne protégeait rien : une main quittée est gelée, pas
+    // soldée. Ce test parcourt les cinq jeux, engage une main, et exige la
+    // sortie.
+    static const char* kNames[core::kGameCount] = {
+        "SLOTS", "VIDEO", "BLACKJACK", "POKER", "ROULETTE",
+    };
+    for (uint8_t gidx = 0; gidx < core::kGameCount; ++gidx) {
+        App a = started(static_cast<uint32_t>(300 + gidx));
+        a.settings.demoOn = 0;
+        for (uint8_t k = 0; k < gidx; ++k) {
+            core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+        }
+        core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+
+        // Une main bel et bien en cours : on distribue, puis on avance
+        // assez pour être au milieu (cartes révélées, bille lancée).
+        uint32_t now = 0;
+        core::handleKey(a, AppKey::Confirm, now, core::xorShift32);
+        for (int i = 0; i < 30; ++i) {
+            now += core::kFrameMs;
+            core::tickApp(a, now, core::xorShift32);
+        }
+
+        core::handleKey(a, AppKey::Back, now, core::xorShift32);
+        TEST_ASSERT_EQUAL_MESSAGE(static_cast<int>(core::AppScreen::Lobby),
+                                  static_cast<int>(a.screen), kNames[gidx]);
+    }
+}
+
+static void test_a_hand_left_behind_is_waiting_on_return() {
+    // La contrepartie de la règle : sortir ne rembourse pas et ne solde
+    // pas. La main doit être EXACTEMENT là où on l'a laissée — sinon la
+    // touche retour deviendrait une annulation gratuite (voir une mauvaise
+    // donne, sortir, revenir, redonner).
+    App a = started(320);
+    a.settings.demoOn = 0;
+    for (int i = 0; i < 3; ++i) core::handleKey(a, AppKey::Down, 0, core::xorShift32);
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
+    TEST_ASSERT_EQUAL(static_cast<int>(core::AppScreen::Poker),
+                      static_cast<int>(a.screen));
+
+    uint32_t now = 0;
+    core::handleKey(a, AppKey::Confirm, now, core::xorShift32);   // donne
+    for (int i = 0; i < 40; ++i) {
+        now += core::kFrameMs;
+        core::tickApp(a, now, core::xorShift32);
+    }
+    const int32_t creditsInHand = a.poker.econ.credits;
+    const uint8_t rank0 = a.poker.hand.c[0].rank;
+    const uint8_t suit0 = a.poker.hand.c[0].suit;
+
+    core::handleKey(a, AppKey::Back, now, core::xorShift32);
+    for (int i = 0; i < 200; ++i) {   // un long détour par l'accueil
+        now += core::kFrameMs;
+        core::tickApp(a, now, core::xorShift32);
+    }
+    core::handleKey(a, AppKey::Confirm, now, core::xorShift32);
+
+    TEST_ASSERT_EQUAL(static_cast<int>(core::AppScreen::Poker),
+                      static_cast<int>(a.screen));
+    TEST_ASSERT_EQUAL(creditsInHand, a.poker.econ.credits);  // pas remboursé
+    TEST_ASSERT_EQUAL(rank0, a.poker.hand.c[0].rank);        // même main
+    TEST_ASSERT_EQUAL(suit0, a.poker.hand.c[0].suit);
+}
+
 static void test_the_roulette_ball_clicks_while_it_runs() {
     // Une bille de roulette cliquette, c'est LE son du jeu. Sans lui, le
     // lancer est un silence de trois secondes.
@@ -564,6 +632,8 @@ int main() {
     RUN_TEST(test_poker_cursor_wraps_over_the_draw_slot);
     RUN_TEST(test_every_lobby_entry_opens_its_game);
     RUN_TEST(test_every_game_actually_makes_sound);
+    RUN_TEST(test_back_always_leaves_any_game_mid_hand);
+    RUN_TEST(test_a_hand_left_behind_is_waiting_on_return);
     RUN_TEST(test_the_roulette_ball_clicks_while_it_runs);
     RUN_TEST(test_demo_runs_free_and_silent_in_every_game);
     RUN_TEST(test_demo_can_be_switched_off);
