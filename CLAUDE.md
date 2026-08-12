@@ -112,7 +112,14 @@ lib/ui/font5x7.h          GÉNÉRÉ — fonte bitmap
 ```bash
 .pio/build/sim/program --screens captures/screens   # rafraîchit les captures
 python3 design/tools/gen.py                          # puis les cartes
+python3 scripts/readme_images.py                     # puis les images README
 ```
+
+Le README (front page GitHub, anglais + version française) suit la même
+doctrine : **toutes ses images sortent du simulateur** via
+`scripts/readme_images.py` (`captures/` n'est pas versionné,
+`docs/images/` l'est). Après tout changement d'écran visible, refaire la
+chaîne complète ci-dessus.
 
 Les cartes d'écran **embarquent les captures du simulateur**, jamais des
 maquettes redessinées : une seconde implémentation de l'affichage dérive
