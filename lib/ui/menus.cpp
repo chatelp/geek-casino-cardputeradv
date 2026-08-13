@@ -26,15 +26,23 @@ bool blink(uint32_t now, uint32_t periodMs) {
 // connaître, sinon un titre un peu long passe dessous.
 constexpr int kPagerReserve = 34;
 
+// Le jeton de l'accueil et l'air qu'il lui faut. Nommés parce que trois
+// calculs en dépendent : la position de l'icône, celle du nombre, et la
+// place que l'en-tête doit laisser au titre.
+constexpr int kIconW = 12;
+constexpr int kIconGap = 4;
+constexpr int kHeaderGap = 10;
+
 void drawHeader(lgfx::LGFX_Sprite& g, const char* title, uint16_t color,
-                bool pager = false) {
+                bool pager = false, int reserve = 0) {
     g.fillRect(0, 0, kScreenW, 24, P::ink800);
     g.fillRect(0, 23, kScreenW, 1, color);
 
     // Découpe stricte à la place disponible : un titre trop long est coupé
-    // net plutôt que d'aller mordre sur les pastilles. Le repère de page
-    // reste lisible quoi qu'il arrive au texte.
-    const int avail = kScreenW - 8 - (pager ? kPagerReserve : 4);
+    // net plutôt que d'aller mordre sur ce qui occupe la droite. Le repère
+    // de page — ou le solde — reste lisible quoi qu'il arrive au texte.
+    // `reserve` sert quand la largeur de droite est MESURÉE et non fixe.
+    const int avail = kScreenW - 8 - (reserve ? reserve : (pager ? kPagerReserve : 4));
     g.setClipRect(8, 0, avail, 24);
     drawText(g, title, 8, 5, color, 2);
     g.clearClipRect();
@@ -107,16 +115,31 @@ void drawAbout(lgfx::LGFX_Sprite& g, uint32_t now) {
 // ------------------------------------------------------------------ accueil
 void drawLobby(lgfx::LGFX_Sprite& g, const core::App& app) {
     g.fillScreen(P::ink900);
-    drawHeader(g, "SILICON CASINO", P::magenta);
 
     const core::Player* p = app.roster.count
             ? &app.roster.players[app.roster.current] : nullptr;
+
+    // Le bloc de droite — nom du joueur, jeton, solde — est COLLÉ au bord
+    // droit, et sa largeur est mesurée. Le solde était posé à un décalage
+    // fixe (kScreenW - 76) avec le nombre aligné à GAUCHE : il grandissait
+    // donc vers la droite. Deux défauts pour le prix d'un — le jeton s'est
+    // posé sur le O de CASINO quand le nom du jeu s'est allongé, et un
+    // solde à six chiffres serait sorti de l'écran.
+    int reserve = 0;
     if (p) {
-        // Joueur courant + solde, à droite du titre.
-        const int nw = textWidth(p->name, 1);
-        drawText(g, p->name, kScreenW - 8 - nw, 3, P::cyan, 1, Align::Left);
-        drawIcon(g, ICON_COIN, kScreenW - 76, 10);
-        drawNumber(g, app.econ.credits, kScreenW - 60, 11, P::yellow, 1);
+        const int bw = numberWidth(app.econ.credits, 1);
+        const int block = kIconW + kIconGap + bw;
+        reserve = (textWidth(p->name, 1) > block ? textWidth(p->name, 1) : block)
+                  + kHeaderGap;
+    }
+    drawHeader(g, "SILICON CASINO", P::magenta, false, reserve);
+
+    if (p) {
+        drawText(g, p->name, kScreenW - 8, 3, P::cyan, 1, Align::Right);
+        const int bw = numberWidth(app.econ.credits, 1);
+        drawNumber(g, app.econ.credits, kScreenW - 8, 11, P::yellow, 1,
+                   Align::Right);
+        drawIcon(g, ICON_COIN, kScreenW - 8 - bw - kIconGap - kIconW, 10);
     }
 
     struct Entry { const char* name; const char* sub; uint8_t sym; };

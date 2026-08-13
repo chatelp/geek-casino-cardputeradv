@@ -2,6 +2,30 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-038 — 2026-08-13 — Le solde de l'accueil se colle au bord droit
+
+Le jeton se posait sur le **O** de CASINO. Cause : le bloc de droite était
+positionné par un décalage **fixe** depuis le bord (`kScreenW - 76`), avec
+le nombre aligné à **gauche** — il grandissait donc vers la droite depuis
+un point figé. Deux défauts pour le prix d'un : il mordait sur le titre
+depuis que le nom public s'est allongé (D-036, « SILICON CASINO » fait
+166 px à l'échelle 2), et un solde à six chiffres serait sorti de l'écran
+sans que rien ne le signale.
+
+Le bloc est désormais **collé au bord droit** et sa largeur **mesurée** :
+le nombre est aligné à droite sur `kScreenW - 8`, et l'icône se place
+d'après `numberWidth()`. Il ne peut structurellement plus déborder, et il
+s'écarte du titre au lieu de s'en rapprocher quand le solde grandit.
+
+`drawHeader()` accepte en plus une **réserve mesurée** — jusque-là il ne
+connaissait que celle, fixe, des pastilles de pagination. Le titre est
+découpé à la place réellement libre : un titre trop long est coupé net
+plutôt que d'aller mordre sur le solde.
+
+Vérification par le calcul, pour tous les ordres de grandeur : à
+9 999 999 jetons le bloc commence encore à x=175, un pixel après la fin du
+titre. Au-delà, la découpe prend le relais.
+
 ## D-037 — 2026-08-12 — Écran About : la transparence sur l'outil fait partie du produit
 
 Doctrine reprise de Daoa Mini, où `CLAUDE.md` nomme l'agent de
