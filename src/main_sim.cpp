@@ -152,7 +152,7 @@ int runCapture() {
             // tard : c'est là que les huit lignes sont toutes affichées.
             static const BootShot kBoots[] = {
                 {200, "boot_noise.bmp"}, {600, "boot_bars.bmp"},
-                {2250, "boot_test.bmp"}, {2900, "boot_logo.bmp"},
+                {2250, "boot_test.bmp"}, {3060, "boot_logo.bmp"},
             };
             app.screen = core::AppScreen::Boot;
             app.bootT0 = 0;

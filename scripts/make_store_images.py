@@ -75,23 +75,65 @@ def make_cover():
                 if 0 <= x + dx < W and 0 <= y + dy < H:
                     img.putpixel((x + dx, y + dy), colour)
 
+    def frame(x, y, w, h, t, colour):
+        px(x, y, 1, colour) if False else None
+        for i in range(t):
+            for xx in range(x + i, x + w - i):
+                img.putpixel((xx, y + i), colour)
+                img.putpixel((xx, y + h - 1 - i), colour)
+            for yy in range(y + i, y + h - i):
+                img.putpixel((x + i, yy), colour)
+                img.putpixel((x + w - 1 - i, yy), colour)
+
     # Le nom, comme au boot : SILICON magenta, CASINO cyan. Échelle 20 →
     # des lettres de 140 px, encore nettes à la réduction x7 du catalogue.
     s1, s2 = "SILICON", "CASINO"
     sc = 20
-    text5x7(px, s1, (W - text_width(s1, sc)) // 2, 130, sc, PAL["magenta"])
-    text5x7(px, s2, (W - text_width(s2, sc)) // 2, 300, sc, PAL["cyan"])
+    text5x7(px, s1, (W - text_width(s1, sc)) // 2, 110, sc, PAL["magenta"])
+    text5x7(px, s2, (W - text_width(s2, sc)) // 2, 280, sc, PAL["cyan"])
 
-    # L'invader — le jackpot — au centre, encadré de deux plus petits.
-    inv = [x for x in art_symbols.SYMBOLS if x["id"] == "INVADER"][0]["art"]
-    blit_art(px, inv, (W - 16 * 22) // 2, 480, 22)
-    blit_art(px, inv, (W - 16 * 22) // 2 - 280, 530, 10)
-    blit_art(px, inv, (W - 16 * 22) // 2 + 16 * 22 + 120, 530, 10)
+    # Une ligne de rouleaux, comme à l'écran de lancement de l'appareil.
+    # Le CADRE dit « casino » (hublots, ligne de paiement, enseignes) ;
+    # les SYMBOLES disent « geek » : diode, d20, puce — le vocabulaire réel
+    # des rouleaux. JAMAIS l'invader en tête d'affiche (règle de Pierre) :
+    # il fait croire à un jeu de Space Invaders. Le d20 tient le centre —
+    # geek par la table de jeu de rôle, casino par le dé.
+    def geek(sid):
+        return [x for x in art_symbols.SYMBOLS if x["id"] == sid][0]["art"]
+    led, d20, chip = geek("LED"), geek("D20"), geek("CHIP")
+    sc2 = 11                       # 16 px d'art -> 176 px par symbole
+    win = 16 * sc2 + 36            # le hublot respire autour du symbole
+    gap = 26
+    x0 = (W - 3 * win - 2 * gap) // 2
+    wy = 468
+    mid = wy + win // 2
+    # La ligne de paiement traverse les trois hublots, sous les symboles.
+    for xx in range(x0 - 30, x0 + 3 * win + 2 * gap + 30):
+        for t in range(4):
+            img.putpixel((xx, mid + t - 2), PAL["magentaDk"])
+    for i, art in enumerate((led, d20, chip)):
+        wx = x0 + i * (win + gap)
+        for yy in range(wy, wy + win):     # fond du hublot
+            for xx in range(wx, wx + win):
+                img.putpixel((xx, yy), PAL["ink800"])
+        frame(wx, wy, win, win, 4, PAL["steel500"])
+        blit_art(px, art, wx + 18, wy + 18, sc2)
 
-    # Deux lignes de silence en bas : ce que c'est, et la règle.
+    # Les quatre enseignes entre les hublots et la règle : le casino de
+    # cartes, pas seulement celui des rouleaux.
+    suits = art_symbols.SUITS
+    order = ["SPADE", "HEART", "DIAMOND", "CLUB"]
+    ssc = 8
+    sw = 8 * ssc
+    total = 4 * sw + 3 * 40
+    sx = (W - total) // 2
+    for i, sid in enumerate(order):
+        art = suits[sid]["art"] if isinstance(suits, dict) else             [x for x in suits if x["id"] == sid][0]["art"]
+        blit_art(px, art, sx + i * (sw + 40), 726, ssc)
+
     l1 = "SLOTS+BLACKJACK+POKER+ROULETTE"
     l2 = "VIRTUAL CHIPS ONLY"
-    text5x7(px, l1, (W - text_width(l1, 5)) // 2, 810, 5, PAL["steel300"])
+    text5x7(px, l1, (W - text_width(l1, 5)) // 2, 812, 5, PAL["steel300"])
     text5x7(px, l2, (W - text_width(l2, 5)) // 2, 858, 5, PAL["yellow"])
 
     img.save(OUT / "01-cover.png")

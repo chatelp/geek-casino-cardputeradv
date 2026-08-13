@@ -115,14 +115,24 @@ void drawLogo(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
     const float fade = (1.0f - p) * (1.0f - p);
     drawNoise(g, frame, fade * 0.30f);
 
-    const int cy = kScreenH / 2 - 16;
+    const int cy = kScreenH / 2 - 20;
     drawText(g, "SILICON", kScreenW / 2, cy, P::magenta, 3, Align::Center);
     drawText(g, "CASINO", kScreenW / 2, cy + 24, P::cyan, 3, Align::Center);
 
-    // Trois invaders sous le nom, qui apparaissent l'un après l'autre.
+    // Une ligne de rouleaux sous le nom, qui se verrouille comme au jeu.
+    // C'est le CADRE qui dit « casino » — hublots, ligne de paiement — et
+    // les SYMBOLES qui disent « geek » : diode, d20, puce, le vocabulaire
+    // réel des rouleaux. JAMAIS l'invader ici (règle de Pierre) : en
+    // tête d'affiche il fait croire à un jeu de Space Invaders. Le d20
+    // tient le centre — geek par la table de jeu de rôle, casino par le
+    // dé. L'invader reste le jackpot DANS le jeu, pas sur l'affiche.
     const int n = static_cast<int>(p * 4.0f);
+    static const uint8_t kLine[3] = {core::SYM_LED, core::SYM_D20,
+                                     core::SYM_CHIP};
     for (int i = 0; i < 3 && i < n; ++i) {
-        drawSymbol(g, core::SYM_INVADER, kScreenW / 2 - 40 + i * 28, cy + 48, 1);
+        const int x = kScreenW / 2 - 40 + i * 28;
+        drawFrame(g, x - 3, cy + 45, 22, 22, P::steel500, 1);
+        drawSymbol(g, kLine[i], x, cy + 48, 1);
     }
 }
 

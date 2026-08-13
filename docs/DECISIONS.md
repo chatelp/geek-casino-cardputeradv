@@ -2,6 +2,31 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-041 — 2026-08-13 — Les visuels de publication disent « casino » — et jamais l'invader en tête d'affiche
+
+Constat de Pierre au moment de publier : la cover et l'écran de
+lancement, portés par des space invaders nus, disaient « geek » voire
+« jeu de Space Invaders » — pas « casino ». Deux corrections en escalade,
+la seconde devenant une **règle** :
+
+1. Le motif porteur devient une **ligne de rouleaux** : trois hublots,
+   ligne de paiement, enseignes de cartes. C'est le CADRE qui dit casino.
+2. **Jamais l'invader en tête d'affiche** : il fait croire à un jeu de
+   Space Invaders. Les hublots montrent le vocabulaire réel des rouleaux
+   — **diode · d20 · puce** — le d20 au centre parce qu'il est double :
+   geek par la table de jeu de rôle, casino par le dé. L'invader reste le
+   jackpot DANS le jeu (D-009 inchangé) ; il ne représente plus le jeu.
+
+Appliqué aux deux endroits d'un même motif : l'écran de lancement (les
+hublots se verrouillent l'un après l'autre, comme des rouleaux) et la
+cover M5Burner (mêmes sources d'art, échelle 11, plus les quatre
+enseignes). La capture du logo se prend à 3060 ms — au moment où la
+ligne est complète, pas aux deux tiers.
+
+Le binaire figé de D-040 était périmé par ce changement : recompilé
+propre, re-flashé en écriture brute à l'adresse 0, re-haché — le
+document de publication porte le nouveau sha256.
+
 ## D-040 — 2026-08-13 — Kit de publication : cover M5Burner, mosaïque et GIF ; la stratégie reste hors dépôt
 
 Préparation de la sortie M5Burner + Reddit, sur la doctrine éprouvée par
