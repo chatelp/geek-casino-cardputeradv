@@ -26,6 +26,21 @@ Vérification par le calcul, pour tous les ordres de grandeur : à
 9 999 999 jetons le bloc commence encore à x=175, un pixel après la fin du
 titre. Au-delà, la découpe prend le relais.
 
+**Les six autres écrans affichant le solde, vérifiés.** Les cinq HUD de
+jeu sont sains **par construction** : le solde est ancré à gauche, le bloc
+de mise à droite, et les deux s'éloignent l'un de l'autre. Même à
+`INT32_MAX` (dix chiffres) il reste 45 à 57 px entre eux — aucun
+changement.
+
+Le **classement**, lui, alignait ses nombres à gauche dans des colonnes
+fixes. Pas de collision atteignable (sept chiffres de marge, quand le
+gain maximal du jeu est de 40 000 — royale à la mise maximale), mais un
+défaut de lecture réel : « 1000 » et « 720 » commençaient au même pixel,
+donc leurs chiffres ne se superposaient pas. Comparer des montants d'un
+coup d'œil est pourtant *tout* ce qu'on demande à un classement. Les deux
+colonnes sont désormais alignées à droite sur un bord nommé, avec l'air
+qu'il faut autour du libellé « BEST ».
+
 ## D-037 — 2026-08-12 — Écran About : la transparence sur l'outil fait partie du produit
 
 Doctrine reprise de Daoa Mini, où `CLAUDE.md` nomme l'agent de

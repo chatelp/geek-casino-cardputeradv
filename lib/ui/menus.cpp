@@ -33,6 +33,13 @@ constexpr int kIconW = 12;
 constexpr int kIconGap = 4;
 constexpr int kHeaderGap = 10;
 
+// Colonnes du classement. Nommées parce qu'un nombre aligné à droite se
+// définit par le bord de sa colonne, pas par son point de départ.
+constexpr int kBoardCoinX = 88;
+constexpr int kBoardCreditsR = 150;  // bord droit de la colonne « solde »
+constexpr int kBoardBestX = 160;     // 10 px d'air : sans quoi le libellé
+constexpr int kBoardBestR = 232;     // touche le montant qui le précède
+
 void drawHeader(lgfx::LGFX_Sprite& g, const char* title, uint16_t color,
                 bool pager = false, int reserve = 0) {
     g.fillRect(0, 0, kScreenW, 24, P::ink800);
@@ -611,12 +618,20 @@ void drawLeaderboard(lgfx::LGFX_Sprite& g, const core::App& app) {
             const bool cur = order[i] == app.roster.current;
             const int y = 28 + i * 11;
             if (cur) g.fillRect(4, y - 1, kScreenW - 8, 11, P::ink700);
+            // Les nombres sont alignés à DROITE sur leur colonne. Alignés à
+            // gauche, « 1000 » et « 720 » commencent au même pixel et leurs
+            // chiffres ne se superposent pas — or comparer des montants d'un
+            // coup d'œil est tout ce qu'on demande à un classement. Ils
+            // s'écartent en plus de leur voisin quand ils grandissent, au
+            // lieu de s'en rapprocher (même correction qu'à l'accueil).
             drawNumber(g, i + 1, 14, y, i == 0 ? P::yellow : P::steel300, 1);
             drawText(g, p.name, 26, y, cur ? P::cyan : P::white, 1);
-            drawIcon(g, ICON_COIN, 96, y - 1);
-            drawNumber(g, p.credits, 110, y, P::yellow, 1);
-            drawText(g, "BEST", 158, y, P::steel500, 1);
-            drawNumber(g, static_cast<int32_t>(p.bestWin), 186, y, P::green, 1);
+            drawIcon(g, ICON_COIN, kBoardCoinX, y - 1);
+            drawNumber(g, p.credits, kBoardCreditsR, y, P::yellow, 1,
+                       Align::Right);
+            drawText(g, "BEST", kBoardBestX, y, P::steel500, 1);
+            drawNumber(g, static_cast<int32_t>(p.bestWin), kBoardBestR, y,
+                       P::green, 1, Align::Right);
         }
     }
     drawHint(g, "L OR ESC BACK");
