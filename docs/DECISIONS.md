@@ -2,6 +2,32 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-040 — 2026-08-13 — Kit de publication : cover M5Burner, mosaïque et GIF ; la stratégie reste hors dépôt
+
+Préparation de la sortie M5Burner + Reddit, sur la doctrine éprouvée par
+Daoa Mini :
+
+- **Une seule cover** (1200 × 900) : le catalogue divise les carrousels
+  en vignettes illisibles. La nôtre est composée depuis les MÊMES sources
+  que l'appareil — fonte 5×7 et invader importés de
+  `design/tools/art_*.py`, jamais redessinés. Nom à l'échelle 20,
+  lisible après la réduction ×7 de la vignette.
+- **La mosaïque 3×2** et **le GIF** (170 images, un tour complet qui
+  finit sur un brelan, 466 Ko) sortent du simulateur : `--frames`
+  existait déjà, `scripts/make_store_images.py` assemble. Le GIF entre
+  aussi en tête de galerie des deux README.
+- **`firmware.factory.bin`, jamais l'export M5Burner** (leçon Daoa
+  reconduite) : l'export relit les 8 Mo de flash — résidus, NVS
+  personnelle (ici : les joueurs du poste de dev), 8 Mo au lieu de 0,7.
+- **La stratégie vit dans `private/`**, hors dépôt : formulaire M5Burner
+  champ par champ, textes Reddit et forum M5Stack prêts à coller,
+  conseils de tenue. Les textes sont **écrits à neuf** — reprendre les
+  formulations des posts Daoa serait précisément la signature « généré
+  par IA » qu'un lecteur attentif détecte (exigence de Pierre).
+- La doctrine de transparence IA est reconduite et renforcée : dite
+  soi-même, cadrée, avec deux preuves de plus que Daoa — l'écran About
+  sur l'appareil, et le journal de décisions public, erreurs comprises.
+
 ## D-039 — 2026-08-13 — Crédit maison sur la rangée de chiffres ; l'aide générale ; la roulette prend toute sa hauteur
 
 **Le crédit maison.** La rangée de chiffres ajoute des jetons — `1` = +10,

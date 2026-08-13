@@ -113,7 +113,12 @@ lib/ui/font5x7.h          GÉNÉRÉ — fonte bitmap
 .pio/build/sim/program --screens captures/screens   # rafraîchit les captures
 python3 design/tools/gen.py                          # puis les cartes
 python3 scripts/readme_images.py                     # puis les images README
+python3 scripts/make_store_images.py                 # cover, mosaïque, GIF
 ```
+
+La stratégie de publication (M5Burner, Reddit) vit dans `private/`, hors
+dépôt — comme sur Daoa Mini : les textes de lancement ne sont pas du
+code. Les images publiées, elles, sont publiques dans `docs/m5burner/`.
 
 Le README (front page GitHub, anglais + version française) suit la même
 doctrine : **toutes ses images sortent du simulateur** via

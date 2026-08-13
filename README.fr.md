@@ -56,6 +56,8 @@ d'arcade — et rend la main au premier geste.
 
 ## Les écrans
 
+![Un tour, sorti du simulateur](docs/images/spin.gif)
+
 | | |
 |:--:|:--:|
 | ![Accueil](docs/images/lobby.png) | ![Machine à sous](docs/images/slot.png) |

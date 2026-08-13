@@ -53,6 +53,8 @@ cabinet — and hands back the keys at the first gesture.
 
 ## The screens
 
+![One spin, straight from the simulator](docs/images/spin.gif)
+
 | | |
 |:--:|:--:|
 | ![Lobby](docs/images/lobby.png) | ![Slots](docs/images/slot.png) |
