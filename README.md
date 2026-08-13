@@ -34,7 +34,8 @@ Everything is played one-handed, and the lobby tells you where you are.
 | **shake the device** | pulls the lever: spins the reels, launches the ball |
 | `←` `→` | change bet — or move the cursor in a hand |
 | `↑` `↓` | navigate the lobby, pick a roulette number |
-| `h` | help for the game under the cursor (paged — chevrons scroll) |
+| `1`…`9` `0` | **house credit** — +10 to +90, `0` adds +100 · anywhere, anytime |
+| `h` | help — **general** in the lobby, the game's rules in a game |
 | `s` | settings — global in the lobby, per-game in a game |
 | `l` | leaderboard |
 | `a` | about |
@@ -68,6 +69,8 @@ cabinet — and hands back the keys at the first gesture.
 | **European roulette** — the wheel as a strip on a rotary encoder | **Ball launched** — it ticks every pocket, bounces before settling |
 | ![Celebration](docs/images/celeb_count.png) | ![Demo mode](docs/images/demo_poker.png) |
 | **Win** — shared celebration panel, payout counts up | **Demo mode** — everything greys out, chips untouched |
+| ![House credit](docs/images/topup.png) | ![General help](docs/images/app_help_credit.png) |
+| **House credit** — the number row rains golden chips over any screen | **General help** (`h` in the lobby) — the transversal gestures live here |
 | ![Boot](docs/images/boot_test.png) | ![About](docs/images/about.png) |
 | **Boot** — fake self-test, **real numbers** (skippable, switchable) | **About** — who made it, with what, and what does *not* run here |
 
@@ -85,11 +88,13 @@ and locked by native tests that fail if a strip or paytable drifts.
 | **Video slot 5×3** | 5 paylines, own strip (the jackpot must stay findable) | **94.95 %** per line | same analytic method — enumeration would be 33 M cases |
 | **Blackjack** | 3:2, dealer stands on all 17, double, no split | **95.81 %** | full-rules tests, strategy hint included |
 | **Video poker** | Jacks or Better **9/6**, max-bet royal pays 800:1 | 9/6 full-pay table | all **2,598,960** hands enumerated; every textbook frequency matches |
-| **Roulette** | European, single zero, ten bet kinds | **97.3 %** for *every* bet | all 37 pockets × 10 bets enumerated: 972,973 ppm each, exactly |
+| **Roulette** | European, single zero, ten bet kinds, 37-detent encoder | **97.3 %** for *every* bet | all 37 pockets × 10 bets enumerated: 972,973 ppm each, exactly |
 
 The balance is shared across games; the **bet is per (player, game)** and
 persists. Bailout: hit zero between hands and the house refills +500 —
-this is a toy about animation, not a lesson about loss.
+this is a toy about animation, not a lesson about loss. Impatient? The
+**number row adds chips anywhere** (`1` = +10 … `0` = +100), under a rain
+of golden coins: virtual chips are given, not sold.
 
 <details>
 <summary><b>Why the video slot needed its own reel strip</b></summary>
@@ -152,7 +157,7 @@ brew install platformio sdl2
 ```
 
 ```bash
-pio test -e test-native                     # 126 native tests, no hardware
+pio test -e test-native                     # 135 native tests, no hardware
 pio run -e sim && .pio/build/sim/program    # macOS simulator, SDL, ×3
 pio run -e cardputer-adv -t upload          # flash over USB
 ```
@@ -191,7 +196,7 @@ lib/hal/    hardware boundaries: display (M5GFX / LovyanGFX), keys, RNG
 lib/ui/     rendering, strictly through lgfx::
 src/        device main and simulator main, sorted by #ifdef
 design/     single source of truth for the visual identity
-test/       Unity tests of lib/core — 126 cases
+test/       Unity tests of lib/core — 135 cases
 ```
 
 One consequence worth stealing: the reel easing, the roulette ball's

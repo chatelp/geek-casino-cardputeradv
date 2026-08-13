@@ -121,7 +121,20 @@ static void test_the_ball_bounces_then_rests_in_its_pocket() {
     float dev = early - static_cast<float>(r.winNumber);
     if (dev < 0) dev = -dev;
     TEST_ASSERT_TRUE_MESSAGE(dev > 0.05f, "le rebond doit exister");
-    TEST_ASSERT_TRUE_MESSAGE(dev < 0.6f, "sans sortir de la case voisine");
+
+    // JAMAIS près de la frontière : à ±0,42 l'arrêt se lisait comme une
+    // hésitation entre deux cases. Le maximum est balayé sur toute la
+    // phase — pas seulement un instant — et doit rester nettement dans la
+    // case.
+    float worst = 0.0f;
+    for (uint32_t t = 0; t <= core::kRltLandMs; t += 10) {
+        float d = core::rltWheelPos(r, r.phaseT0 + t) -
+                  static_cast<float>(r.winNumber);
+        if (d < 0) d = -d;
+        if (d > worst) worst = d;
+    }
+    TEST_ASSERT_TRUE_MESSAGE(worst < 0.25f,
+                             "le rebond doit rester DANS la case");
 
     // Fin du rebond : posée exactement, avant même le règlement.
     const float late = core::rltWheelPos(r, r.phaseT0 + core::kRltLandMs);

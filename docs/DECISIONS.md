@@ -2,6 +2,49 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-039 — 2026-08-13 — Crédit maison sur la rangée de chiffres ; l'aide générale ; la roulette prend toute sa hauteur
+
+**Le crédit maison.** La rangée de chiffres ajoute des jetons — `1` = +10,
+… `9` = +90, `0` = +100 — **partout** : accueil, les cinq jeux, réglages,
+classement. Deux exceptions et pas une de plus : la saisie du nom (les
+chiffres y écrivent) et l'allumage (toute touche le saute). Pas de menu,
+pas de confirmation — des jetons virtuels se donnent, ils ne se vendent
+pas : le cérémonial est dans l'ANIMATION. Une pluie de seize pièces d'or
+traverse l'écran (chaque pièce fonction pure de (indice, âge), chute en
+p², balancement amorti), le montant grimpe au centre en énorme avec le
+même décompte que les célébrations, « HOUSE CREDIT » en mention, et une
+cascade de tintements dans le haut du registre. Les pressions s'empilent
+dans le même panneau. Le signal sonore vit dans `App` — le geste
+n'appartient à aucun jeu — et sort par `takeAppCue`, le point de vidange
+unique. Neuf tests, dont la transversalité écran par écran : un écran
+oublié serait le poker muet de D-030.
+
+**L'aide générale** (demande de Pierre, dans la foulée) : H à l'accueil
+ouvrait l'aide du jeu pointé — les gestes TRANSVERSAUX n'avaient donc
+aucun endroit où être documentés. Le crédit maison l'a prouvé sur-le-champ :
+dessiné, câblé, sonorisé… et invisible pour qui ne lit pas le README.
+H à l'accueil ouvre désormais l'aide de l'OBJET (touches communes, geste,
+démo — page 2 : le crédit maison avec ses montants) ; H en jeu reste
+l'aide du jeu. Deux tests mis à jour l'encodaient à l'ancienne — c'était
+un changement voulu, ils suivent le nouveau contrat.
+
+**La roulette, trois retouches de la même passe :**
+- **Le rebond hésitait entre deux cases** (Pierre) : ±0,42 case frôlait
+  la frontière de la case voisine. ±0,20 et trois demi-tours au lieu de
+  quatre — un tassement DANS la case, pas un choix entre deux. Le test
+  balaie désormais toute la phase et refuse tout écart au-delà de 0,25.
+- **L'habillage geek manquait** : l'encodeur flottait sur du noir. La
+  bande est maintenant montée sur sa carte (vias, sérigraphie), avec ses
+  pastilles de soudure or et sa référence : **RE1, 37 DET** — un encodeur
+  à 37 crans n'existe dans aucun catalogue, c'est la roue européenne en
+  composant.
+- **La hauteur perdue** (Pierre) : ~20 px mouraient sous le message. Les
+  cases passent de 44x36 à **44x46**, panneau et message descendent au ras
+  du bas. Au passage, un vrai trou : `drawMessage` n'avait aucun cas pour
+  la phase Landing — la bande restait vide pendant les 520 ms du rebond.
+  « NO MORE BETS » y reste affiché : les jeux sont faits tant que la bille
+  n'est pas réglée.
+
 ## D-038 — 2026-08-13 — Le solde de l'accueil se colle au bord droit
 
 Le jeton se posait sur le **O** de CASINO. Cause : le bloc de droite était

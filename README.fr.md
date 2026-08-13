@@ -36,7 +36,8 @@ Tout se joue d'une main, et l'accueil dit toujours où l'on est.
 | **secouer l'appareil** | tire le levier : lance les rouleaux ou la bille |
 | `←` `→` | changer la mise — ou déplacer le curseur dans une main |
 | `↑` `↓` | naviguer à l'accueil, choisir un numéro à la roulette |
-| `h` | aide du jeu pointé (paginée — les chevrons défilent) |
+| `1`…`9` `0` | **crédit maison** — +10 à +90, `0` ajoute +100 · partout, tout le temps |
+| `h` | aide — **générale** à l'accueil, règles du jeu en jeu |
 | `s` | réglages — globaux à l'accueil, du jeu en jeu |
 | `l` | classement |
 | `a` | à propos |
@@ -71,6 +72,8 @@ d'arcade — et rend la main au premier geste.
 | **Roulette européenne** — la roue en bande, sur encodeur rotatif | **Bille lancée** — elle cliquette à chaque case et rebondit avant de se poser |
 | ![Célébration](docs/images/celeb_count.png) | ![Mode démo](docs/images/demo_poker.png) |
 | **Gain** — panneau de célébration commun, le gain se décompte | **Mode démo** — tout passe au gris, les jetons ne bougent pas |
+| ![Crédit maison](docs/images/topup.png) | ![Aide générale](docs/images/app_help_credit.png) |
+| **Crédit maison** — la rangée de chiffres fait pleuvoir des jetons sur n'importe quel écran | **Aide générale** (`h` à l'accueil) — les gestes transversaux vivent ici |
 | ![Allumage](docs/images/boot_test.png) | ![À propos](docs/images/about.png) |
 | **Allumage** — faux self-test, **chiffres vrais** (sautable, désactivable) | **À propos** — qui l'a fait, avec quoi, et ce qui ne tourne *pas* ici |
 
@@ -89,11 +92,14 @@ dérive.
 | **Vidéo 5×3** | 5 lignes, bande propre (le jackpot doit rester trouvable) | **94,95 %** par ligne | même méthode — l'énumération ferait 33 M de cas |
 | **Blackjack** | 3:2, croupier reste sur tout 17, double, pas de split | **95,81 %** | règles complètes testées, conseil de stratégie compris |
 | **Video poker** | Jacks or Better **9/6**, royale à 800:1 en mise max | table 9/6 pleine | les **2 598 960** mains énumérées ; chaque fréquence du manuel correspond |
-| **Roulette** | européenne, zéro simple, dix paris | **97,3 %** pour *chaque* pari | 37 cases × 10 paris énumérés : 972 973 ppm partout, exactement |
+| **Roulette** | européenne, zéro simple, dix paris, encodeur 37 crans | **97,3 %** pour *chaque* pari | 37 cases × 10 paris énumérés : 972 973 ppm partout, exactement |
 
 Le solde est commun aux jeux ; la **mise appartient au couple (joueur,
 jeu)** et persiste. Renflouement : à zéro entre deux mains, la maison
 remet +500 — c'est un jouet d'animation, pas une leçon sur la perte.
+Impatient ? La **rangée de chiffres ajoute des jetons partout**
+(`1` = +10 … `0` = +100), sous une pluie de pièces d'or : des jetons
+virtuels se donnent, ils ne se vendent pas.
 
 ---
 
@@ -122,7 +128,7 @@ brew install platformio sdl2
 ```
 
 ```bash
-pio test -e test-native                     # 126 tests natifs, sans matériel
+pio test -e test-native                     # 135 tests natifs, sans matériel
 pio run -e sim && .pio/build/sim/program    # simulateur macOS, SDL, ×3
 pio run -e cardputer-adv -t upload          # flash par USB
 ```
@@ -159,7 +165,7 @@ lib/hal/    frontières matérielles : écran (M5GFX / LovyanGFX), touches, alé
 lib/ui/     rendu, strictement via lgfx::
 src/        main appareil et main simulateur, triés par #ifdef
 design/     source de vérité unique de l'identité visuelle
-test/       tests Unity de lib/core — 126 cas
+test/       tests Unity de lib/core — 135 cas
 ```
 
 `lib/ui/palette.h`, `symbols.h`, `font5x7.h`, `layout.h` sont **générés**

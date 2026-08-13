@@ -66,7 +66,10 @@ static void test_help_pages_scroll_and_reset_on_close() {
     typeName(a, "ZOE");
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
 
+    // L'aide d'un jeu s'ouvre DEPUIS le jeu — H à l'accueil ouvre l'aide
+    // générale de l'objet, pas celle du jeu pointé (D-039).
     core::handleKey(a, AppKey::Down, 0, core::xorShift32);   // VIDEO SLOT
+    core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
     core::handleKey(a, AppKey::Help, 0, core::xorShift32);
     TEST_ASSERT_EQUAL(AppScreen::VideoHelp, a.screen);
     TEST_ASSERT_EQUAL_UINT8(0, a.helpPage);
@@ -86,7 +89,7 @@ static void test_help_pages_scroll_and_reset_on_close() {
     // Fermer remet à la première page : rouvrir ne doit pas reprendre au
     // milieu d'une explication.
     core::handleKey(a, AppKey::Back, 0, core::xorShift32);
-    TEST_ASSERT_EQUAL(AppScreen::Lobby, a.screen);
+    TEST_ASSERT_EQUAL(AppScreen::Video, a.screen);
     TEST_ASSERT_EQUAL_UINT8(0, a.helpPage);
 }
 
@@ -100,7 +103,7 @@ static void test_help_returns_where_it_was_opened() {
     core::handleKey(a, AppKey::Confirm, 0, core::xorShift32);
 
     core::handleKey(a, AppKey::Help, 0, core::xorShift32);  // depuis l'accueil
-    TEST_ASSERT_EQUAL(AppScreen::SlotHelp, a.screen);
+    TEST_ASSERT_EQUAL(AppScreen::AppHelp, a.screen);        // l'aide GÉNÉRALE
     core::handleKey(a, AppKey::Back, 0, core::xorShift32);
     TEST_ASSERT_EQUAL(AppScreen::Lobby, a.screen);          // retour accueil
 

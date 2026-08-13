@@ -9,6 +9,7 @@
 #include "symbols.h"
 #include "video_screen.h"
 #include "roulette_screen.h"
+#include "topup_fx.h"
 #include "vp_screen.h"
 
 namespace ui {
@@ -117,6 +118,52 @@ void drawAbout(lgfx::LGFX_Sprite& g, uint32_t now) {
     drawText(g, "MIT - GITHUB.COM/CHATELP", kScreenW / 2, 108, P::steel500, 1,
              Align::Center);
     drawHint(g, "ESC BACK");
+}
+
+// ------------------------------------------------------------- aide générale
+// H à l'accueil : le TRANSVERSAL. Ce qui vaut partout n'a pas de jeu où
+// habiter — le rachat de jetons l'a prouvé : dessiné, câblé, mais
+// indocumenté, il n'existait pour personne.
+void drawAppHelp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
+    g.fillScreen(P::ink900);
+    const uint8_t pages = core::helpPageCount(core::AppScreen::AppHelp);
+
+    if (app.helpPage == 0) {
+        drawHeader(g, "SILICON CASINO", P::cyan, true);
+        struct Row { const char* key; const char* what; };
+        static const Row kRows[] = {
+            {"ENTER", "SPIN, DEAL, DRAW, LAUNCH"},
+            {"SHAKE", "PULLS THE LEVER TOO"},
+            {"< >", "CHANGE BET / MOVE CURSOR"},
+            {"H", "GAME RULES, IN A GAME"},
+            {"S", "SETTINGS   L LEADERBOARD"},
+            {"ESC", "BACK - WORKS MID-HAND"},
+        };
+        for (unsigned i = 0; i < sizeof(kRows) / sizeof(kRows[0]); ++i) {
+            const int y = 30 + static_cast<int>(i) * 13;
+            drawText(g, kRows[i].key, 14, y, P::cyan, 1);
+            drawText(g, kRows[i].what, 62, y, P::steel300, 1);
+        }
+        drawText(g, "IDLE 12S: DEMO PLAYS, FREE AND GREY", kScreenW / 2, 110,
+                 P::steel500, 1, Align::Center);
+    } else {
+        drawHeader(g, "HOUSE CREDIT", P::yellow, true);
+        // La rangée de chiffres, expliquée avec ses vrais montants.
+        drawText(g, "NUMBER ROW ADDS CHIPS", kScreenW / 2, 32, P::white, 1,
+                 Align::Center);
+        drawText(g, "ANYWHERE, ANYTIME", kScreenW / 2, 44, P::steel300, 1,
+                 Align::Center);
+        drawText(g, "1 = 10   2 = 20   3 = 30", kScreenW / 2, 62, P::yellow, 1,
+                 Align::Center);
+        drawText(g, "...  9 = 90   0 = 100", kScreenW / 2, 74, P::yellow, 1,
+                 Align::Center);
+        drawIcon(g, ICON_COIN, kScreenW / 2 - 6, 86);
+        drawText(g, "VIRTUAL CHIPS - THE HOUSE GIVES", kScreenW / 2, 104,
+                 P::steel500, 1, Align::Center);
+    }
+    drawPager(g, app.helpPage, pages, now);
+    drawHintPaged(g, "ESC BACK", app.helpPage > 0, app.helpPage + 1 < pages,
+                  now);
 }
 
 // ------------------------------------------------------------------ accueil
@@ -667,12 +714,16 @@ void drawApp(lgfx::LGFX_Sprite& g, const core::App& app, uint32_t now) {
         case core::AppScreen::BjSettings: drawBjSettings(g, app); break;
         case core::AppScreen::GlobalSettings: drawGlobalSettings(g, app); break;
         case core::AppScreen::Leaderboard: drawLeaderboard(g, app); break;
+        case core::AppScreen::AppHelp: drawAppHelp(g, app, now); break;
         case core::AppScreen::About: drawAbout(g, now); break;
     }
     // Le gris de la démo s'applique ICI, sur l'écran fini : c'est le seul
     // endroit où rien ne peut lui échapper. Grisé trait par trait, il
     // laissait passer tout ce qu'on ajoutait sans y penser.
     if (core::appInDemo(app)) desaturate(g);
+    // La pluie de jetons passe APRÈS le gris : le rachat est un geste du
+    // joueur, il sort de la démo — l'or tombe dès la première image.
+    drawTopupFx(g, app.topup, now);
 }
 
 }  // namespace ui

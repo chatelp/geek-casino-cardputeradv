@@ -142,8 +142,14 @@ float rltWheelPos(const RouletteSession& s, uint32_t now) {
         if (age < kRltLandMs) {
             const float p = static_cast<float>(age) / static_cast<float>(kRltLandMs);
             const float damp = (1.0f - p) * (1.0f - p);
-            const float bounce = 0.42f * damp *
-                std::sin(p * 2.0f * 2.0f * 3.14159265f);
+            // ±0,20 case, pas plus : à ±0,42 la bille frôlait la frontière
+            // et l'arrêt se lisait comme une hésitation entre deux cases
+            // (constat de Pierre). Le rebond doit se voir DANS la case —
+            // c'est un tassement, pas un choix. Trois demi-tours au lieu de
+            // quatre : un rebond, pas un tremblement. sin(3π·1) = 0, donc
+            // la bille finit exactement sur son numéro.
+            const float bounce = 0.20f * damp *
+                std::sin(p * 3.0f * 3.14159265f);
             return static_cast<float>(s.winNumber) + bounce;
         }
         return static_cast<float>(s.winNumber);

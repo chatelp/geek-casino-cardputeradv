@@ -969,6 +969,11 @@ def card_device():
             ("leaderboard", "Classement — c'est la table des joueurs elle-même."),
             ("settings", "Réglages généraux : son, démo, allumage, joueur."),
             ("about", "Qui l'a fait, avec quoi — et ce qui ne tourne PAS ici."),
+            ("app_help", "H à l'accueil : l'aide de l'OBJET — le transversal."),
+            ("app_help_credit", "La rangée de chiffres, expliquée avec ses "
+                                "montants."),
+            ("topup", "Rachat : pluie de jetons et compteur, par-dessus "
+                      "n'importe quel écran."),
         ]),
         ("Machine à sous 3x1", [
             ("slot", "Cabinet-circuit, levier à droite, hublots hauts."),
@@ -998,7 +1003,8 @@ def card_device():
             ("poker_help", "Barème 9/6 et bonus de mise maximale."),
         ]),
         ("Roulette", [
-            ("roulette", "La roue en bande, montée sur encodeur rotatif."),
+            ("roulette", "La roue en bande, sur sa carte — encodeur RE1, "
+                         "37 crans, sérigraphie."),
             ("roulette_spin", "Pari sur un plein, bille lancée."),
             ("roulette_help", "Dix paris — tous à 97,3 %."),
         ]),
@@ -1372,8 +1378,11 @@ def export_layout():
     out.append("// Roulette — la roue est rendue en BANDE horizontale : une\n")
     out.append("// roue ronde de 37 cases est illisible sur 240 px de large.\n")
     out.append("namespace rlayout {\n\n")
-    rl = {"kCellW": 44, "kStripY": 24, "kStripH": 36, "kVisible": 5,
-          "kBetY": 70, "kBetH": 28, "kMsgY": 104}
+    # La roue est l'événement : elle prend la hauteur rendue par les ~20 px
+    # qui mouraient sous le message (constat de Pierre, 2026-08-13). Cases
+    # 44x46 au lieu de 44x36, panneau et message repoussés au ras du bas.
+    rl = {"kCellW": 44, "kStripY": 26, "kStripH": 46, "kVisible": 5,
+          "kBetY": 86, "kBetH": 28, "kMsgY": 120}
     rl["kStripX"] = (SCREEN_W - rl["kVisible"] * rl["kCellW"]) // 2
     for k in sorted(rl):
         out.append("constexpr int %-10s = %d;\n" % (k, rl[k]))

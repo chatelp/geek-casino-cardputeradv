@@ -73,15 +73,39 @@ void drawWheel(lgfx::LGFX_Sprite& g, const core::RouletteSession& s, uint32_t no
     }
 }
 
-// Corps de l'encodeur sous la bande : axe, méplat, et deux pattes.
+// La carte sous la roue : même règle que le blackjack et le poker — le
+// geek passe par le décor, les numéros restent des numéros. La bande est
+// un composant MONTÉ sur ce circuit ; sans lui, l'encodeur flottait sur
+// du noir.
+void drawBoard(lgfx::LGFX_Sprite& g) {
+    constexpr int kTy = 20;
+    const int kTh = kBetY - 2 - kTy;  // jusqu'au ras du panneau de mise
+    g.fillRect(4, kTy, kScreenW - 8, kTh, P::pcb);
+    drawFrame(g, 4, kTy, kScreenW - 8, kTh, P::pcbEdge, 1);
+    // Vias sur la marge haute seulement : la marge basse porte la
+    // sérigraphie et l'encodeur — trois choses au même endroit ne se
+    // liraient plus.
+    for (int x = 12; x < kScreenW - 12; x += 16) {
+        drawVia(g, x, kTy + 1, P::pcbLine, P::pcb);
+    }
+}
+
+// Corps de l'encodeur sous la bande : axe, méplat, pattes soudées à leurs
+// pastilles, et sa sérigraphie — RE1, 37 crans. Un encodeur à 37 crans
+// n'existe pas en catalogue : c'est la roue européenne en composant.
 void drawEncoder(lgfx::LGFX_Sprite& g) {
     const int cx = kScreenW / 2;
-    const int y = kStripY + kStripH + 8;
-    g.fillRect(cx - 18, y, 36, 4, P::steel500);
-    g.fillRect(cx - 22, y + 4, 44, 2, P::ink600);
+    const int y = kStripY + kStripH + 2;
     for (int i = 0; i < 4; ++i) {
-        g.fillRect(cx - 15 + i * 10, y - 3, 2, 3, P::tan);
+        // La pastille de soudure or, et la patte qui rejoint la bande.
+        g.fillRect(cx - 16 + i * 10, y, 4, 2, P::tan);
+        g.fillRect(cx - 15 + i * 10, y - 3, 2, 3, P::steel500);
     }
+    g.fillRect(cx - 18, y + 2, 36, 3, P::steel500);
+    g.fillRect(cx - 22, y + 5, 44, 1, P::ink600);
+    // La sérigraphie, dans la marge basse de la carte.
+    drawText(g, "RE1", 12, y + 1, P::pcbEdge, 1);
+    drawText(g, "37 DET", kScreenW - 12, y + 1, P::pcbEdge, 1, Align::Right);
 }
 
 void drawHud(lgfx::LGFX_Sprite& g, const core::RouletteSession& s) {
@@ -138,6 +162,10 @@ void drawMessage(lgfx::LGFX_Sprite& g, const core::RouletteSession& s, uint32_t 
                      P::cyan, 1, Align::Center);
             break;
         case core::RltPhase::Spinning:
+        case core::RltPhase::Landing:
+            // Le rebond fait partie du lancer : les jeux restent faits tant
+            // que la bille n'est pas réglée. Sans ce cas, la bande restait
+            // VIDE pendant les 520 ms du rebond.
             drawText(g, "NO MORE BETS", kScreenW / 2, kMsgY, P::magenta, 2,
                      Align::Center);
             break;
@@ -164,6 +192,7 @@ void drawRouletteScreen(lgfx::LGFX_Sprite& g, const core::RouletteSession& s,
     g_demo = s.attract;
     g.fillScreen(P::ink900);
     drawHud(g, s);
+    drawBoard(g);
     drawWheel(g, s, now);
     drawEncoder(g);
     drawBetPanel(g, s);

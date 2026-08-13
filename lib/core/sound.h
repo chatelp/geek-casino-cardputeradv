@@ -30,6 +30,8 @@ enum class Cue : uint8_t {
     // Passage d'une case sous la bille. Très court : il en part
     // plusieurs par seconde au début du lancer.
     Tick,
+    // Rachat de jetons : la cascade de pièces qui tombent.
+    Topup,
 };
 
 struct Tone {

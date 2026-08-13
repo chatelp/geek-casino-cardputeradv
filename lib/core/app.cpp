@@ -13,6 +13,12 @@ uint32_t demoDelayMs(const App& a) {
 }
 
 Cue takeAppCue(App& a) {
+    // Le rachat de jetons d'abord : il n'appartient à aucun jeu.
+    if (a.topupCue != Cue::None) {
+        const Cue t = a.topupCue;
+        a.topupCue = Cue::None;
+        return t;
+    }
     Cue c = takeCue(a.game);
     if (c == Cue::None) c = takeVideoCue(a.video);
     if (c == Cue::None) c = takeBjCue(a.bj);
@@ -219,9 +225,12 @@ void keyLobby(App& a, AppKey k, uint32_t now, RngFn rng) {
             a.screen = AppScreen::About;
             break;
         case AppKey::Help:
+            // L'aide de l'accueil est celle de l'OBJET : les gestes
+            // transversaux (rachat de jetons, secousse, démo, navigation).
+            // Les règles d'un jeu vivent dans son aide à lui — H en jeu.
             a.helpReturn = AppScreen::Lobby;
             a.helpPage = 0;
-            a.screen = helpOf(static_cast<GameId>(a.lobbyIndex));
+            a.screen = AppScreen::AppHelp;
             break;
         case AppKey::Back:
             a.quitRequested = true;
@@ -504,6 +513,7 @@ void keyGlobalSettings(App& a, AppKey k) {
 
 uint8_t helpPageCount(AppScreen help) {
     switch (help) {
+        case AppScreen::AppHelp: return 2;    // touches, jetons & démo
         case AppScreen::SlotHelp: return 2;   // gains, règles
         case AppScreen::PokerHelp: return 2;  // gains, règles
         case AppScreen::RouletteHelp: return 2;
@@ -511,6 +521,33 @@ uint8_t helpPageCount(AppScreen help) {
         case AppScreen::BjHelp: return 2;     // règles, actions
         default: return 1;
     }
+}
+
+bool topupKey(App& a, uint8_t digit, uint32_t now) {
+    // Pendant la saisie du nom les chiffres ÉCRIVENT ; pendant l'allumage
+    // toute touche saute l'intermède. Partout ailleurs, le geste vaut.
+    if (a.screen == AppScreen::NameEntry || a.screen == AppScreen::Boot) {
+        return false;
+    }
+    a.lastInputMs = now;  // un geste, n'importe lequel, désarme la démo
+
+    const int32_t amount = topupAmount(digit);
+    if (amount <= 0) return false;
+    // Lire la vérité du jeu affiché AVANT d'ajouter : son économie fait
+    // foi (c'est elle qui a débité la mise), le solde d'app ne fait que la
+    // suivre. Ajouter sur une copie en retard écraserait un débit.
+    pullEconomy(a);
+    a.econ.credits += amount;
+    pushEconomy(a);
+    syncAndMarkDirty(a);
+
+    // Les pressions s'empilent : marteler `0` cumule les +100 dans le même
+    // panneau, et l'animation repart — la pluie ne s'interrompt pas.
+    a.topup.shown = a.topup.active ? a.topup.shown + amount : amount;
+    a.topup.t0 = now;
+    a.topup.active = true;
+    a.topupCue = Cue::Topup;
+    return true;
 }
 
 void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
@@ -537,6 +574,7 @@ void handleKey(App& a, AppKey k, uint32_t now, RngFn rng) {
         case AppScreen::Poker: keyPoker(a, k, now, rng); break;
         case AppScreen::Roulette: keyRoulette(a, k, now, rng); break;
 
+        case AppScreen::AppHelp:
         case AppScreen::SlotHelp:
         case AppScreen::VideoHelp:
         case AppScreen::BjHelp:
@@ -673,6 +711,11 @@ void tickApp(App& a, uint32_t now, RngFn rng) {
         if (now - a.bootT0 >= kBootTotalMs) a.screen = a.afterBoot;
         a.lastInputMs = now;  // pas de démo pendant l'allumage
         return;
+    }
+    // La pluie de jetons s'éteint d'elle-même.
+    if (a.topup.active && now - a.topup.t0 >= kTopupFxMs) {
+        a.topup.active = false;
+        a.topup.shown = 0;
     }
     // Armement commun : un seul compteur d'inactivité pour tout l'objet.
     const bool armed = a.settings.demoOn != 0 &&

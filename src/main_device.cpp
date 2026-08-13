@@ -117,7 +117,13 @@ static void handleKeyboard(uint32_t now) {
             case 'l': core::handleKey(app, core::AppKey::Board, now, trng); break;
             case 'a': core::handleKey(app, core::AppKey::About, now, trng); break;
             case '`': core::handleKey(app, core::AppKey::Back, now, trng); break;
-            default: break;
+            default:
+                // La rangée de chiffres : rachat de jetons, partout.
+                // topupKey refuse de lui-même la saisie du nom et le boot.
+                if (c >= '0' && c <= '9') {
+                    core::topupKey(app, static_cast<uint8_t>(c - '0'), now);
+                }
+                break;
         }
     }
 }

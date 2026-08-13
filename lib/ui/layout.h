@@ -106,12 +106,12 @@ constexpr int cardX(int i) { return kRowX + i * kStep; }
 namespace rlayout {
 
 constexpr int kBetH      = 28;
-constexpr int kBetY      = 70;
+constexpr int kBetY      = 86;
 constexpr int kCellW     = 44;
-constexpr int kMsgY      = 104;
-constexpr int kStripH    = 36;
+constexpr int kMsgY      = 120;
+constexpr int kStripH    = 46;
 constexpr int kStripX    = 10;
-constexpr int kStripY    = 24;
+constexpr int kStripY    = 26;
 constexpr int kVisible   = 5;
 
 constexpr int cellLeft(int i) { return kStripX + i * kCellW; }

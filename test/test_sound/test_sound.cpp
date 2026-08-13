@@ -12,7 +12,7 @@ static const core::Cue kAllCues[] = {
     core::Cue::SpinStart, core::Cue::ReelStop1, core::Cue::ReelStop2,
     core::Cue::ReelStop3, core::Cue::WinSmall, core::Cue::WinMid,
     core::Cue::WinBig, core::Cue::Jackpot, core::Cue::Bailout,
-    core::Cue::BetChange,
+    core::Cue::BetChange, core::Cue::Tick, core::Cue::Topup,
 };
 
 static void test_every_note_is_audible_on_this_speaker() {

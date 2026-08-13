@@ -34,6 +34,7 @@ SHOTS = [
     ("poker", 2), ("poker_result", 2),
     ("roulette", 2), ("roulette_spin", 2),
     ("demo_poker", 2), ("help", 2),
+    ("topup", 2), ("app_help_credit", 2),
 ]
 
 # Le héros : quatre écrans côte à côte, deux par deux.

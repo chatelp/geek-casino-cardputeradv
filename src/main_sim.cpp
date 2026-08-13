@@ -178,11 +178,27 @@ int runCapture() {
             {core::AppScreen::SlotSettings, "slot_settings.bmp"},
             {core::AppScreen::Leaderboard, "leaderboard.bmp"},
             {core::AppScreen::About, "about.bmp"},
+            {core::AppScreen::AppHelp, "app_help.bmp"},
         };
         for (const auto& d : defs) {
             app.screen = d.sc;
             ui::drawApp(canvas, app, 400);
             if (!saveShot(canvas, d.name)) return 1;
+        }
+        // La page HOUSE CREDIT de l'aide générale.
+        app.screen = core::AppScreen::AppHelp;
+        app.helpPage = 1;
+        ui::drawApp(canvas, app, 400);
+        if (!saveShot(canvas, "app_help_credit.bmp")) return 1;
+        app.helpPage = 0;
+        app.screen = core::AppScreen::Lobby;
+        // La pluie du rachat, en plein vol, par-dessus l'accueil.
+        {
+            uint32_t tt = 5000;
+            core::topupKey(app, 0, tt);          // +100
+            ui::drawApp(canvas, app, tt + 640);  // pluie et compteur visibles
+            if (!saveShot(canvas, "topup.bmp")) return 1;
+            core::tickApp(app, tt + core::kTopupFxMs + 50, core::xorShift32);
         }
         // La saisie du nom, à moitié remplie, curseur visible.
         app.roster.count = 0;
@@ -473,11 +489,22 @@ int simRun(bool* running) {
                 core::handleKey(app, core::AppKey::Board, now, core::xorShift32);
             if (edge.pressed(st, SDL_SCANCODE_A))
                 core::handleKey(app, core::AppKey::About, now, core::xorShift32);
+            static const SDL_Scancode kDigits[10] = {
+                SDL_SCANCODE_0, SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3,
+                SDL_SCANCODE_4, SDL_SCANCODE_5, SDL_SCANCODE_6, SDL_SCANCODE_7,
+                SDL_SCANCODE_8, SDL_SCANCODE_9,
+            };
+            for (uint8_t d = 0; d < 10; ++d) {
+                if (edge.pressed(st, kDigits[d])) core::topupKey(app, d, now);
+            }
         } else {
             edge.pressed(st, SDL_SCANCODE_H);  // consomme les fronts pour ne
             edge.pressed(st, SDL_SCANCODE_S);  // pas déclencher en sortant
             edge.pressed(st, SDL_SCANCODE_L);
             edge.pressed(st, SDL_SCANCODE_A);
+            for (int sc = SDL_SCANCODE_1; sc <= SDL_SCANCODE_0; ++sc) {
+                edge.pressed(st, static_cast<SDL_Scancode>(sc));
+            }
         }
 
         if (app.quitRequested) {

@@ -19,6 +19,7 @@
 #include "players.h"
 #include "video_game.h"
 #include "roulette_session.h"
+#include "topup.h"
 #include "vp_session.h"
 
 namespace core {
@@ -42,6 +43,9 @@ enum class AppScreen : uint8_t {
     RouletteHelp,
     GlobalSettings,  // S à l'accueil — son, volume, joueur, reset
     Leaderboard,     // L à l'accueil
+    AppHelp,         // H à l'accueil — le TRANSVERSAL : rachat de jetons,
+                     // geste, démo, navigation. Les règles d'un jeu vivent
+                     // dans SON aide (H en jeu), pas ici.
     About,           // A à l'accueil — auteur, licence, et la transparence
                      // sur l'outil : construit avec Claude Code
 };
@@ -96,6 +100,11 @@ struct App {
     bool resetArmed = false;    // le reset demande une seconde pression
     bool quitRequested = false; // Échap depuis l'accueil (sim uniquement)
     bool dirty = false;         // une sauvegarde est due
+    // Rachat de jetons (rangée de chiffres) : l'animation en cours, et son
+    // signal sonore — qui vit dans App parce que le geste n'appartient à
+    // aucun jeu.
+    Topup topup;
+    Cue topupCue = Cue::None;
 };
 
 App newApp(uint32_t now, RngFn rng);
@@ -103,6 +112,12 @@ App newApp(uint32_t now, RngFn rng);
 // Après chargement d'une sauvegarde : saute la saisie du nom s'il existe
 // déjà des joueurs, et branche l'économie sur le joueur courant.
 void enterFromSave(App& a);
+
+// La rangée de chiffres : ajoute des jetons, partout sauf pendant la
+// saisie du nom (les chiffres y écrivent) et l'allumage (toute touche le
+// saute). `digit` est le chiffre de la touche, 0..9. Renvoie true si des
+// jetons ont été ajoutés.
+bool topupKey(App& a, uint8_t digit, uint32_t now);
 
 // Une touche. Fait tout : navigation, réglages, lancement des tours.
 void handleKey(App& a, AppKey k, uint32_t now, RngFn rng);
