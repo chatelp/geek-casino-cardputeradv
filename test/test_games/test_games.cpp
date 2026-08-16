@@ -596,6 +596,61 @@ static void test_a_hand_left_behind_is_waiting_on_return() {
     TEST_ASSERT_EQUAL(suit0, a.poker.hand.c[0].suit);
 }
 
+static void test_the_slot_pays_when_the_reels_land_not_when_you_press() {
+    // LE bug de la 1.0, signalé sur Reddit vidéo à l'appui : 965 jetons,
+    // mise de 5, gain de 10. Le joueur attendait 965 -> 960 -> 970 et voyait
+    // 965 -> 970 d'un bloc, à l'appui — la mise et le gain tombaient dans le
+    // même appel. Le solde contenait donc déjà le gain quand la célébration
+    // l'annonçait, et le tour paraissait n'avoir rien payé.
+    //
+    // Aucun test ne regardait le solde PENDANT la rotation : c'est ce trou
+    // exact que celui-ci ferme.
+    App a = started(900);
+    a.settings.demoOn = 0;
+    a.screen = core::AppScreen::Slot;
+
+    uint32_t now = 0;
+    for (int attempt = 0; attempt < 400; ++attempt) {
+        const int32_t before = a.game.machine.econ.credits;
+        core::handleKey(a, AppKey::Confirm, now, core::xorShift32);
+        TEST_ASSERT_EQUAL(static_cast<int>(core::Phase::Spinning),
+                          static_cast<int>(a.game.phase));
+        const int32_t stake = static_cast<int32_t>(a.game.outcome.stake);
+        const int32_t payout = static_cast<int32_t>(a.game.outcome.payout);
+
+        // À l'appui : SEULE la mise part. Le gain ne doit pas être là,
+        // même si le tirage est déjà résolu sous le capot.
+        TEST_ASSERT_EQUAL_INT32_MESSAGE(before - stake,
+                                        a.game.machine.econ.credits,
+                                        "le gain est arrive trop tot");
+
+        // Pendant toute la rotation : le compteur ne bouge pas d'un jeton.
+        while (a.game.phase == core::Phase::Spinning) {
+            now += core::kFrameMs;
+            core::tickApp(a, now, core::xorShift32);
+            if (a.game.phase != core::Phase::Spinning) break;
+            TEST_ASSERT_EQUAL_INT32_MESSAGE(before - stake,
+                                            a.game.machine.econ.credits,
+                                            "le solde a bouge en pleine rotation");
+        }
+
+        // À l'arrivée : le gain est là, au jeton près.
+        if (!a.game.outcome.bailedOut) {
+            TEST_ASSERT_EQUAL_INT32_MESSAGE(before - stake + payout,
+                                            a.game.machine.econ.credits,
+                                            "le gain n'a pas ete paye a l'arrivee");
+        }
+        // Un tour GAGNANT vérifié de bout en bout, c'est le cas du rapport.
+        if (payout > 0 && !a.game.outcome.bailedOut) return;
+
+        while (a.game.phase != core::Phase::Idle) {   // laisse retomber
+            now += core::kFrameMs;
+            core::tickApp(a, now, core::xorShift32);
+        }
+    }
+    TEST_FAIL_MESSAGE("aucun tour gagnant en 400 essais : test non concluant");
+}
+
 static void test_the_roulette_ball_clicks_while_it_runs() {
     // Une bille de roulette cliquette, c'est LE son du jeu. Sans lui, le
     // lancer est un silence de trois secondes.
@@ -636,6 +691,7 @@ int main() {
     RUN_TEST(test_every_game_actually_makes_sound);
     RUN_TEST(test_back_always_leaves_any_game_mid_hand);
     RUN_TEST(test_a_hand_left_behind_is_waiting_on_return);
+    RUN_TEST(test_the_slot_pays_when_the_reels_land_not_when_you_press);
     RUN_TEST(test_the_roulette_ball_clicks_while_it_runs);
     RUN_TEST(test_demo_runs_free_and_silent_in_every_game);
     RUN_TEST(test_demo_can_be_switched_off);

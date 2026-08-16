@@ -69,6 +69,7 @@ static void test_player_never_gets_permanently_ruined() {
         for (int k = 0; k < core::kBetSteps; ++k) core::raiseBet(m.econ);
         TEST_ASSERT_TRUE_MESSAGE(core::playSpin(m, core::xorShift32, o),
                                  "la machine a refuse de jouer : cul-de-sac");
+        core::settleSpin(m, o);   // un tour complet = jouer PUIS solder
         TEST_ASSERT_TRUE_MESSAGE(m.econ.credits >= 0, "solde negatif");
         if (o.bailedOut) ++bailouts;
     }

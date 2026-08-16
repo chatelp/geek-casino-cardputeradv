@@ -2,6 +2,46 @@
 
 Une entrée par décision actée avec Pierre. Les plus récentes en haut.
 
+## D-042 — 2026-08-13 — 1.1 : la machine à sous paie à l'arrêt des rouleaux, pas à l'appui
+
+**Premier bug remonté par un joueur**, sur r/CardPuter, vidéo à l'appui —
+et chiffré au jeton près : 965 jetons, mise de 5, gain de 10. Il attendait
+965 → 960 → 970 et voyait 965 → 970 d'un bloc, à l'appui.
+
+Diagnostic exact dans `machine.cpp` : `placeBet()` et `award()` tombaient
+dans le **même appel**, à l'appui. Le tirage entier était résolu au départ
+— les rouleaux ne faisaient que montrer un résultat déjà encaissé. Le
+solde contenait donc le gain pendant toute la rotation, et la célébration
+annonçait « +10 » alors qu'il n'y avait plus rien à ajouter. D'où « les
+jetons ne sont pas ajoutés », et **seulement de temps en temps** : le
+défaut ne se voit que sur un tour gagnant.
+
+**Le 3×1 seul était touché.** La machine vidéo crédite à l'arrêt du
+dernier rouleau depuis toujours (`video_game.cpp`), parce qu'elle a été
+écrite quand l'animation existait déjà ; blackjack, poker et roulette sont
+réglés à la fin par nature. Le 3×1 est l'ancien MVP, où un tour se
+résolvait d'un bloc faute d'avoir quoi que ce soit à attendre — la dette
+est restée quand l'animation est arrivée.
+
+**Un tour se joue désormais en deux temps déclarés** : `playSpin()` prend
+la mise et tire, `settleSpin()` paie et renfloue. Tous les appelants
+doivent nommer les deux moments, y compris les tests statistiques — c'est
+volontaire : l'ordre EST le jeu, il ne doit plus pouvoir se perdre dans un
+appel unique.
+
+**Le trou de test qui l'a laissé passer** : aucun test ne regardait le
+solde PENDANT la rotation. 135 tests, et le correctif n'en a cassé aucun.
+Le nouveau test parcourt un tour gagnant de bout en bout — mise partie à
+l'appui, compteur figé pendant toute la rotation, gain exact à l'arrivée —
+et il échoue bien sur le comportement 1.0 (`Expected 990 Was 1000`).
+
+Leçon plus générale : on regardait tous les rouleaux, jamais le compteur.
+C'est aussi ce qu'il faut retenir des retours de joueurs — ils regardent
+ailleurs que nous.
+
+Version affichée à l'allumage : **V1.1**. C'est la ligne de ROM qui
+permet à un joueur de vérifier ce qu'il a.
+
 ## D-041 — 2026-08-13 — Les visuels de publication disent « casino » — et jamais l'invader en tête d'affiche
 
 Constat de Pierre au moment de publier : la cover et l'écran de

@@ -265,7 +265,9 @@ void keySlot(App& a, AppKey k, uint32_t now, RngFn rng) {
             noteInput(a.game, now);
             if (startSpin(a.game, now, rng)) {
                 ++a.game.spins;
-                syncAndMarkDirty(a, a.game.outcome.payout);
+                // Pas de gain à enregistrer à l'appui : il n'est pas encore
+                // payé. tickApp() le fera à l'arrêt des rouleaux.
+                syncAndMarkDirty(a);
             }
             break;
         case AppKey::Left:

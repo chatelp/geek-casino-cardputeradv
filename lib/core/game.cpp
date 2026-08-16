@@ -126,6 +126,9 @@ uint8_t updateGame(Game& g, uint32_t now, RngFn rng) {
             }
             if (stopped == rs.reels) {
                 for (uint8_t r = 0; r < rs.reels; ++r) g.restPos[r] = g.outcome.pos[r];
+                // Le gain arrive ICI, pas à l'appui : le compteur monte avec
+                // la célébration, comme au format vidéo.
+                settleSpin(g.machine, g.outcome, /*charge=*/!g.attract);
                 g.tier = tierOf(g.outcome.win);
                 if (g.outcome.bailedOut) {
                     g.phase = Phase::Bailout;

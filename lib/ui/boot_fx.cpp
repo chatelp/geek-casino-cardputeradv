@@ -74,7 +74,7 @@ void drawSelftest(lgfx::LGFX_Sprite& g, uint32_t frame, float p) {
     // Panel_ST7789 et ne connaît pas de révision. On n'affiche que ce qu'on
     // peut montrer.
     static const char* kLines[] = {
-        "SILICON CASINO BOOT ROM V1.0",
+        "SILICON CASINO BOOT ROM V1.1",
         "CPU   ESP32-S3  240 MHZ",
         "FLASH 8 MB   PSRAM NONE",
         "VRAM  64800 BYTES",

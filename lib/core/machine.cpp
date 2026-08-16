@@ -22,16 +22,18 @@ bool playSpin(Machine& m, RngFn rng, SpinOutcome& out, bool charge) {
     out.win = evaluateLine(*m.pay, out.sym, m.reels->reels);
     out.payout = static_cast<uint32_t>(out.win.multiplier) * out.stake;
 
-    if (charge) {
-        award(m.econ, out.payout);
-        // Garde-fou : personne ne repart ruiné.
-        if (needsBailout(m.econ)) {
-            bailout(m.econ);
-            out.bailedOut = true;
-        }
-        clampBet(m.econ);
-    }
     return true;
+}
+
+void settleSpin(Machine& m, SpinOutcome& out, bool charge) {
+    if (!charge) return;   // la démo ne touche à rien
+    award(m.econ, out.payout);
+    // Garde-fou : personne ne repart ruiné.
+    if (needsBailout(m.econ)) {
+        bailout(m.econ);
+        out.bailedOut = true;
+    }
+    clampBet(m.econ);
 }
 
 }  // namespace core
